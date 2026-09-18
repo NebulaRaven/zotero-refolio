@@ -3,7 +3,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { script } from './source.mts';
-import { spRelatedGraph } from '../src/core/graph.ts';
 import { domFixture } from './dom-fixture.ts';
 
 const root = new URL('../src/', import.meta.url);
@@ -28,28 +27,11 @@ function timers() {
   };
 }
 
-test('related-item indexing scales with items and links and keeps library identities separate', () => {
-  let keyReads = 0;
-  const items = Array.from({ length: 10000 }, (_, id) => ({ id, libraryID: 1,
-    get key() { keyReads++; return String(id); }, relatedItems: [String(id + 1)] }));
-  const graph = spRelatedGraph(items);
-  assert.equal(Object.keys(graph.nodes).length, 10000);
-  assert.equal(keyReads, 10000);
-  assert.deepEqual(graph.nodes[0].links, { 1: true });
-  assert.deepEqual(graph.nodes[9999].links, {});
-  const mixed = spRelatedGraph([
-    { id: 1, libraryID: 1, key: 'A', relatedItems: ['A', 'B', 'missing'] },
-    { id: 2, libraryID: 1, key: 'B', relatedItems: [] },
-    { id: 3, libraryID: 2, key: 'B', relatedItems: [] }
-  ]);
-  assert.deepEqual(mixed.nodes[1].links, { 2: true });
-});
-
 test('graph selection bursts coalesce and hidden graphs do not schedule work', async () => {
   const clock = timers(); let refreshed = 0;
   const ctx = await load({ window: clock, ztoolkit: { log: assert.fail } }, 'upstream/features/collections/graphView.ts');
   const view = Object.create(ctx.GraphView.prototype);
-  Object.assign(view, { active: true, timers: new Set(), container: { style: { display: '' } }, mode: 'related',
+  Object.assign(view, { active: true, timers: new Set(), container: { style: { display: '' } }, mode: 'citations',
     refreshGraphView: async () => { refreshed++; } });
   for (let i = 0; i < 100; i++) view.queueSelectionRefresh();
   assert.equal(clock.pending.size, 1);
@@ -312,7 +294,7 @@ test('preference teardown removes observers and manual-journal callbacks and per
     spFeatureGroups: ['journals', 'graph', 'reader', 'columns'].map(id => [id, `ui-group-${id}`]), spFeatureDefinitions: [], spInactivePreferences: new Set(),
     readDefaultPreferences: () => new Map([['extensions.zotero.stylepersonal.enable', true]]),
     Zotero: { Prefs: { registerObserver(key, callback) { observers.set(++nextObserver, callback); return nextObserver; }, unregisterObserver(id) { observers.delete(id); } } } },
-    'upstream/features/preferences/preferenceWindow.ts', 'app/manualRanks.ts', 'app/preferences.ts');
+    'app/ui.ts', 'upstream/features/preferences/preferenceWindow.ts', 'app/manualRanks.ts', 'app/preferences.ts');
   await ctx.registerPrefsScripts(win); const count = observers.size;
   assert.ok(count > 0); assert.equal(typeof ctx.addon.api.openManualJournal, 'function');
   ctx.addon.data.prefs.release();

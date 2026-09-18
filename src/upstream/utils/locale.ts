@@ -33,9 +33,9 @@ const optionMessages: Record<string, string> = {
   left: "ui-option-left", right: "ui-option-right", center: "ui-option-center",
   bar: "ui-option-bar", line: "ui-option-line", auto: "ui-automatic",
   extra: "ui-extra-field", tag: "ui-tag", tags: "ui-mode-tags",
-  horizontal: "ui-horizontal", vertical: "ui-vertical", related: "ui-mode-related",
+  horizontal: "ui-horizontal", vertical: "ui-vertical",
   note: "ui-mode-notes", author: "ui-mode-authors", citations: "ui-mode-citations",
-  genealogy: "ui-mode-genealogy", default: "ui-mode-links", sciif: "ui-rank-if",
+  genealogy: "ui-mode-genealogy", sciif: "ui-rank-if",
   sciif5: "ui-rank-five-year-if", "综合影响因子": "ui-rank-comprehensive-if", "复合影响因子": "ui-rank-composite-if"
 };
 

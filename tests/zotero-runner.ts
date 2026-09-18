@@ -20,6 +20,8 @@ async function startup() {
       const request = JSON.parse(await IOUtils.readUTF8(runnerOptions.request));
       if (request.revision === runnerRevision) return;
       runnerRevision = request.revision;
+      const previousRun = (Zotero.StylePersonal?.api as { __nativeRun?: Promise<void> })?.__nativeRun;
+      await previousRun?.catch(error => Zotero.logError(error));
       await IOUtils.writeUTF8(runnerOptions.status, JSON.stringify({stage:"installing",revision:runnerRevision}));
       const file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsIFile);
       file.initWithPath(runnerOptions.candidate);

@@ -66,7 +66,7 @@ test('release source archive includes build inputs and excludes local profiles a
 test('shutdown unregisters the preference pane by pane ID, not plugin ID',async()=>{
   let removed;
   const addon={data:{alive:true},api:{}};
-  const context: vm.Context = {addon,spCitationAbort:undefined,config:{addonID:'style-personal@nebularaven.local',addonInstance:'StylePersonal'},
+  const context: vm.Context = {addon,spShutdownCitations:async()=>{},config:{addonID:'style-personal@nebularaven.local',addonInstance:'StylePersonal'},
     Zotero:{StylePersonal:addon,PreferencePanes:{unregister:id=>{removed=id;}}},ztoolkit:{unregisterAll:()=>{}}};
   vm.runInNewContext(await script(root+'/src/app/hooks.ts')+';globalThis.stop=onShutdown;',context);
   await context.stop();assert.equal(removed,'stylepersonal-preferences');assert.equal(addon.data.alive,false);

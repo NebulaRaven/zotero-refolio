@@ -1,6 +1,6 @@
 import { getString, getErrorMessage } from "../upstream/utils/locale.ts";
 import type { GraphView } from '../upstream/features/collections/graphView.ts';
-import { spElement,spGenealogyOptions,spSelectOptions } from "./ui.ts";
+import { spElement,spGenealogyOptions,spSelect,spSelectOptions } from "./ui.ts";
 import { spDeleteManualGenealogy,spReadManualGenealogy,spRestoreManualGenealogy,spSaveManualGenealogy } from "../core/manualGenealogy.ts";
 import { getPref,setPref } from "../upstream/utils/prefs.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -20,7 +20,8 @@ export function spBuildManualGenealogyControls(view: GraphView, parent: HTMLElem
     return result;
   };
   const field = (label, tag = "input") => {
-    const row = create("label", form, label), input = create(tag, row); input.setAttribute("aria-label", label); return input;
+    const row = create("label", form, label), input = tag === "select" ? spSelect(doc, row) : create(tag, row);
+    input.setAttribute("aria-label", label); return input;
   };
   const personFields = (role, nameLabel, descriptionLabel) => {
     const choice = field(role, "select"), name = field(nameLabel), description = field(descriptionLabel);

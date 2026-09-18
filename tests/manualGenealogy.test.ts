@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import vm from 'node:vm';
+import { domFixture } from './dom-fixture.ts';
 import { spReadManualGenealogy, spSaveManualGenealogy, spDeleteManualGenealogy,
   spRestoreManualGenealogy, spMergeManualGenealogy } from '../src/core/manualGenealogy.ts';
 
@@ -90,24 +91,18 @@ test('invalid saved genealogy data is reported instead of silently replaced', ()
 
 test('actual genealogy panel initialises local records and uses the Academic Family Tree main site without an API request', async () => {
   const next = freshIDs(), saved = spSaveManualGenealogy(empty(), draft(), next);
-  const elements = [];
-  const doc: vm.Context = { defaultView: { crypto: { randomUUID: next } } };
-  const makeElement = (doc, tag, parent = undefined, text = '') => {
-    const element = { ownerDocument: doc, tag, textContent: text, value: '', children: [], events: {},
-      append(child) { this.children.push(child); }, setAttribute() {}, addEventListener(type, listener) { this.events[type] = listener; },
-      replaceChildren(...children) { this.children = children; }, scrollIntoView() {} };
-    parent?.append(element); elements.push(element); return element;
-  };
-  doc.createElementNS = (_namespace, tag) => makeElement(doc, tag);
+  const dom = domFixture(), doc = dom.document;
+  doc.defaultView.crypto = { randomUUID: next };
   const view: vm.Context = { cleanups: [], status: {}, active: true, mode: 'genealogy', schedule() {}, refreshGraphView: async () => {} };
-  const ctx: vm.Context = { spElement: makeElement, getString: testGetString, getErrorMessage: testGetErrorMessage, spReadManualGenealogy, spMergeManualGenealogy,
+  const ctx: vm.Context = { getString: testGetString, getErrorMessage: testGetErrorMessage, spReadManualGenealogy, spMergeManualGenealogy,
     spSaveManualGenealogy, spDeleteManualGenealogy, spRestoreManualGenealogy,
     getPref: () => JSON.stringify(saved.data), setPref: () => assert.fail('Must not save during initialisation'),
     Zotero: { locale: 'en', HTTP: { request: () => assert.fail('Must remain offline') } },
     ZoteroPane: { getSelectedItems: () => [] }, SPGenealogyClient: class {} };
   for (const file of ['ui', 'manualGenealogy', 'genealogy']) vm.runInNewContext(await script(new URL(`../src/app/${file}.ts`, import.meta.url)), ctx);
-  ctx.spBuildGenealogyControls(view, makeElement(doc, 'div'));
+  const container = new dom.Element('div');
+  ctx.spBuildGenealogyControls(view, container);
   assert.equal(view.getGenealogyGraph().genealogyEdges.length, 1);
-  assert.equal(elements.find(element => element.tag === 'a' && element.textContent === 'Academic Family Tree').href, 'https://academictree.org/');
-  assert.ok(elements.some(element => element.textContent === 'Manual relationships'));
+  assert.equal((container.querySelector('a') as any).href, 'https://academictree.org/');
+  assert.ok(container.querySelectorAll('summary').some(element => element.textContent === 'Manual relationships'));
 });

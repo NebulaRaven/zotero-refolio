@@ -1,6 +1,7 @@
 import { getString, getErrorMessage } from "../upstream/utils/locale.ts";
-import { spElement,spGenealogyOptions,spSelectOptions } from "./ui.ts";
+import { spElement,spGenealogyOptions,spSelect,spSelectOptions } from "./ui.ts";
 import { SPGenealogyClient } from "../core/genealogy.ts";
+import type { GenealogyKind } from "../core/models.ts";
 import { getPref } from "../upstream/utils/prefs.ts";
 import { spMergeManualGenealogy,spReadManualGenealogy } from "../core/manualGenealogy.ts";
 import { spBuildManualGenealogyControls } from "./manualGenealogy.ts";
@@ -11,10 +12,10 @@ export function spBuildGenealogyControls(view, container) {
   const create = spElement.bind(null, doc);
   const panel = view.genealogyPanel = create("div", container); panel.className = "sp-genealogy";
   const row = create("div", panel); row.className = "sp-genealogy-row";
-  const author = create("select", row); author.setAttribute("aria-label", getString("ui-authors-of-selected-items"));
+  const author = spSelect(doc, row); author.setAttribute("aria-label", getString("ui-authors-of-selected-items"));
   const search = create("input", row); search.placeholder = getString("ui-author-name"); search.setAttribute("aria-label", search.placeholder);
   const submit = create("button", row, getString("ui-search-wikidata")); submit.type = "button";
-  const kind = create("select", row); kind.setAttribute("aria-label", getString("ui-relationship-type"));
+  const kind = spSelect(doc, row); kind.setAttribute("aria-label", getString("ui-relationship-type"));
   spSelectOptions(kind, spGenealogyOptions(), "doctoral");
   const manualView = create("button", row, getString("ui-local-genealogy")); manualView.type = "button";
   const external = create("a", row, "Academic Family Tree"); external.href = "https://academictree.org/";
@@ -43,7 +44,7 @@ export function spBuildGenealogyControls(view, container) {
     a.addEventListener("click", event => { event.preventDefault(); Zotero.launchURL(url); }); return a;
   };
   const localData = () => getPref("genealogy.manualData");
-  view.getGenealogyGraph = () => view.genealogyData = spMergeManualGenealogy(remoteGraph || localBase, localData(), kind.value);
+  view.getGenealogyGraph = () => view.genealogyData = spMergeManualGenealogy(remoteGraph || localBase, localData(), kind.value as GenealogyKind);
   const showManual = async (relationshipKind = kind.value, center?) => {
     view.cancelGenealogy(); remoteGraph = undefined; kind.value = relationshipKind;
     results.replaceChildren(); details.replaceChildren(); details.hidden = true;
@@ -87,7 +88,7 @@ export function spBuildGenealogyControls(view, container) {
     }
   };
   const load = id => request(async (signal, current) => {
-    const graph = await client.graph(id, kind.value, language, signal);
+    const graph = await client.graph(id, kind.value as GenealogyKind, language, signal);
     if (!current()) return;
     remoteGraph = graph; localBase = undefined;
     view.getGenealogyGraph();
@@ -121,14 +122,12 @@ export function spBuildGenealogyControls(view, container) {
   });
   author.addEventListener("change", () => { if (author.value) search.value = author.value; });
   view.syncGenealogyAuthors = () => {
-    const old = author.value; author.replaceChildren();
-    const empty = create("option", author, getString("ui-selected-authors")); empty.value = "";
-    const names = new Set();
+    const old = author.value;
+    const names = new Set<string>();
     for (const item of ZoteroPane.getSelectedItems()) for (const person of item.getCreators?.() || []) {
       const name = [person.firstName, person.lastName].filter(Boolean).join(" "); if (name) names.add(name);
     }
-    for (const name of names) { const option = create("option", author, name); option.value = name; }
-    if (names.has(old)) author.value = old;
+    spSelectOptions(author, [["", getString("ui-selected-authors")], ...[...names].map(name => [name, name] as [string, string])], names.has(old) ? old : "");
     if (!search.value && names.size) { search.value = [...names][0]; author.value = search.value; }
   };
   view.syncGenealogyAuthors();

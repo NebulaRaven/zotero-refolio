@@ -3,19 +3,23 @@ import { initLocale } from "../upstream/utils/locale.ts";
 import { registerPrefs,registerPrefsScripts } from "./preferences.ts";
 import { FeatureRuntime } from "../upstream/app/lifecycle.ts";
 import { spRegisterSettingsMenu } from "./manualRanks.ts";
-import { getPref } from "../upstream/utils/prefs.ts";
+import { getPref,setPref } from "../upstream/utils/prefs.ts";
 import { createFinalFeatures,createImmediateFeatures,createStandardFeatures } from "../upstream/app/mainWindowFeatures.ts";
-import { spCitationAbort } from "./citations.ts";
+import { spShutdownCitations } from "./citations.ts";
+import { spRegisterCitationUpdates } from "./citationPrompts.ts";
 import { config } from "../upstream/config.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Lifecycle follows MuiseDestiny/zotero-addon-template (bootstrap branch).
 export var windowRuntimes = new Map();
+let stopCitationUpdates: (() => void) | undefined;
 export async function onStartup() {
   await waitForZotero();
   await restoreMissingDefaultPreferences();
+  if (["default", "related"].includes(getPref("graphView.mode"))) setPref("graphView.mode", "citations");
   initLocale();
   await registerPrefs();
   for (const win of Zotero.getMainWindows()) await onMainWindowLoad(win);
+  if (getPref("enable") !== false && getPref("function.citationGraph.enable") !== false) stopCitationUpdates ??= spRegisterCitationUpdates();
 }
 export async function onMainWindowLoad(win) {
   if (windowRuntimes.has(win) || !addon.data.alive) return;
@@ -41,7 +45,10 @@ export async function onMainWindowUnload(win) {
 }
 export async function onShutdown() {
   addon.data.alive = false;
-  spCitationAbort?.abort();
+  stopCitationUpdates?.();
+  stopCitationUpdates = undefined;
+  try { await spShutdownCitations(); }
+  catch (error) { reportFeatureFailure({ featureID: "citation-updates", phase: "stop", error }); }
   for (const runtime of [...windowRuntimes.values()].reverse()) await runtime.stopAll();
   windowRuntimes.clear();
   addon.data.prefs?.release?.();

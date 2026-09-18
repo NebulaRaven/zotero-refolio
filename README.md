@@ -17,7 +17,7 @@ Refolio is a fully open-source fork of [Ethereal Style](https://github.com/Muise
 | Feature | What you can do |
 | --- | --- |
 | **Journal metrics** | Show impact factors, JCR quartiles, and other journal ratings in your library. Add your own values and choose which labels to display. |
-| **Literature graphs** | Explore related papers, shared authors and tags, note links, and citations. Filter by year, expand connections, and jump to a paper from the graph. |
+| **Literature graphs** | Explore directed citations, shared authors and tags, and note links. Fetch or add citations, filter by year, and choose which views to show. |
 | **Academic genealogy** | Explore mentor–student relationships from Wikidata, or build and edit your own local genealogy. |
 | **Library organization** | Organize nested tags, rate papers, mark reading status, customize columns, and switch between saved layouts. |
 | **Reading tools** | Adjust PDF appearance, customize annotation colors, and enable reading-time tracking when you need it. |
@@ -26,7 +26,7 @@ Refolio is a fully open-source fork of [Ethereal Style](https://github.com/Muise
 
 - **More complete journal matching.** A [built-in directory](data/README.md) connects English and Chinese titles from PKU Core, CSSCI, and CSCD. Set a custom query title when a journal uses a different name in the data service.
 - **Control over journal labels.** Add, override, or hide individual ratings. Conflicting query results show their sources and the value being used.
-- **More ways to explore connections.** Citation and genealogy views complement the literature graph, with depth and year filters, a resizable canvas, and support for light and dark themes.
+- **More ways to explore connections.** Save directed citations and Zotero related items together, with manual linking and optional updates when adding papers. Explore genealogy, filter connections, and use a resizable canvas in light or dark themes.
 - **One place for settings.** Search for features and adjust their switches in a single panel. Reading-time tracking is optional and off by default.
 - **A smoother Zotero 10 experience.** Native colors and controls, fewer repeated refreshes, and improved tag editing, dragging, and view switching.
 

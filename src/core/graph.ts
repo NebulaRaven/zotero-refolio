@@ -1,20 +1,6 @@
 import { isRecord } from "./models.ts";
 import type { GraphItem,GraphData,GraphNode,GraphEdge,GraphFilter,NodeID,Delay,JsonRequest } from "./models.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
-export function spRelatedGraph(items: Array<{ id: number; key: string; libraryID: number; relatedItems: string[] }>): GraphData {
-  const index = new Map(items.map(item => [`${item.libraryID}:${item.key}`, item.id]));
-  const nodes: Record<string, GraphNode> = {};
-  for (const item of items) {
-    const links: Record<string, boolean> = {};
-    for (const key of item.relatedItems) {
-      const id = index.get(`${item.libraryID}:${key}`);
-      if (id !== undefined && id !== item.id) links[id] = true;
-    }
-    nodes[item.id] = { type: 'item', links };
-  }
-  return { nodes };
-}
-
 export function spExtraValue(extra: unknown, field: string): string {
   for (const line of String(extra || "").split(/\r?\n/)) {
     const colon = line.indexOf(":");
@@ -44,28 +30,34 @@ export function spNormalizeDOI(value: unknown): string {
   return /^10\.\d{4,9}\/\S+$/i.test(text) ? text.toLowerCase() : "";
 }
 
-export function spCitationGraph(items: GraphItem[], references: ReadonlyMap<string, string[]>): GraphData {
+export function spCitationGraph(items: GraphItem[], references: ReadonlyMap<string, string[]>, manual: ReadonlyMap<string, string[]> = new Map()): GraphData {
   const nodes: Record<string, GraphNode> = {};
-  const byDOI = new Map<string, number[]>();
+  const byDOI = new Map<string, GraphItem[]>();
+  const byKey = new Map<string, GraphItem>();
   const edges: GraphEdge[] = [];
   for (const item of items) {
     nodes[item.id] = { links: {}, type: "item" };
     const doi = spNormalizeDOI(item.getField("DOI"));
-    if (doi) byDOI.set(doi, [...(byDOI.get(doi) || []), item.id]);
+    if (doi) {
+      const matches = byDOI.get(doi) || [];
+      matches.push(item); byDOI.set(doi, matches);
+    }
+    if (item.key) byKey.set(`${item.libraryID}/${item.key}`, item);
   }
   for (const item of items) {
     const doi = spNormalizeDOI(item.getField("DOI"));
     const targets = new Set((references.get(doi) || []).map(spNormalizeDOI).filter(Boolean));
-    for (const target of targets) {
-      for (const targetID of byDOI.get(target) || []) {
-        if (targetID !== item.id) {
-          nodes[item.id].links[targetID] = true;
-          edges.push({ source: item.id, target: targetID });
-        }
-      }
+    const link = (target: GraphItem | undefined) => {
+      if (!target || target.id === item.id || target.libraryID !== item.libraryID || nodes[item.id].links[target.id]) return;
+      nodes[item.id].links[target.id] = true;
+      edges.push({ source: item.id, target: target.id });
+    };
+    for (const target of targets) for (const match of byDOI.get(target) || []) link(match);
+    for (const key of manual.get(`${item.libraryID}/${item.key}`) || []) {
+      link(byKey.get(`${item.libraryID}/${key}`));
     }
   }
-  return { nodes, citationEdges: edges };
+  return { nodes, citationEdges: edges, citationDataAvailable: edges.length > 0 || items.some(item => references.has(spNormalizeDOI(item.getField("DOI")))) };
 }
 
 export function spSharedGraph<T extends Pick<GraphItem, "id">>(items: T[], valuesFor: (item: T) => string[]): GraphData {

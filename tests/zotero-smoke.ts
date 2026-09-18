@@ -2,24 +2,28 @@
 import type { nativeSmoke } from './native-entry.ts';
 
 interface NativeReport {
-  version: string; zotero: string; started: string;
-  tests: Array<{ name: string; status: 'passed' | 'failed'; error?: string; stack?: string }>;
+  version: string; zotero: string; started: string; revision: string;
+  tests: Array<{ name: string; status: 'running' | 'passed' | 'failed'; error?: string; stack?: string }>;
   fatal?: string; preferenceWindowReady?: boolean; graphNodeCount?: number;
   pdfPageCount?: number; ok?: boolean; finished?: string;
   journalQueries?: string[]; graphThemes?: Record<string, string>;
+  graphRendering?: Record<string, unknown>;
   screenshots?: string[]; screenshotErrors?: string[]; conflictNotification?: boolean;
+  citationQueries?: string[];
 }
 
-async function runRefolioNativeSmoke(options: { profile: string; dataDir: string; report: string; fixture: string }) {
+async function runRefolioNativeSmoke(options: { profile: string; dataDir: string; report: string; fixture: string; revision: string }) {
   const report: NativeReport = {
     version: (Zotero.StylePersonal.api as typeof Zotero.StylePersonal.api & { __nativeSmoke: typeof nativeSmoke }).__nativeSmoke.version,
-    zotero: Zotero.version, started: new Date().toISOString(), tests: []
+    zotero: Zotero.version, started: new Date().toISOString(), revision: options.revision, tests: []
   };
   const normalize = value => String(value).replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
   const save = () => IOUtils.writeUTF8(options.report, JSON.stringify(report, null, 2));
   const check = async (name, run) => {
-    try { await run(); report.tests.push({ name, status: "passed" }); }
-    catch (error) { report.tests.push({ name, status: "failed", error: String(error), stack: error.stack }); }
+    const test: NativeReport['tests'][number] = { name, status: 'running' };
+    report.tests.push(test); await save();
+    try { await run(); test.status = 'passed'; }
+    catch (error) { Object.assign(test, { status: 'failed', error: String(error), stack: error.stack }); }
     await save();
   };
   const assert = (value, message) => { if (!value) throw new Error(message); };
@@ -62,6 +66,33 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
   };
   const change = element => element.dispatchEvent(new element.ownerDocument.defaultView.Event('change', { bubbles: true }));
   const graphFrame = () => (Array.from(mainDocument.querySelectorAll('iframe')) as GraphFrame[]).find(frame => frame.getAttribute('src')?.includes('stylepersonal/content/dist/index.html'));
+  const answerPrompt = (choice: 'accept' | 'cancel', remember: boolean, screenshot?: string) => {
+    let seen = 0, error: unknown;
+    const observer = { observe(subject) {
+      const dialogWindow = subject as any;
+      const doc = dialogWindow.document;
+      if (doc.title !== 'Refolio') return;
+      seen++;
+      dialogWindow.setTimeout(async () => {
+        const dialog = doc.querySelector('#commonDialog');
+        try {
+          const checkbox = doc.querySelector('#checkbox');
+          assert(!doc.querySelector('#checkboxContainer').hidden, 'Remember-choice checkbox is hidden');
+          assert(checkbox.label === api.getString('ui-remember-choice'), 'Remember-choice label is incorrect');
+          checkbox.checked = remember;
+          checkbox.dispatchEvent(new dialogWindow.Event('command', { bubbles: true }));
+          if (screenshot) await capture(screenshot, dialogWindow);
+        } catch (caught) { error = caught; }
+        finally { dialog.getButton(choice).click(); }
+      }, 100);
+    } };
+    Services.obs.addObserver(observer, 'common-dialog-loaded');
+    return {
+      get seen() { return seen; },
+      verify() { assert(seen === 1, `Expected one native prompt, received ${seen}`); if (error) throw error; },
+      dispose() { Services.obs.removeObserver(observer, 'common-dialog-loaded'); }
+    };
+  };
   let preferences;
   const collectionView = () => {
     const view = win.ZoteroPane.collectionsView;
@@ -69,10 +100,12 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     return view;
   };
   const libraryID = Zotero.Libraries.userLibraryID;
+  const doiSuffix = options.revision.slice(0, 8);
+  api.setPref('citations.onAdd', 'skip'); api.setPref('citations.onEmpty', 'skip');
   await check("Empty collection starts and unloads without waiting for a table", async () => {
     await addon.hooks.onMainWindowUnload(win);
     api.setPref('graphView.enable', true);
-    api.setPref('graphView.mode', 'related');
+    api.setPref('graphView.mode', 'citations');
     api.setPref('graphView.scope', 'all');
     api.setPref('graphView.minYear', ''); api.setPref('graphView.maxYear', '');
     const empty = new Zotero.Collection();
@@ -105,17 +138,21 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
   paper.setField("title", "Refolio native smoke: source paper");
   paper.setField("shortTitle", "Source theory");
   paper.setField("extra", "Graph Label: Dual continuum");
-  paper.setField("DOI", "10.5555/style-smoke-a");
+  paper.setField("DOI", `10.5555/refolio-${doiSuffix}-a`);
   paper.setField("date", "2025");
   for (const tag of ["#Smoke(A)+", "#Smoke(A)+/Child", "#Smoke(A)+Other"]) paper.addTag(tag);
   await paper.saveTx();
   const target = new Zotero.Item("journalArticle");
   target.libraryID = libraryID;
   target.setField("title", "Refolio native smoke: cited paper");
-  target.setField("DOI", "10.5555/style-smoke-b");
+  target.setField("DOI", `10.5555/refolio-${doiSuffix}-b`);
   target.setField("date", "2023");
   await target.saveTx();
   paper.addRelatedItem(target); await paper.saveTx();
+  await check('Native Related Items do not invent a citation direction', async () => {
+    const graph = await api.spGetCitationGraph([paper, target]);
+    assert(graph.citationEdges.length === 0, 'An undirected related item became a citation');
+  });
   await check("Deferred item columns initialize when items are available", async () => {
     await addon.api.itemTreeReady;
     assert(!(addon.api.featureFailures || []).length, JSON.stringify(addon.api.featureFailures));
@@ -151,6 +188,22 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     assert(!prefs.document.querySelector("#stylepersonal-settings").textContent.includes("Style Pro"), "Paid UI remains");
     report.preferenceWindowReady = true;
   });
+  await check('Native settings dropdown opens and saves its selected option', async () => {
+    const key = 'citations.onAdd', before = api.getPref(key);
+    const menu = preferences.document.querySelector('[data-pref="citations.onAdd"]');
+    const popup = menu.querySelector('menupopup');
+    try {
+      assert(menu.localName === 'menulist' && popup, 'Expected a native menulist');
+      menu.scrollIntoView({ block: 'center' }); preferences.focus(); menu.focus();
+      const rect = menu.getBoundingClientRect(), x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
+      preferences.windowUtils.sendMouseEvent('mousedown', x, y, 0, 1, 0);
+      preferences.windowUtils.sendMouseEvent('mouseup', x, y, 0, 1, 0);
+      await waitFor(() => popup.state === 'open', 'The settings dropdown did not open');
+      await capture('settings-dropdown', preferences);
+      popup.querySelector('menuitem[value="ask"]').dispatchEvent(new preferences.Event('command', { bubbles: true }));
+      await waitFor(() => menu.value === 'ask' && api.getPref(key) === 'ask', 'The chosen setting did not save');
+    } finally { popup.hidePopup(); api.setPref(key, before); }
+  });
   await check('All five languages render native settings and validation messages', async () => {
     const original = addon.data.locale.current;
     const Localizer = original.constructor as new (...args: any[]) => typeof original;
@@ -172,7 +225,7 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
             `Untranslated setting in ${locale}: ${input.dataset.pref}`);
         }
         const mode = panel.querySelector('[data-pref="graphView.mode"]');
-        assert(mode.querySelector('option[value="default"]').textContent === api.getString('ui-mode-links'),
+        assert(mode.querySelector('menuitem[value="citations"]').getAttribute('label') === api.getString('ui-mode-citations'),
           `Graph option was not translated: ${locale}`);
         assert(mode.value === api.getPref('graphView.mode'), `Graph option value changed: ${locale}`);
         const year = panel.querySelector('[data-pref="graphView.minYear"]');
@@ -237,7 +290,7 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
       const panel = preferences.document.querySelector('#stylepersonal-manual-journals');
       const text = panel.querySelector('.sp-journal-conflicts').textContent;
       assert(text.includes('Acta Psychologica Sinica: 2') && text.includes('心理学报: 3'), 'Conflict sources are absent from the settings table');
-      const mode = control(panel, api.getString('ui-field-mode', { args: { field: 'IF' } }), 'select');
+      const mode = control(panel, api.getString('ui-field-mode', { args: { field: 'IF' } }), 'menulist');
       const value = control(panel, api.getString('ui-field-value', { args: { field: 'IF' } }));
       mode.value = 'override'; change(mode); value.value = '9';
       const saveButton = button(panel, 'ui-save-journal-settings'); saveButton.click();
@@ -268,15 +321,113 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     api.setPref('graphView.scope', 'all');
     type GraphFrame = HTMLIFrameElement & { contentWindow: Window & { renderer?: { nodes: unknown[] } } };
     const frame = await waitFor(() => (Array.from(win.document.querySelectorAll("iframe")) as GraphFrame[]).find(frame => frame.getAttribute("src")?.includes("stylepersonal/content/dist/index.html") && frame.contentWindow?.renderer), "Graph iframe did not initialize");
-    addon.api.citationReferences = new Map([["10.5555/style-smoke-a", ["10.5555/style-smoke-b"]]]);
     await addon.api.refreshGraphView();
     assert(frame.contentWindow.renderer.nodes.length >= 2, "Graph did not render the test items");
     report.graphNodeCount = frame.contentWindow.renderer.nodes.length;
+  });
+  await check('Native confirmation remembers each choice independently', async () => {
+    const library = Zotero.Libraries.get(libraryID);
+    if (!library) throw new Error('Test library is unavailable');
+    api.setPref('citations.onEmpty', 'ask');
+    const prompt = answerPrompt('cancel', true, 'citation-prompt');
+    try {
+      assert(!api.spConfirmCitationUpdate('empty', 2, library.name), 'Skip returned update');
+      prompt.verify();
+      assert(api.getPref('citations.onEmpty') === 'skip', 'Remembered skip was not saved');
+      assert(api.getPref('citations.onAdd') === 'skip', 'Empty-view choice changed the new-item policy');
+      assert(!api.spConfirmCitationUpdate('empty', 2, library.name), 'Remembered skip changed');
+      prompt.verify();
+    } finally { prompt.dispose(); api.setPref('citations.onEmpty', 'skip'); }
+  });
+  await check('Manual citation controls save direction and native relations without DOIs', async () => {
+    const source = new Zotero.Item('journalArticle'), cited = new Zotero.Item('journalArticle');
+    for (const [item, title] of [[source, 'Manual citation source'], [cited, 'Manual citation target']] as const) {
+      item.libraryID = libraryID; item.setField('title', title); await item.saveTx();
+    }
+    const container = mainDocument.querySelector('#graph');
+    button(container, 'ui-add-citation').click();
+    const panel = await waitFor(() => container.querySelector<HTMLElement>('.sp-manual-citation:not([hidden])'), 'Manual citation panel did not open');
+    const citingSelect = control(panel, api.getString('ui-citing-paper'), 'menulist');
+    const citedSelect = control(panel, api.getString('ui-cited-paper'), 'menulist');
+    citingSelect.value = String(cited.id); citedSelect.value = String(source.id);
+    button(panel, 'ui-swap-direction').click();
+    assert(citingSelect.value === String(source.id) && citedSelect.value === String(cited.id), 'Swap did not reverse the selected papers');
+    await capture('manual-citation');
+    button(panel, 'ui-save').click();
+    await waitFor(() => panel.hidden, 'Manual citation did not finish saving');
+    assert(source.relatedItems.includes(cited.key) && cited.relatedItems.includes(source.key), 'Native reciprocal relations were not saved');
+    const graph = await api.spGetCitationGraph([source, cited]);
+    assert(graph.citationEdges.length === 1 && graph.citationEdges[0].source === source.id && graph.citationEdges[0].target === cited.id,
+      'Manual citation direction is incorrect');
+    const disk = JSON.parse(await IOUtils.readUTF8(PathUtils.join(options.dataDir, 'stylepersonal-citations.json')));
+    assert(disk[`manual:${libraryID}`][source.key].includes(cited.key), 'Manual citation did not persist to disk');
+  });
+  await check('Adding papers prompts once and saves fetched citation directions', async () => {
+    const source = new Zotero.Item('journalArticle'), cited = new Zotero.Item('journalArticle');
+    const sourceDOI = `10.5555/refolio-${doiSuffix}-added-a`, citedDOI = `10.5555/refolio-${doiSuffix}-added-b`;
+    const originalRequest = Zotero.HTTP.request;
+    const queried: string[] = [];
+    Zotero.HTTP.request = (async (method, url, ...rest) => {
+      if (!String(url).startsWith('https://api.crossref.org/works/')) return originalRequest.call(Zotero.HTTP, method, url, ...rest);
+      const doi = decodeURIComponent(String(url).split('/works/')[1]); queried.push(doi);
+      assert([sourceDOI, citedDOI].includes(doi), `Unexpected Crossref fixture query: ${doi}`);
+      return { response: { status: 'ok', message: { reference: doi === sourceDOI ? [{ DOI: citedDOI }] : [] } } };
+    }) as typeof Zotero.HTTP.request;
+    const prompt = answerPrompt('accept', true);
+    api.setPref('citations.onAdd', 'ask');
+    try {
+      await Zotero.DB.executeTransaction(async () => {
+        for (const [item, title, doi] of [[source, 'Fetched citation source', sourceDOI], [cited, 'Fetched citation target', citedDOI]] as const) {
+          item.libraryID = libraryID; item.setField('title', title); item.setField('DOI', doi); await item.save();
+        }
+      });
+      const metadata = item => { const json = item.toJSON(); delete json.relations; return JSON.stringify(json); };
+      const before = [metadata(source), metadata(cited)];
+      await waitFor(() => addon.api.citationReport?.edges.some(edge => edge.source === source.id && edge.target === cited.id),
+        'New-item notification did not fetch the citation relation');
+      prompt.verify();
+      assert(api.getPref('citations.onAdd') === 'update', 'Remembered update was not saved');
+      assert(api.getPref('citations.onEmpty') === 'skip', 'New-item choice changed the empty-view policy');
+      assert(queried.length === 2 && addon.api.citationReport.requested === 2, 'New items were not queried as one batch');
+      assert(source.relatedItems.includes(cited.key) && cited.relatedItems.includes(source.key), 'Fetched citations did not save native relations');
+      assert(before[0] === metadata(source) && before[1] === metadata(cited), 'Citation saving changed bibliographic metadata');
+      const disk = JSON.parse(await IOUtils.readUTF8(PathUtils.join(options.dataDir, 'stylepersonal-citations.json')));
+      assert(disk.references[sourceDOI].references.includes(citedDOI), 'Fetched citation did not persist');
+      const graph = await api.spGetCitationGraph([source, cited]);
+      assert(graph.citationEdges.length === 1 && graph.citationEdges[0].source === source.id, 'Fetched citation direction changed');
+      report.citationQueries = queried;
+    } finally { api.setPref('citations.onAdd', 'skip'); prompt.dispose(); Zotero.HTTP.request = originalRequest; }
+  });
+  await check('View visibility and graph actions stay separate', async () => {
+    const container = mainDocument.querySelector('#graph');
+    const tabs = container.querySelector('[role=tablist]');
+    const actions = container.querySelector('.sp-graph-actions');
+    for (const key of ['ui-fetch-citations', 'ui-add-citation', 'ui-fit']) {
+      const action = button(actions, key);
+      assert(!tabs.contains(action) && action.getAttribute('role') !== 'tab', `${key} is a view category`);
+    }
+    assert(!tabs.querySelector('[data-mode=related], [data-mode=link]'), 'Removed graph categories remain');
+    const mode = api.getPref('graphView.mode'); button(actions, 'ui-fit').click();
+    assert(api.getPref('graphView.mode') === mode, 'Fit changed graph category');
+    const keys = ['citations', 'note', 'author', 'tag', 'genealogy'];
+    const panel = preferences.document.querySelector('#stylepersonal-settings');
+    const toggle = (key, value) => { const input = panel.querySelector(`[data-pref="graphView.modes.${key}"]`); input.checked = value; change(input); };
+    try {
+      for (const key of keys) toggle(key, false);
+      await addon.api.refreshGraphView();
+      assert([...tabs.querySelectorAll('[data-mode]')].every((tab: HTMLElement) => tab.hidden), 'A hidden category remains visible');
+      assert(button(actions, 'ui-fit').disabled && container.querySelector<HTMLElement>('.sp-graph-filters').hidden,
+        'All-hidden graph still exposes active controls');
+      toggle('citations', true); await addon.api.refreshGraphView();
+      assert(tabs.querySelector('[data-mode=citations]').getAttribute('aria-selected') === 'true', 'Restored category was not selected');
+      assert(!button(actions, 'ui-fit').disabled, 'Fit did not recover');
+    } finally { for (const key of keys) toggle(key, true); await addon.api.refreshGraphView(); }
   });
   await check('Graph follows Zotero light and dark themes', async () => {
     const before = Zotero.Prefs.get('browser.theme.toolbar-theme', true);
     const container = mainDocument.querySelector<HTMLElement>('#graph');
     report.graphThemes = {};
+    report.graphRendering = {};
     try {
       for (const [theme, value] of [['dark', 0], ['light', 1]] as const) {
         Zotero.Prefs.set('browser.theme.toolbar-theme', value, true);
@@ -286,6 +437,10 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
           'Graph colors did not update after the host theme changed');
         assert(frame.contentDocument.documentElement.style.colorScheme === theme, 'Graph iframe uses the wrong theme');
         report.graphThemes[theme] = frame.contentDocument.body.style.backgroundColor;
+        await Zotero.Promise.delay(800);
+        const renderer = frame.contentWindow.renderer as any;
+        report.graphRendering[theme] = { colors: renderer.colors, scale: renderer.scale, textAlpha: renderer.textAlpha,
+          nodes: renderer.nodes.slice(0, 2).map(node => ({ labelAlpha: node.text?.alpha, labelColor: node.text?.style.fill, nodeAlpha: node.circle?.alpha })) };
         await capture(`graph-${theme}`);
       }
       assert(report.graphThemes.dark !== report.graphThemes.light, 'Graph colors did not change with the host theme');
@@ -326,7 +481,7 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
       assert(panel.querySelector('a').href === 'https://academictree.org/', 'Academic Family Tree link is restricted to one discipline');
     } finally {
       if (before !== undefined) api.setPref('genealogy.manualData', before);
-      container.querySelector<HTMLButtonElement>('[data-mode=related]').click();
+      container.querySelector<HTMLButtonElement>('[data-mode=citations]').click();
     }
   });
   await check("PDF reader opens with Refolio toolbar and reading recording disabled", async () => {

@@ -31,6 +31,13 @@ export interface PreferenceValues {
   "graphView.enable": boolean;
   "graphView.height": string;
   "graphView.mode": string;
+  "graphView.modes.citations": boolean;
+  "graphView.modes.note": boolean;
+  "graphView.modes.author": boolean;
+  "graphView.modes.tag": boolean;
+  "graphView.modes.genealogy": boolean;
+  "citations.onAdd": string;
+  "citations.onEmpty": string;
   "graphView.show": boolean;
   "graphView.theme": string;
   "cookies.cnki": string;

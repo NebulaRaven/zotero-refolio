@@ -1,14 +1,16 @@
-import { getString } from "../../utils/locale.ts";
+import { getString,getErrorMessage } from "../../utils/locale.ts";
 import type { GraphData } from '../../../core/models.ts';
 import { setPref } from "../../utils/prefs.ts";
 import { getPref } from "../../utils/prefs.ts";
 import { requireItemsView } from "../../utils/zoteroPane.ts";
 import { spReadGraphTheme } from "../../../app/graphTheme.ts";
 import { config } from "../../config.ts";
-import { spCitationGraph,spFilterGraph,spGraphLabel,spSharedGraph,spRelatedGraph } from "../../../core/graph.ts";
+import { spFilterGraph,spGraphLabel,spSharedGraph } from "../../../core/graph.ts";
 import { getFirstSelectedCollection,getFirstSelectedLibraryID } from "../../utils/zoteroSelection.ts";
 import { spBuildGraphControls,spMakeGraphResizable } from "../../../app/graphControls.ts";
 import { spElement } from "../../../app/ui.ts";
+import { spGetCitationGraph } from "../../../app/citations.ts";
+import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
   // src/features/collections/graphView.ts
   export class GraphView {
     declare active: boolean;
@@ -16,7 +18,6 @@ import { spElement } from "../../../app/ui.ts";
     declare tooltip: HTMLDivElement;
     declare genealogyPanel: HTMLDivElement;
     declare genealogyData: GraphData;
-    declare busyMode: boolean;
     declare cancelGenealogy: () => void;
     declare syncControls: () => void;
     declare syncGenealogyAuthors: () => void;
@@ -30,7 +31,6 @@ import { spElement } from "../../../app/ui.ts";
     declare onUnload: () => void;
     declare refreshGraphView: () => Promise<void>;
     declare refreshGeneration: number;
-    declare urls: { Zotero: string; Style: string; Help: string; Share: string; Issue: string; Plugins: string; };
     declare positions: Map<any, any>;
     declare modeFunction: Record<string, (items: Zotero.Item[]) => GraphData | Promise<GraphData>>;
     declare mode: string;
@@ -61,28 +61,18 @@ import { spElement } from "../../../app/ui.ts";
         const graph = await this.getGraph();
         if (this.active && generation === this.refreshGeneration) this.setData(graph);
       };
-      this.urls = {
-        Zotero: "https://www.zotero.org/",
-        Style: "https://github.com/MuiseDestiny/zotero-style",
-        Help: "https://github.com/MuiseDestiny/zotero-style#zotero-style",
-        Share: "https://github.com/MuiseDestiny/zotero-style/issues/48",
-        Issue: "https://github.com/MuiseDestiny/zotero-style/issues/new/choose",
-        Plugins: "https://plugins.zotero-chinese.com/#/"
-      };
       this.positions = new Map();
       this.refreshGeneration = 0;
       this.modeFunction = {
-        default: this.getGraphByDefaultLink.bind(this),
-        related: this.getGraphByRelatedLink.bind(this),
+        citations: this.getGraphByCitationLink.bind(this),
         note: this.getGraphByNoteLink.bind(this),
         author: this.getGraphByAuthorLink.bind(this),
-        tag: this.getGraphByTagLink.bind(this),
-        citations: this.getGraphByCitationLink.bind(this)
+        tag: this.getGraphByTagLink.bind(this)
       };
       if (getPref("function.citationGraph.enable") === false) delete this.modeFunction.citations;
       if (getPref("function.genealogy.enable") !== false) this.modeFunction.genealogy = () => this.getGenealogyGraph?.() || { nodes: {} };
-      this.mode = getPref("graphView.mode") || "related";
-      if (!this.modeFunction[this.mode]) this.mode = "related";
+      this.mode = getPref("graphView.mode") || "citations";
+      if (!this.modeFunction[this.mode]) this.mode = Object.keys(this.modeFunction)[0];
       window.addEventListener("unload", this.onUnload, {
         once: true
       });
@@ -242,6 +232,7 @@ import { spElement } from "../../../app/ui.ts";
               const firstOpen = !this.rendererReady;
               await this.ensureRenderer();
               if (!firstOpen) await this.refreshGraphView();
+              await this.promptForCitationRelations();
             } else {
               node2.style.display = "none";
               setPref(`graphView.enable`, false);
@@ -261,17 +252,24 @@ import { spElement } from "../../../app/ui.ts";
       return spGraphLabel(item, getPref("graphView.labelField") || "authorYear", getPref("graphView.extraLabelKey") || "Graph Label");
     }
     async getGraphByCitationLink(items) {
-      const references = addon.api.citationReferences || new Map();
-      return spCitationGraph(items.filter(item => item.isRegularItem?.()), references);
+      return spGetCitationGraph(items.filter(item => item.isRegularItem?.()));
+    }
+    async promptForCitationRelations() {
+      const libraryID = getFirstSelectedLibraryID();
+      const current = () => this.active && this.mode === "citations" && this.container?.style.display !== "none"
+        && getFirstSelectedLibraryID() === libraryID;
+      try { await spPromptEmptyCitationGraph(libraryID, current); }
+      catch (error) { if (this.active) this.status.textContent = getErrorMessage(error); Zotero.logError(error); }
     }
     async getGraph() {
       const mode = this.mode;
+      if (!mode) return { nodes: {} };
       const items = ZoteroPane.getSortedItems();
       const collection = getFirstSelectedCollection();
       const context = `${mode}:${getFirstSelectedLibraryID()}:${collection?.key || "library"}`;
       const raw: GraphData = await this.modeFunction[mode](items);
       raw.context = context;
-      if (mode === "genealogy" || mode === "default") {
+      if (mode === "genealogy") {
         return raw;
       }
       for (const [id, node] of Object.entries(raw.nodes)) {
@@ -296,53 +294,6 @@ import { spElement } from "../../../app/ui.ts";
       graph.noSelection = options.scope === "selected" && !seeds.length;
       graph.yearFiltered = Boolean(options.minYear || options.maxYear);
       return graph;
-    }
-    getGraphByDefaultLink() {
-      return {
-        nodes: {
-          // url
-          Zotero: {
-            links: {
-              Style: true
-            },
-            type: "url"
-          },
-          Style: {
-            links: {
-              Zotero: true
-            },
-            type: "url"
-          },
-          Help: {
-            links: {
-              Style: true
-            },
-            type: "url"
-          },
-          Share: {
-            links: {
-              Style: true
-            },
-            type: "url"
-          },
-          Issue: {
-            links: {
-              Style: true
-            },
-            type: "url"
-          },
-          Plugins: {
-            links: {
-              Zotero: true,
-              Style: true
-            },
-            type: "url"
-          }
-        }
-      };
-    }
-    getGraphByRelatedLink(items: Zotero.Item[]) {
-      return spRelatedGraph(items);
     }
     getGraphByNoteLink(items) {
       const noteItems = items.filter(item => item.itemType == "note");
@@ -421,7 +372,10 @@ import { spElement } from "../../../app/ui.ts";
       resizer.className = "sp-graph-resizer";
       container.insertBefore(resizer, frame);
       spMakeGraphResizable(this, container, resizer, minHeight);
-      if (container.style.display !== "none") await this.ensureRenderer();
+      if (container.style.display !== "none") {
+        await this.ensureRenderer();
+        this.schedule(() => this.promptForCitationRelations(), 0);
+      }
       if (this.active) {
         this.setTheme();
       }
@@ -469,8 +423,6 @@ import { spElement } from "../../../app/ui.ts";
           }
         } else if (type == "person") {
           this.showGenealogyPerson?.(id);
-        } else if (type == "url") {
-          Zotero.launchURL(this.urls[id]);
         } else if (type == "tag") {
           const graph = this.graph;
           if (!graph) {
@@ -595,10 +547,11 @@ import { spElement } from "../../../app/ui.ts";
           citations: getString("ui-citing-paper-cited-paper"),
           author: getString("ui-papers-sharing-an-author-name"),
           tag: getString("ui-papers-sharing-a-complete-tag"),
-          note: getString("ui-note-linked-note"),
-          related: getString("ui-zotero-related-items")
+          note: getString("ui-note-linked-note")
         };
         let status = `${descriptions[this.mode] || ""} · ${getString("ui-graph-counts", { args: { nodes, links: edges } })}`;
+        if (!this.mode) status = getString("ui-no-graph-views");
+        if (this.mode === "citations" && !graph.citationDataAvailable) status = getString("ui-fetch-citations-to-build-graph");
         if (graph.noSelection) status = getString("ui-select-a-paper-or-choose-current-view");
         if (graph.yearFiltered) status += getString("ui-undated-items-excluded");
         if (this.mode === "genealogy") {

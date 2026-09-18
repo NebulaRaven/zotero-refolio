@@ -3,7 +3,7 @@ import { getPref,setPref } from "../upstream/utils/prefs.ts";
 import { spNormalizeJournalName,spPublicationNames } from "../core/journals.ts";
 import { spEffectiveRanks,spManualRankFields,spManualRankRecord,spReadManualRanks,spSaveManualRankRecord,spValidateManualRank } from "../core/manualRanks.ts";
 import { config } from "../upstream/config.ts";
-import { spElement,spSelectOptions } from "./ui.ts";
+import { spElement,spSelect,spSelectOptions } from "./ui.ts";
 import { getPublicationTitle,updatePublicationTags } from "../upstream/utils/base.ts";
 import { spGetAutomaticJournalRanks,spGetJournalLookup,spJournalChosenValue } from "./journalLookup.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -37,12 +37,11 @@ export function spRenderManualRanks(doc, parent, status) {
   title.placeholder = getString("ui-journal-name"); title.setAttribute("aria-label", title.placeholder);
   const load = create("button", lookup, getString("ui-load")); load.type = "button";
   const selected = create("button", lookup, getString("ui-selected-item-s-journal")); selected.type = "button";
-  const saved = create("select", section); saved.setAttribute("aria-label", getString("ui-saved-journals"));
+  const saved = spSelect(doc, section); saved.setAttribute("aria-label", getString("ui-saved-journals"));
   const refreshSaved = () => {
-    saved.replaceChildren(); const empty = create("option", saved, getString("ui-saved-journals-2")); empty.value = "";
-    for (const record of Object.values(spReadManualRanks(getPref("publicationTagsColumn.manualRanks")))) {
-      const option = create("option", saved, record.names[0]); option.value = record.names[0];
-    }
+    const choices = Object.values(spReadManualRanks(getPref("publicationTagsColumn.manualRanks")))
+      .map(record => [record.names[0], record.names[0]] as [string, string]);
+    spSelectOptions(saved, [["", getString("ui-saved-journals-2")], ...choices], "");
   };
   const namesText = create("p", section);
   const queryRow = create("label", section); queryRow.className = "sp-field";
@@ -84,7 +83,7 @@ export function spRenderManualRanks(doc, parent, status) {
   const addRow = (field, label = field, value = undefined) => {
     if (rows.has(field)) return;
     const row = create("tr", body); create("td", row, label);
-    const mode = create("select", create("td", row)); mode.setAttribute("aria-label", getString("ui-field-mode", { args: { field: label } }));
+    const mode = spSelect(doc, create("td", row)); mode.setAttribute("aria-label", getString("ui-field-mode", { args: { field: label } }));
     spSelectOptions(mode, [["auto", getString("ui-automatic")], ["override", getString("ui-manual-2")], ["hide", getString("ui-hide")]]);
     const input = create("input", create("td", row)); input.type = "text"; input.setAttribute("aria-label", getString("ui-field-value", { args: { field: label } }));
     input.value = value == null ? "" : String(value);

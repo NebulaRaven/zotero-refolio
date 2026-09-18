@@ -120,10 +120,13 @@ test('settings render translated labels and preserve stored option values in all
       assert.ok(label && !label.startsWith('stylepersonal-') && label !== input.dataset.pref, `${locale}: ${input.dataset.pref}: ${label}`);
     }
     const graphMode = inputs.find(input => input.dataset.pref === 'graphView.mode')!;
-    assert.equal(graphMode.value, 'related');
-    assert.equal(graphMode.children.find(option => option.value === 'note').textContent, api.getString('ui-mode-notes'));
-    assert.equal(graphMode.children.find(option => option.value === 'default').textContent, api.getString('ui-mode-links'));
-    for (const value of ['note', 'default']) {
+    assert.equal(graphMode.value, 'citations');
+    assert.equal(graphMode.localName, 'menulist');
+    assert.equal(graphMode.getAttribute('native'), 'true');
+    const options = graphMode.querySelectorAll('menuitem');
+    assert.equal(options.find(option => option.value === 'note').getAttribute('label'), api.getString('ui-mode-notes'));
+    assert.ok(!options.some(option => ['default', 'related'].includes(option.value)));
+    for (const value of ['note', 'citations']) {
       graphMode.value = value;
       await [...graphMode.listeners.get('change')!][0]();
       assert.equal(saved.at(-1)[1], value);

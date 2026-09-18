@@ -1,7 +1,7 @@
 import { getString, getErrorMessage, getPreferenceOptionLabel } from "../upstream/utils/locale.ts";
 import { config } from "../upstream/config.ts";
 import { trackPreferenceWindow } from "../upstream/features/preferences/preferenceWindow.ts";
-import { spElement,spSelectOptions } from "./ui.ts";
+import { spElement,spSelect,spSelectOptions } from "./ui.ts";
 import { spFeatureDefinitions,spFeatureGroups,spInactivePreferences } from "../core/features.ts";
 import { readDefaultPreferences } from "../upstream/features/preferences/defaultPreferences.ts";
 import { getPref,setPref } from "../upstream/utils/prefs.ts";
@@ -65,7 +65,8 @@ export async function registerPrefsScripts(prefWindow) {
     row.dataset.search = `${label} ${key}`.toLowerCase();
     create("span", row, label);
     const type = typeof fallback;
-    const input = create(choices ? "select" : key === "publicationTagsColumn.aliases" ? "textarea" : "input", row);
+    const input = choices ? spSelect(doc, row) : create(key === "publicationTagsColumn.aliases" ? "textarea" : "input", row);
+    input.setAttribute("aria-label", label);
     input.dataset.pref = key;
     if (choices) {
       spSelectOptions(input, choices);
@@ -109,6 +110,12 @@ export async function registerPrefsScripts(prefWindow) {
   addField("publicationTagsColumn.aliases", getString("ui-custom-journal-aliases-json"), undefined, journal);
   releaseManualRanks = spRenderManualRanks(doc, journal, status);
   featured.add("publicationTagsColumn.manualRanks");
+  for (const [mode, label] of [["citations", "citations"], ["note", "notes"], ["author", "authors"], ["tag", "tags"], ["genealogy", "genealogy"]]) {
+    addField(`graphView.modes.${mode}`, getString("ui-show-graph-view", { args: { view: getString(`ui-mode-${label}`) } }), undefined, graph);
+  }
+  const citationPolicies = [["ask", getString("ui-always-ask")], ["update", getString("ui-update-automatically")], ["skip", getString("ui-do-not-update")]];
+  addField("citations.onAdd", getString("ui-citations-on-add"), citationPolicies, graph);
+  addField("citations.onEmpty", getString("ui-citations-on-empty"), citationPolicies, graph);
   addField("graphView.labelField", getString("ui-node-label"), [["authorYear",getString("ui-author-year")],["title",getString("ui-title")],["shortTitle",getString("ui-short-title")],["extra",getString("ui-extra-field")]], graph);
   addField("graphView.extraLabelKey", getString("ui-extra-field-name"), undefined, graph);
   addField("graphView.scope", getString("ui-graph-scope"), [["selected", getString("ui-selected-items")], ["all", getString("ui-current-view")]], graph);
@@ -131,7 +138,7 @@ export async function registerPrefsScripts(prefWindow) {
     "IFColumn.progressType": ["1", "2"],
     "ratingColumn.storage": ["extra", "tag"],
     "annotationColorNameDirection": ["horizontal", "vertical"],
-    "graphView.mode": ["default", "related", "note", "author", "tag", "citations", "genealogy"]
+    "graphView.mode": ["citations", "note", "author", "tag", "genealogy"]
   };
   for (const [key] of defaults) {
     const suffix = key.slice(config.prefsPrefix.length + 1);

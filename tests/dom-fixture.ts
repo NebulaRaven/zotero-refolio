@@ -15,6 +15,7 @@ export function domFixture() {
     ownerDocument: any;
     tagName: string;
     constructor(tagName = 'div') { this.tagName = tagName; this.ownerDocument = document; }
+    get localName() { return this.tagName; }
     get parentNode() { return this.parentElement; }
     get childNodes() { return this.children; }
     get nextElementSibling() { const list = this.parentElement?.children || []; return list[list.indexOf(this) + 1]; }
@@ -39,7 +40,7 @@ export function domFixture() {
       if (this.parentElement) { const list = this.parentElement.children; list.splice(list.indexOf(this), 1); this.parentElement = null; }
     }
     replaceChildren(...children: Element[]) { for (const child of [...this.children]) child.remove(); this.append(...children); }
-    setAttribute(key: string, value: string) { this.attributes.set(key, value); }
+    setAttribute(key: string, value: string) { this.attributes.set(key, value); if (key === 'value') this.value = value; }
     getAttribute(key: string) { return this.attributes.get(key) ?? null; }
     removeAttribute(key: string) { this.attributes.delete(key); }
     matches(selector: string) { return selector.startsWith('.') ? this.classList.contains(selector.slice(1)) : this.tagName === selector; }
@@ -67,7 +68,7 @@ export function domFixture() {
     }
   }
   const document: any = { activeElement: null,
-    createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag),
+    createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), createXULElement: tag => new Element(tag),
     querySelector: () => null,
     defaultView: {
       Event: class { type: string; constructor(type: string) { this.type = type; } },

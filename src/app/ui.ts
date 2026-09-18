@@ -9,14 +9,29 @@ export function spElement<K extends keyof HTMLElementTagNameMap>(doc: Document, 
   return element;
 }
 
-export function spSelectOptions(select: HTMLSelectElement, choices: ReadonlyArray<readonly [string, string]>, value?: string | number) {
+export function spSelect(doc: Document, parent: Element): XULMenuListElement {
+  const select = doc.createXULElement("menulist") as XULMenuListElement;
+  select.setAttribute("native", "true");
+  select.classList.add("sp-select");
+  select.append(doc.createXULElement("menupopup"));
+  select.addEventListener("command", event => {
+    const option = event.target as Element;
+    if (option.localName === "menuitem") select.value = option.getAttribute("value");
+    select.dispatchEvent(new doc.defaultView.Event("change", { bubbles: true }));
+  });
+  parent.append(select);
+  return select;
+}
+
+export function spSelectOptions(select: XULMenuListElement, choices: ReadonlyArray<readonly [string, string]>, value?: string | number) {
   const options = choices.map(([key, label]) => {
-    const option = spElement(select.ownerDocument, "option", null, label);
-    option.value = key;
+    const option = select.ownerDocument.createXULElement("menuitem");
+    option.setAttribute("label", label);
+    option.setAttribute("value", key);
     return option;
   });
-  select.replaceChildren(...options);
-  if (value !== undefined) select.value = String(value);
+  select.querySelector("menupopup").replaceChildren(...options);
+  select.value = String(value ?? choices[0]?.[0] ?? "");
 }
 
 export function spGenealogyOptions(): Array<[string, string]> {

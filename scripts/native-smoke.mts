@@ -13,6 +13,7 @@ if(updating&&!previous.runner)throw new Error('The existing test window has no r
 const testDirectory=arg('--test-dir');
 const base=updating?previous.base:testDirectory?path.resolve(testDirectory):await fs.mkdtemp(path.join(os.tmpdir(),'refolio-native-'));
 const profile=path.join(base,'profile'),dataDir=path.join(base,'data'),report=path.join(base,'native-report.json');
+const revision=randomUUID();
 await fs.mkdir(base,{recursive:true});
 const fixture=path.join(base,'reader-fixture.pdf');
 const stream='BT /F1 18 Tf 72 720 Td (Refolio Reader Test) Tj ET\n';
@@ -36,7 +37,9 @@ const prefs={
   'extensions.update.enabled':false,
   'extensions.zotero.automaticScraperUpdates':false,'extensions.zotero.reportTranslationFailure':false,
   'extensions.zotero.stylepersonal.graphView.enable':true,
-  'extensions.zotero.stylepersonal.graphView.mode':'related'
+  'extensions.zotero.stylepersonal.graphView.mode':'citations',
+  'extensions.zotero.stylepersonal.citations.onAdd':'skip',
+  'extensions.zotero.stylepersonal.citations.onEmpty':'skip'
 };
 if(!updating)await fs.writeFile(path.join(profile,'user.js'),Object.entries(prefs).map(([key,value])=>`user_pref(${JSON.stringify(key)},${JSON.stringify(value)});`).join('\n'));
 const entries=await addonFiles();
@@ -47,7 +50,12 @@ const testSource=await compileScript('tests/zotero-smoke.ts');
 const bootstrap=entries.find(([name])=>name==='bootstrap.js')!;
 let code=bootstrap[1].toString()+'\n'+testSource;
 code=code.replace('  await Zotero.initializationPromise;', '  await IOUtils.writeUTF8('+JSON.stringify(report)+',JSON.stringify({stage:"bootstrap",ok:null}));\n  await Zotero.initializationPromise;');
-code=code.replace('await Zotero.StylePersonal.hooks.onStartup();','await Zotero.StylePersonal.hooks.onStartup();\n    await runRefolioNativeSmoke('+JSON.stringify({profile,dataDir,report,fixture})+');');
+code=code.replace('await Zotero.StylePersonal.hooks.onStartup();',
+  'if (PathUtils.normalize(Zotero.Profile.dir) !== PathUtils.normalize('+JSON.stringify(profile)+') || PathUtils.normalize(Zotero.DataDirectory.dir) !== PathUtils.normalize('+JSON.stringify(dataDir)+')) throw new Error("Native test profile mismatch");\n'
+  + '    Zotero.Prefs.set("stylepersonal.citations.onAdd", "skip");\n    Zotero.Prefs.set("stylepersonal.citations.onEmpty", "skip");\n'
+  + '    const nativeRun = (async () => {\n      await Zotero.StylePersonal.hooks.onStartup();\n'
+  + '      await runRefolioNativeSmoke('+JSON.stringify({profile,dataDir,report,fixture,revision})+');\n    })();\n'
+  + '    Zotero.StylePersonal.api.__nativeRun = nativeRun;\n    await nativeRun;');
 code=code.replace('} catch (error) {','} catch (error) {\n    await IOUtils.writeUTF8('+JSON.stringify(report)+',JSON.stringify({ok:false,fatal:String(error),stack:error.stack}));');
 bootstrap[1]=Buffer.from(code);
 const candidate=path.join(base,'candidate.xpi'),request=path.join(base,'request.json'),status=path.join(base,'runner-status.json');
@@ -58,7 +66,7 @@ if(!updating){
   await fs.writeFile(path.join(profile,'extensions','style-test-runner@nebularaven.local.xpi'),zip([['manifest.json',JSON.stringify(manifest)],['bootstrap.js',runner]]));
   await fs.writeFile(path.join(root,'native-test-location.json'),JSON.stringify({base,profile,dataDir,report,runner:true},null,2));
 }
-await fs.writeFile(request+'.tmp',JSON.stringify({revision:randomUUID()}));
+await fs.writeFile(request+'.tmp',JSON.stringify({revision}));
 await fs.rename(request+'.tmp',request);
 console.log(JSON.stringify({profile,dataDir,report},null,2));
 if(!updating&&!args.includes('--prepare-only')) {

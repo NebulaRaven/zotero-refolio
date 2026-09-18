@@ -13,6 +13,7 @@ export interface Creator {
 }
 export interface GraphItem {
   id: number;
+  libraryID?: number;
   key?: string;
   getField(name: string): unknown;
   getCreators?(): Creator[];
@@ -49,6 +50,7 @@ export interface GraphData {
   noSelection?: boolean;
   yearFiltered?: boolean;
   citationEdges?: GraphEdge[];
+  citationDataAvailable?: boolean;
   genealogyEdges?: GenealogyEdge[];
   center?: string;
   kind?: GenealogyKind;
