@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "strict": true, "types": ["node"] },
+  "include": ["scripts/*.mts", "tests/source.mts"]
+}

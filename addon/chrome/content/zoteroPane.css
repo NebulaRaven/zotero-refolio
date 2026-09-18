@@ -1,0 +1,524 @@
+/* #zotero-items-tree .virtualized-table:focus-within .row.selected .tag-swatch.colored+.colored,
+#zotero-items-tree .drag-image-container .row.selected .tag-swatch.colored+.colored,
+#zotero-items-tree .virtualized-table .row .tag-swatch.colored+.colored,
+#zotero-items-tree .drag-image-container .row .tag-swatch.colored+.colored {
+  background: url("chrome://zotero/skin/tag-circle-border.svg") no-repeat center/contain;
+} */
+#explore-pane {
+  width: 100%;
+}
+
+#zotero-items-tree .stylepersonal-tags .colored {
+  background: url("chrome://zotero/skin/tag-circle-border.svg") no-repeat
+    center/contain !important;
+}
+
+.style-attachment-preview #preview {
+  pointer-events: auto !important;
+  /* max-height: none !important; */
+  min-height: 0 !important;
+}
+
+/* Keep the native loading/error UI, but do not expose the PDF before auto-fit.
+   Opacity preserves layout measurements used by PDF.js. */
+.style-attachment-preview[data-style-preview-loading] #preview {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.style-attachment-preview .drag-container {
+  display: none !important;
+}
+
+.style-attachment-preview {
+  max-height: none !important;
+}
+
+.style-attachment-preview:hover .btn-container {
+  display: none !important;
+}
+
+#dark-light-button:hover {
+  opacity: 0.8;
+}
+
+#dark-light-button {
+  opacity: 0.34;
+  transition: opacity 0.23s;
+}
+
+toolbarbutton.style-pane-button[aria-pressed="true"] {
+  background-color: var(--material-mix-quarternary) !important;
+  background-image: none !important;
+  border-radius: 4px;
+}
+
+toolbarbutton.style-pane-button:hover {
+  background-color: var(--material-background) !important;
+  background-image: none !important;
+}
+
+.zotero-style-toolbar-button {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
+  align-self: center;
+  align-items: stretch;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: var(--material-background);
+}
+
+.zotero-style-toolbar-button:hover {
+  background-color: var(--material-background) !important;
+}
+
+.zotero-style-toolbar-button > toolbarbutton.zotero-tb-button {
+  display: flex;
+  flex-direction: row;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  -moz-appearance: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 4px !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.zotero-style-sidebar-button > .toolbarbutton-icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  -moz-context-properties: fill, stroke;
+}
+
+.zotero-style-toolbar-button > toolbarbutton.zotero-tb-button:hover {
+  background-color: transparent !important;
+}
+
+.explore-item:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  transition: background-color 0.23s;
+}
+
+#tab-manager .separator {
+  height: 0px;
+  border: var(--material-border-quarternary);
+}
+
+#tab-manager .item:hover {
+  background-color: var(--material-mix-quinary);
+}
+
+#tab-manager .item.dragging {
+  opacity: 0.43;
+}
+
+#tab-manager .item.draggable {
+  transition: opacity 0.2s ease;
+}
+
+#tab-manager .tab-group-menu:hover {
+  background-color: var(--material-mix-quinary);
+}
+
+#tab-manager .tab-close:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.tab-bar-inner-container .pinned-tabs {
+  display: block !important;
+}
+
+.tab-bar-inner-container .pinned-tabs .tab {
+  max-width: 200px !important;
+  width: 200px;
+}
+
+.tab-bar-inner-container .tabs-wrapper .tabs [data-id="zotero-pane"] {
+  display: none !important;
+}
+
+.tab-bar-inner-container.scrollable .tab-manager-tab-button {
+  border-right: var(--material-border-quarternary);
+}
+
+.open-tab-ghost {
+  opacity: 0;
+}
+
+.open-tab-drag {
+  opacity: 1;
+  display: flex;
+  flex-direction: row;
+}
+
+#tab-manager .header-container {
+  font-weight: bold;
+  opacity: 0.7;
+  padding: 0.5em 1em;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+#tab-manager .twisty {
+  -moz-context-properties: fill, fill-opacity, stroke, stroke-opacity;
+  width: 16px;
+  height: 16px;
+  padding: 4px;
+  box-sizing: border-box;
+  background: url("chrome://zotero/skin/8/universal/chevron-8.svg") content-box
+    no-repeat;
+}
+
+#tab-manager.dark .twisty {
+  fill: var(--accent-white);
+}
+
+#tab-manager.dark .item.selected {
+  background-color: var(--accent-blue);
+  color: #fff;
+}
+
+#tab-manager.light .item.selected {
+  background-color: #e942623b;
+}
+
+#tab-manager .collapse .twisty {
+  transform: rotate(-90deg);
+  transition: transform 0.125s ease;
+}
+
+#tab-manager .items {
+  overflow-y: hidden;
+}
+
+#tab-manager .header-container.collapse + .items {
+  display: none !important;
+}
+
+#tab-manager .item.even {
+  background-color: var(--material-background);
+}
+
+#zotero-plugin-toolkit-prompt .prompt-input {
+  border-radius: var(---radius---) !important;
+  width: -moz-available !important;
+  background-color: var(--material-background) !important;
+  height: 40px !important;
+  padding: 24px !important;
+  /* border-radius: 50% !important; */
+  border: none !important;
+  outline: none !important;
+  font-size: 18px !important;
+}
+
+#zotero-plugin-toolkit-prompt input {
+  background-image: none !important;
+  border-bottom-color: transparent !important;
+}
+
+#zotero-plugin-toolkit-prompt {
+  background-color: var(--material-background) !important;
+  border: var(--material-border-quarternary) !important;
+}
+
+#zotero-plugin-toolkit-prompt .input-container .cta {
+  border-bottom: var(--material-border-quarternary) !important;
+}
+
+#zotero-plugin-toolkit-prompt .instructions {
+  border-top: var(--material-border-quarternary) !important;
+  color: var(--fill-secondary) !important;
+}
+
+#zotero-plugin-toolkit-prompt
+  .commands-container
+  .command
+  .content
+  .aux
+  .label {
+  color: var(--fill-primary) !important;
+  background-color: var(--color-background) !important;
+}
+
+#zotero-plugin-toolkit-prompt .command:hover {
+  background-color: var(--material-mix-quinary);
+}
+
+.tag-swatch.colored {
+  -moz-context-properties: fill, fill-opacity, stroke, stroke-opacity;
+  width: 0.83333333em;
+  height: 0.83333333em;
+  background:
+    url("chrome://zotero/skin/tag-circle.svg") no-repeat center/80%,
+    url("chrome://zotero/skin/tag-circle-border.svg") no-repeat center/0;
+  fill: currentcolor;
+}
+
+.meta-data .remark-span {
+  display: none;
+}
+
+.meta-data .remark-text {
+  display: grid !important;
+}
+
+#remark textarea,
+.remark-text {
+  display: none;
+}
+
+/* 为了标签在第一列正常显示 */
+/* [id^=item-tree-main-default-row] .cell-text {
+  pointer-events: auto;
+  text-overflow: clip;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+} */
+
+#search-container:focus-within {
+  outline: none;
+  border-color: rgba(0, 0, 0, 0);
+  box-shadow: 0 0 0 2px #7598e9;
+}
+
+#search-container input {
+  background-image: none !important;
+}
+
+.filter-button {
+  transition: opacity 0.25s;
+  opacity: 1;
+}
+
+.has-selected #tag-filter .filter-button.selected {
+  opacity: 1;
+  background-color: var(--material-stripe);
+  border: 1px solid var(--fill-primary) !important;
+}
+
+.note-manager.has-selected #tag-filter .filter-button:not(.selected) {
+  opacity: 0.45;
+}
+
+.has-selected #color-filter .filter-button.selected {
+  opacity: 1;
+  border: 1px solid var(--fill-primary) !important;
+}
+
+.filter-button {
+  border: 1px solid transparent !important;
+}
+
+.annotation-manager .filter-button {
+  appearance: none;
+  box-sizing: content-box;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  color: var(--fill-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.annotation-manager #tag-filter .filter-button.selected {
+  background-color: var(--material-mix-quarternary);
+}
+
+.annotation-manager
+  #tag-filter
+  .filter-button:not(.selected):not(:disabled):hover {
+  background-color: var(--material-mix-quinary);
+}
+
+.annotation-manager .filter-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.annotation-manager .filter-button:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+.item.disabled,
+.item.hide {
+  display: none !important;
+}
+
+.items {
+  padding: 1em;
+  padding-top: 0;
+  padding-bottom: 0.5em;
+}
+
+.items .item {
+  margin-top: 0.7em;
+}
+
+.items .item.first {
+  margin-top: 0;
+}
+
+.items .item.last {
+  margin-bottom: 0.5em;
+}
+
+.items .item {
+  margin: 0.7em 0;
+}
+
+.items .item {
+  margin: 0.5em 0;
+}
+
+/* 修复标签搜索框宽度不自适应 */
+.tag-selector-filter-pane {
+  width: -moz-available;
+}
+
+.vertical-divider {
+  width: 1px;
+  height: 20px;
+  border-radius: 0.5px;
+  background: var(--fill-quinary);
+  margin: 0 4px;
+}
+
+toolbarbutton[data-pane="stylepersonal-TLDR"] {
+  fill: #124189;
+  stroke: #124189;
+}
+
+.section-custom-button.refresh .section-custom-button.translate {
+  fill: var(--fill-secondary);
+}
+
+/* Annotation Manager 高亮*/
+.items .keyword-highlight {
+  padding: 2px;
+  background-color: #f17f7d;
+  border-radius: 4px;
+  color: #fff;
+}
+
+#backlinks-preview .selected {
+  background-color: var(--material-mix-quarternary);
+}
+
+#backlinks-preview .note-preview #links-container {
+  display: none;
+}
+
+#zotero-editpane-notes {
+  margin-inline: 8px !important;
+}
+
+#zotero-editpane-notes :is(.head, .body) {
+  margin-inline: 0 !important;
+}
+
+#zotero-editpane-notes .head {
+  margin-block: 4px 6px !important;
+}
+
+#zotero-editpane-notes .body {
+  padding-block-start: 0 !important;
+}
+
+#zotero-editpane-notes row {
+  margin-inline-start: 0 !important;
+}
+
+.note-manager .buttons .button {
+  opacity: 0.4;
+  transition: opacity 0.1s;
+  margin: 0 3px;
+}
+
+.note-manager .buttons .button:hover {
+  opacity: 1;
+}
+
+.note-manager .item.note {
+  background-color: rgba(133, 230, 197, 0.05);
+  transition: background-color 0.23s ease;
+}
+
+.note-manager .item.note:hover {
+  background-color: rgba(133, 230, 197, 0.1);
+}
+
+.note-manager .note-load-all {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  margin: 0.5em 0;
+  border: 1px solid var(--fill-quarternary);
+  border-radius: 4px;
+  background: var(--material-background);
+  color: var(--fill-primary);
+  cursor: pointer;
+}
+
+.note-manager .note-load-all:hover:not(:disabled) {
+  background: var(--material-mix-quinary);
+}
+
+.note-manager .note-load-all:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+/* favorite */
+#favorite-collections .item:hover {
+  background-color: var(--fill-quarternary);
+}
+
+#favorite-collections[collapsed="true"] {
+  visibility: collapse;
+}
+
+[zoteroUIDensity="comfortable"] splitter#favorite-splitter[state="collapsed"] {
+  --draggable-size: 0px;
+}
+
+#favorite-splitter
+  + #zotero-collections-tree-container
+  .virtualized-table-body {
+  padding: 8px;
+}
+
+/* 防止stck视图bug */
+deck#explore-pane {
+  position: absolute;
+  height: 100%;
+}
+
+/* 预览界面 */
+#preview-pane toolbarbutton {
+  padding: 0.25em 0.5em;
+  cursor: pointer;
+  background-color: var(--material-background);
+  color: currentcolor;
+  border: var(--material-border-quinary);
+  width: 100%;
+}
+
+/* autocomplete */
+.style-autocomplete .item:nth-child(even) {
+  background-color: var(--material-stripe);
+}

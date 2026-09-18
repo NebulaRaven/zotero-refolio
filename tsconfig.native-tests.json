@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["tests/zotero-*.ts", "tests/native-entry.ts", "tests/native.d.ts", "src/types/**/*.d.ts"]
+}

@@ -1,0 +1,53 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+.stylepersonal-ui { font: inherit; color: var(--fill-primary, CanvasText); }
+.stylepersonal-ui [hidden] { display: none !important; }
+.stylepersonal-ui :is(input, select, textarea, button) { font: inherit; }
+.stylepersonal-ui :is(input:not([type=checkbox]), select, textarea) { min-width: 0; box-sizing: border-box; }
+.stylepersonal-ui button { margin: 0; }
+.stylepersonal-ui input[type=checkbox] { flex: none; }
+.stylepersonal-ui a { color: LinkText; }
+.stylepersonal-ui summary { padding-block: 6px; }
+.stylepersonal-ui [role=status] { color: var(--fill-secondary, CanvasText); }
+.stylepersonal-ui [role=status]:empty { display: none; }
+.stylepersonal-ui .sp-help { color: var(--fill-secondary, CanvasText); margin-block: 6px 10px; }
+.stylepersonal-ui .sp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 10px; }
+.stylepersonal-ui .sp-actions input { flex: 1; min-width: 180px; }
+
+#stylepersonal-settings { max-width: 780px; padding: 0; }
+#stylepersonal-settings h1 { font-size: 1.2em; margin-block: 0 12px; }
+#stylepersonal-settings h2 { font-size: 1em; margin-block: 0 8px; }
+#stylepersonal-settings section { margin-block: 20px; }
+#stylepersonal-settings .sp-field { display: grid; grid-template-columns: minmax(170px, 1fr) minmax(200px, 1fr); gap: 12px; align-items: center; margin-block: 8px; }
+#stylepersonal-settings .sp-field :is(input:not([type=checkbox]), select, textarea) { width: 100%; }
+#stylepersonal-settings .sp-field.sp-toggle { display: flex; gap: 6px; margin-block: 6px; }
+#stylepersonal-settings .sp-field textarea { min-height: 80px; }
+#stylepersonal-settings .sp-search { width: 100%; margin-block: 0 10px; }
+#stylepersonal-settings .sp-navigation { gap: 12px; padding-block-end: 10px; border-block-end: 1px solid var(--color-border, ThreeDShadow); }
+#stylepersonal-settings .sp-rank-table { width: 100%; border-collapse: collapse; margin-block: 10px; }
+#stylepersonal-settings .sp-rank-table :is(th, td) { padding: 4px; text-align: start; }
+#stylepersonal-settings .sp-rank-table :is(input, select) { width: 100%; }
+#stylepersonal-settings .sp-journal-conflicts td { white-space: pre-line; overflow-wrap: anywhere; vertical-align: top; }
+#stylepersonal-settings .sp-status { margin-block: 6px; }
+@media (max-width: 580px) {
+  #stylepersonal-settings .sp-field { grid-template-columns: 1fr; gap: 4px; }
+}
+
+.stylepersonal-ui.sp-graph { position: relative; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; background: var(--material-background, Canvas); }
+.sp-graph :is(.sp-graph-toolbar, .sp-graph-filters) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; }
+.sp-graph .sp-graph-toolbar { background: var(--material-toolbar, Canvas); border-block-end: 1px solid var(--color-border, ThreeDShadow); }
+.sp-graph .option[aria-pressed=true] { background: var(--accent-blue10, SelectedItem); border-color: var(--accent-blue, Highlight); color: var(--fill-primary, SelectedItemText); }
+.sp-graph input[type=number] { width: 6em; }
+.sp-graph label { display: inline-flex; align-items: center; gap: 4px; }
+.sp-graph .sp-graph-status { padding: 4px 8px; margin: 0; }
+.sp-graph .sp-graph-tooltip { position: absolute; inset-inline-start: 12px; bottom: 10px; max-width: calc(100% - 48px); border: 1px solid var(--color-border, ThreeDShadow); border-radius: 4px; padding: 6px 8px; color: var(--fill-primary, CanvasText); background: var(--material-background, Canvas); pointer-events: none; z-index: 3; white-space: pre-wrap; }
+.sp-graph .sp-genealogy { padding: 6px 8px; max-height: 180px; overflow: auto; border-block-end: 1px solid var(--color-border, ThreeDShadow); }
+.sp-graph .sp-genealogy-row { display: flex; gap: 8px; align-items: center; margin-block: 6px; flex-wrap: wrap; }
+.sp-graph .sp-genealogy-row input { min-width: 160px; flex: 1; }
+.sp-graph .sp-genealogy-editor { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 8px; }
+.sp-graph .sp-genealogy-editor label { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.sp-graph .sp-genealogy-editor :is(input, select, textarea) { width: 100%; }
+.sp-graph textarea { resize: vertical; }
+.sp-graph .sp-genealogy-note { white-space: pre-wrap; overflow-wrap: anywhere; }
+.sp-graph .sp-genealogy-candidate { display: flex; gap: 10px; align-items: center; margin-block: 6px; }
+.sp-graph .sp-graph-resizer { height: 4px; flex: none; width: 100%; cursor: ns-resize; touch-action: none; background: var(--color-border, ThreeDShadow); }
+.sp-graph iframe { border: 0; width: 100%; flex: 1; min-height: 0; height: 0; overflow: hidden; background: transparent; }

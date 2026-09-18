@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "name": "Refolio",
+  "version": "1.0.0",
+  "description": "Journal labels, literature graphs and library tools for Zotero",
+  "author": "NebulaRaven; based on Style by Polygon",
+  "icons": {
+    "48": "chrome/content/icons/favicon@0.5x.png",
+    "96": "chrome/content/icons/favicon.png"
+  },
+  "applications": {
+    "zotero": {
+      "update_url": "https://github.com/NebulaRaven/zotero-refolio/releases/latest/download/updates.json",
+      "id": "style-personal@nebularaven.local",
+      "strict_min_version": "10.0",
+      "strict_max_version": "10.*"
+    }
+  }
+}

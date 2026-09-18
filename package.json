@@ -1,0 +1,34 @@
+{
+  "name": "zotero-refolio",
+  "version": "1.0.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NebulaRaven/zotero-refolio.git"
+  },
+  "description": "Refolio: journal labels, literature graphs and library tools for Zotero",
+  "license": "AGPL-3.0-or-later",
+  "author": "NebulaRaven",
+  "contributors": [
+    "Polygon (upstream Style)",
+    "windingwind (Zotero plugin template)"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mts",
+    "test": "node --test tests/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.core.json && tsc -p tsconfig.tools.json && tsc -p tsconfig.tests.json && tsc -p tsconfig.native-tests.json",
+    "check": "node scripts/check.mts"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "devDependencies": {
+    "@fluent/bundle": "0.19.1",
+    "@fluent/syntax": "0.19.0",
+    "@types/node": "24.13.5",
+    "esbuild": "0.25.10",
+    "typescript": "5.9.3",
+    "zotero-types": "4.0.0"
+  }
+}

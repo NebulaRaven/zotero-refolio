@@ -1,0 +1,1320 @@
+#pdf-margin-note-container {
+  --margin-card-width: 288px;
+  --margin-font-size: 13px;
+  --margin-surface: var(--material-background);
+  --margin-surface-solid: var(--material-background);
+  --margin-surface-raised: var(--material-mix-quinary);
+  --margin-surface-hover: var(--material-mix-quarternary);
+  --margin-menu: color-mix(
+    in srgb,
+    var(--material-background) 94%,
+    transparent
+  );
+  --margin-control: var(--material-button);
+  --margin-text: var(--fill-primary);
+  --margin-text-muted: var(--fill-secondary);
+  --margin-border: var(--color-border50);
+  --margin-border-strong: var(--color-border);
+  --margin-shadow-rest: 0 2px 8px var(--color-border50);
+  --margin-shadow-hover: 0 8px 24px var(--color-border50),
+    0 2px 8px var(--fill-quinary);
+  --margin-shadow-selected: 0 0 0 2px
+      color-mix(in srgb, var(--annotation-color) 34%, transparent),
+    0 12px 32px var(--color-border50);
+  --margin-focus: var(--accent-blue);
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--margin-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+.margin-annotation-connectors,
+.margin-annotation-card-layer,
+.margin-annotation-portal {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.margin-annotation-connectors {
+  overflow: visible;
+}
+
+.margin-annotation-connector {
+  fill: none;
+  stroke: var(--annotation-color, var(--accent-yellow));
+  stroke-width: 1.4px;
+  stroke-linecap: round;
+  opacity: 0.72;
+  vector-effect: non-scaling-stroke;
+  transition:
+    opacity 180ms ease,
+    stroke-width 160ms ease,
+    filter 160ms ease;
+}
+
+.margin-annotation-connector.is-selected {
+  stroke-width: 2.6px;
+  opacity: 1;
+  filter: drop-shadow(
+    0 0 3px color-mix(in srgb, var(--annotation-color) 60%, transparent)
+  );
+}
+
+.margin-annotation-connector.is-exiting {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.margin-annotation-card {
+  --annotation-color: var(--accent-yellow);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--margin-card-width);
+  max-width: calc(50% - 16px);
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--margin-text);
+  background: var(--margin-surface);
+  border: 1px solid var(--annotation-color);
+  border-radius: 8px;
+  box-shadow: var(--margin-shadow-rest);
+  opacity: 0;
+  transform: translate3d(var(--card-x, 0), calc(var(--card-y, 0) + 10px), 0)
+    scale(0.98);
+  transform-origin: center top;
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+  pointer-events: auto;
+  -moz-user-select: text;
+  user-select: text;
+  font-size: var(--margin-font-size);
+  line-height: 1.45;
+  outline: none;
+  animation: margin-annotation-card-enter 320ms cubic-bezier(0.2, 0.8, 0.2, 1)
+    both;
+  animation-delay: calc(var(--card-index, 0) * 30ms);
+}
+
+.margin-annotation-card * {
+  -moz-user-select: text;
+  user-select: text;
+}
+
+.margin-annotation-card :is(button, svg, svg *) {
+  -moz-user-select: none;
+  user-select: none;
+}
+
+.margin-annotation-card
+  :is(
+    .margin-annotation-card-heading,
+    .margin-annotation-quote,
+    .margin-annotation-comment,
+    .margin-annotation-tag
+  ) {
+  cursor: text;
+}
+
+.margin-annotation-card ::selection {
+  color: inherit;
+  background: var(--accent-blue30);
+}
+
+.margin-annotation-card.is-ready {
+  opacity: 1;
+  transform: translate3d(var(--card-x, 0), var(--card-y, 0), 0) scale(1);
+}
+
+.margin-annotation-card:hover,
+.margin-annotation-card:focus-visible {
+  border-color: var(--annotation-color);
+  box-shadow: var(--margin-shadow-hover);
+  transform: translate3d(var(--card-x, 0), calc(var(--card-y, 0) - 2px), 0)
+    scale(1.005);
+  z-index: 25;
+}
+
+.margin-annotation-card:focus,
+.margin-annotation-card:focus-visible,
+.margin-annotation-card:-moz-focusring {
+  outline: none !important;
+}
+
+.margin-annotation-card.is-selected {
+  border-color: var(--annotation-color);
+  box-shadow: var(--margin-shadow-selected);
+  z-index: 20;
+}
+
+.margin-annotation-card.is-exiting {
+  opacity: 0;
+  transform: translate3d(var(--card-x, 0), calc(var(--card-y, 0) - 6px), 0)
+    scale(0.98);
+  pointer-events: none;
+  animation: none;
+}
+
+.margin-annotation-card.is-selected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--annotation-color);
+  opacity: 0;
+  pointer-events: none;
+  animation: margin-annotation-pulse 720ms ease-out;
+}
+
+@keyframes margin-annotation-card-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--card-x, 0), calc(var(--card-y, 0) + 10px), 0)
+      scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(var(--card-x, 0), var(--card-y, 0), 0) scale(1);
+  }
+}
+
+@keyframes margin-annotation-pulse {
+  from {
+    opacity: 0.16;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.margin-annotation-card-header {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  gap: 8px;
+  padding: 8px 8px 6px 10px;
+  box-sizing: border-box;
+}
+
+.margin-annotation-card:not(.has-annotation-text)
+  .margin-annotation-card-header {
+  padding-bottom: 2px;
+}
+
+.margin-annotation-card.is-collapsed .margin-annotation-card-header {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.margin-annotation-type-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: color-mix(in srgb, var(--annotation-color) 58%, var(--fill-primary));
+  background: color-mix(in srgb, var(--annotation-color) 18%, transparent);
+}
+
+.margin-annotation-card-heading {
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.margin-annotation-card-title,
+.margin-annotation-card-meta {
+  grid-area: 1 / 1;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0;
+  will-change: clip-path;
+}
+
+.margin-annotation-card-title {
+  color: var(--margin-text);
+  visibility: hidden;
+  clip-path: inset(0 100% 0 0);
+  font-size: 0.92em;
+  font-weight: 400;
+  transition:
+    clip-path 180ms cubic-bezier(0.4, 0, 1, 1),
+    visibility 0s linear 180ms;
+}
+
+.margin-annotation-card.is-collapsed .margin-annotation-card-title {
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  transition:
+    clip-path 180ms cubic-bezier(0.2, 0.8, 0.2, 1) 40ms,
+    visibility 0s linear 40ms;
+}
+
+.margin-annotation-card-meta {
+  color: var(--margin-text-muted);
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  font-size: 0.8em;
+  font-weight: 400;
+  transition:
+    clip-path 160ms cubic-bezier(0.2, 0.8, 0.2, 1) 40ms,
+    visibility 0s linear 40ms;
+}
+
+.margin-annotation-card.is-collapsed .margin-annotation-card-meta {
+  visibility: hidden;
+  clip-path: inset(0 100% 0 0);
+  transition:
+    clip-path 120ms cubic-bezier(0.4, 0, 1, 1),
+    visibility 0s linear 120ms;
+}
+
+.margin-annotation-card-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.margin-annotation-icon-button,
+.margin-annotation-menu-button,
+.margin-annotation-editor-button {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--margin-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.margin-annotation-icon-button:hover,
+.margin-annotation-icon-button:focus-visible,
+.margin-annotation-menu-button:hover,
+.margin-annotation-menu-button:focus-visible,
+.margin-annotation-editor-button:hover,
+.margin-annotation-editor-button:focus-visible {
+  color: var(--margin-text);
+  background: var(--margin-surface-hover);
+  outline: none;
+}
+
+.margin-annotation-collapse-icon {
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.margin-annotation-card.is-collapsed .margin-annotation-collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.margin-annotation-card:not(.is-collapsed)
+  .margin-annotation-collapse-icon:active {
+  transform: scale(0.92);
+}
+
+.margin-annotation-card.is-collapsed .margin-annotation-collapse-icon:active {
+  transform: rotate(-90deg) scale(0.92);
+}
+
+.margin-annotation-card-body {
+  display: grid;
+  gap: 7px;
+  padding: 0 10px 9px;
+  max-height: 600px;
+  opacity: 1;
+  overflow: hidden;
+  transition: opacity 120ms ease;
+}
+
+.margin-annotation-card.is-collapsed .margin-annotation-card-body {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.margin-annotation-card.is-collapsed .margin-annotation-tags {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.margin-annotation-card.is-collapsing .margin-annotation-card-body {
+  overflow: hidden;
+}
+
+.margin-annotation-card.is-collapsing {
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 140ms ease,
+    border-color 140ms ease;
+}
+
+.margin-annotation-card.is-comment-resizing {
+  transition:
+    transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 140ms ease,
+    border-color 140ms ease;
+}
+
+.margin-annotation-card.is-resize-measuring
+  :is(.margin-annotation-card-body, .margin-annotation-tags) {
+  transition: none !important;
+}
+
+.margin-annotation-quote,
+.margin-annotation-comment-shell,
+.margin-annotation-comment-preview,
+.margin-annotation-comment {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.margin-annotation-comment-shell {
+  display: grid;
+  position: relative;
+  gap: 6px;
+  overflow: visible;
+}
+
+.margin-annotation-card.is-editing .margin-annotation-comment-shell {
+  box-sizing: border-box;
+  gap: 0;
+  margin: 3px 0 0;
+  overflow: hidden;
+  background: var(--margin-surface-solid);
+  border: 1px solid
+    color-mix(in srgb, var(--annotation-color) 70%, var(--margin-border));
+  border-radius: 6px;
+}
+
+.margin-annotation-comment-shell[hidden] {
+  display: none;
+}
+
+.margin-annotation-image {
+  display: block;
+  width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  background: var(--margin-surface-raised);
+  border: 1px solid var(--margin-border);
+  border-radius: 6px;
+}
+
+.margin-annotation-image[hidden] {
+  display: none;
+}
+
+.margin-annotation-quote {
+  display: -webkit-box;
+  padding-left: 9px;
+  color: var(--margin-text-muted);
+  border-left: 2px solid
+    color-mix(in srgb, var(--annotation-color) 72%, transparent);
+  font-size: 0.91em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  cursor: pointer;
+  user-select: text;
+}
+
+.margin-annotation-card.is-quote-expanded .margin-annotation-quote {
+  display: block;
+  max-height: min(320px, 45vh);
+  overflow: auto;
+  -webkit-line-clamp: unset;
+  cursor: zoom-out;
+}
+
+.margin-annotation-comment {
+  box-sizing: border-box;
+  color: var(--margin-text);
+  scrollbar-width: thin;
+}
+
+.margin-annotation-comment-preview {
+  display: none;
+  width: 100%;
+  max-height: 2.9em;
+  overflow: hidden;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.margin-annotation-card:not(.has-annotation-text)
+  .margin-annotation-comment-preview {
+  max-height: 7.25em;
+  -webkit-line-clamp: 5;
+}
+
+.margin-annotation-comment:not([contenteditable="true"]) {
+  max-height: 176px;
+  overflow-y: auto;
+  cursor: pointer;
+}
+
+.margin-annotation-card:not(.is-comment-expanded):not(.is-editing):not(
+    .is-generating
+  )
+  .margin-annotation-comment-preview {
+  display: -webkit-box;
+}
+
+.margin-annotation-card:not(.is-comment-expanded):not(.is-editing):not(
+    .is-generating
+  )
+  .margin-annotation-comment:not([contenteditable="true"]) {
+  display: none;
+}
+
+.margin-annotation-comment-preview:empty::before,
+.margin-annotation-comment:empty::before {
+  content: attr(data-placeholder);
+  color: var(--margin-text-muted);
+  font-style: normal;
+}
+
+.margin-annotation-comment[contenteditable="true"],
+.margin-annotation-card.is-generating .margin-annotation-comment {
+  min-height: 48px;
+  max-height: 220px;
+  width: 100%;
+  padding: 8px 10px 6px;
+  margin: 0;
+  overflow-y: auto;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+}
+
+.margin-annotation-card.is-editing
+  .margin-annotation-comment[contenteditable="true"] {
+  padding: 5px 8px 4px;
+}
+
+.margin-annotation-card.is-generating .margin-annotation-comment {
+  cursor: progress;
+}
+
+.margin-annotation-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 30px;
+  gap: 1px;
+  padding: 2px 4px;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.margin-annotation-comment-count {
+  margin-right: auto;
+  padding: 0 5px;
+  color: var(--margin-text-muted);
+  font-size: 0.72em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+.margin-annotation-editor-actions[hidden] {
+  display: none;
+}
+
+.margin-annotation-editor-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  gap: 5px;
+  color: var(--margin-text-muted);
+  background: var(--margin-surface-solid);
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+.margin-annotation-editor-action[hidden] {
+  display: none;
+}
+
+.margin-annotation-editor-action:not(:disabled):hover,
+.margin-annotation-editor-action:not(:disabled):focus-visible {
+  color: var(--margin-text);
+  background: var(--margin-surface-hover);
+  outline: none;
+}
+
+.margin-annotation-editor-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.margin-annotation-editor-ask {
+  width: 24px;
+  min-width: 24px;
+  padding: 0;
+}
+
+.margin-annotation-editor-ask.is-stopping {
+  color: var(--annotation-color);
+}
+
+.margin-annotation-editor-ask.is-stopping .margin-annotation-icon {
+  fill: currentColor;
+  stroke: none;
+}
+
+.margin-annotation-comment :is(p, div) {
+  margin: 0 0 5px;
+}
+
+.margin-annotation-comment :is(ul, ol) {
+  margin: 0 0 6px;
+  padding-inline-start: 22px;
+  list-style-position: outside;
+}
+
+.margin-annotation-comment ul {
+  list-style-type: disc;
+}
+
+.margin-annotation-comment ol {
+  list-style-type: decimal;
+}
+
+.margin-annotation-comment li {
+  display: list-item;
+  margin: 0 0 3px;
+}
+
+.margin-annotation-comment :is(h1, h2, h3) {
+  margin: 7px 0 4px;
+  color: var(--margin-text);
+  line-height: 1.28;
+  letter-spacing: 0;
+}
+
+.margin-annotation-comment h1 {
+  font-size: 1.32em;
+}
+
+.margin-annotation-comment h2 {
+  font-size: 1.18em;
+}
+
+.margin-annotation-comment h3 {
+  font-size: 1.06em;
+}
+
+.margin-annotation-comment mark {
+  padding: 0 2px;
+  color: inherit;
+  background: var(--tag-yellow);
+}
+
+.margin-annotation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  max-height: 160px;
+  gap: 4px;
+  padding: 0 10px 8px;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 120ms ease;
+}
+
+.margin-annotation-tags[hidden] {
+  display: none;
+}
+
+.margin-annotation-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 20px;
+  padding: 1px 6px;
+  overflow: hidden;
+  color: var(--margin-text-muted);
+  background: var(--margin-surface-raised);
+  border: 1px solid var(--margin-border);
+  border-radius: 5px;
+  font-size: 0.72em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.margin-annotation-tag:hover {
+  background: var(--margin-surface-hover);
+  border-color: var(--margin-border-strong);
+}
+
+#pdf-margin-note-container[data-density="compact"]
+  .margin-annotation-card-header {
+  min-height: 30px;
+  padding-top: 6px;
+  padding-bottom: 4px;
+}
+
+#pdf-margin-note-container[data-density="compact"]
+  .margin-annotation-card.is-collapsed
+  .margin-annotation-card-header {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+#pdf-margin-note-container[data-density="compact"]
+  .margin-annotation-card-body {
+  gap: 5px;
+  padding-bottom: 7px;
+}
+
+#pdf-margin-note-container[data-density="compact"] .margin-annotation-quote {
+  -webkit-line-clamp: 2;
+}
+
+#pdf-margin-note-container[data-density="compact"]
+  .margin-annotation-card.is-comment-expanded
+  .margin-annotation-comment:not([contenteditable="true"]) {
+  max-height: 112px;
+}
+
+#pdf-margin-note-container[data-scrolling="true"] .margin-annotation-card {
+  transition: opacity 100ms ease;
+}
+
+#pdf-margin-note-container[data-scrolling="true"] .margin-annotation-connector {
+  opacity: 0.45;
+  transition: opacity 100ms ease;
+}
+
+#pdf-margin-note-container[data-scrolling="true"]
+  .margin-annotation-connector.is-exiting {
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.margin-annotation-portal {
+  z-index: 80;
+}
+
+.margin-annotation-menu,
+.margin-annotation-editor-ai-menu,
+.margin-annotation-editor-toolbar,
+.margin-annotation-toast {
+  position: fixed;
+  box-sizing: border-box;
+  color: var(--margin-text);
+  background: var(--margin-menu);
+  border: 1px solid var(--margin-border);
+  border-radius: 8px;
+  box-shadow: var(--margin-shadow-hover);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+.margin-annotation-menu,
+.margin-annotation-editor-ai-menu {
+  display: none;
+  min-width: 170px;
+  padding: 5px;
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: var(--menu-origin-x, center) var(--menu-origin-y, top);
+  transition:
+    opacity 140ms ease,
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.margin-annotation-menu.is-open,
+.margin-annotation-editor-ai-menu.is-open {
+  display: grid;
+  gap: 2px;
+  opacity: 1;
+  transform: scale(1);
+  animation: margin-annotation-menu-enter 160ms cubic-bezier(0.2, 0.8, 0.2, 1)
+    both;
+}
+
+.margin-annotation-menu:focus,
+.margin-annotation-editor-ai-menu:focus {
+  outline: none;
+}
+
+.margin-annotation-editor-ai-menu {
+  z-index: 90;
+  min-width: 148px;
+}
+
+@keyframes margin-annotation-menu-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.margin-annotation-menu-button {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  height: 32px;
+  padding: 0 9px;
+  gap: 9px;
+  color: var(--margin-text);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: 6px;
+}
+
+.margin-annotation-menu-button:focus,
+.margin-annotation-menu-button:focus-visible,
+.margin-annotation-menu-button:-moz-focusring {
+  outline: none !important;
+  box-shadow: none !important;
+  background: var(--margin-surface-hover);
+}
+
+.margin-annotation-menu-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.margin-annotation-menu-button.is-danger {
+  color: var(--accent-red);
+}
+
+.margin-annotation-menu-separator {
+  height: 1px;
+  margin: 3px 4px;
+  background: var(--margin-border);
+}
+
+.margin-annotation-editor-toolbar {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.margin-annotation-editor-toolbar[hidden] {
+  display: none;
+}
+
+.margin-annotation-editor-toolbar select {
+  width: 70px;
+  height: 28px;
+  padding: 0 5px;
+  color: var(--margin-text);
+  background: var(--margin-control);
+  border: 1px solid var(--margin-border);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.margin-annotation-editor-separator {
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: var(--margin-border);
+}
+
+.margin-annotation-color-control {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--margin-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.margin-annotation-color-control:hover,
+.margin-annotation-color-control:focus-visible {
+  color: var(--margin-text);
+  background: var(--margin-surface-hover);
+  outline: none;
+}
+
+.margin-annotation-color-control .margin-annotation-icon,
+.margin-annotation-color-swatch {
+  pointer-events: none;
+}
+
+.margin-annotation-color-swatch {
+  position: absolute;
+  right: 5px;
+  bottom: 3px;
+  left: 5px;
+  height: 3px;
+  box-sizing: border-box;
+  background: var(--editor-color);
+  border: 1px solid var(--margin-border-strong);
+  border-radius: 2px;
+}
+
+.margin-annotation-color-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  opacity: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.margin-annotation-toast {
+  left: 50%;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  max-width: min(360px, calc(100% - 24px));
+  padding: 7px 12px;
+  gap: 8px;
+  opacity: 0;
+  transform: translate(-50%, 10px) scale(0.98);
+  transition:
+    opacity 160ms ease,
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.margin-annotation-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .margin-annotation-card,
+  .margin-annotation-connector,
+  .margin-annotation-toast,
+  .margin-annotation-menu,
+  .margin-annotation-editor-ai-menu,
+  .margin-annotation-card-body,
+  .margin-annotation-tags,
+  .margin-annotation-comment-preview,
+  .margin-annotation-comment,
+  .margin-annotation-card-title,
+  .margin-annotation-card-meta,
+  .margin-annotation-collapse-icon,
+  .margin-annotation-icon-button,
+  .margin-annotation-menu-button,
+  .margin-annotation-editor-button,
+  .margin-annotation-tag,
+  .margin-annotation-segmented::before {
+    transition: none;
+    animation: none;
+  }
+
+  .margin-annotation-card {
+    transform: translate3d(var(--card-x, 0), var(--card-y, 0), 0) scale(1);
+  }
+
+  .margin-annotation-card:hover,
+  .margin-annotation-card:focus-visible {
+    transform: translate3d(var(--card-x, 0), var(--card-y, 0), 0) scale(1);
+  }
+
+  .margin-annotation-card.is-ready {
+    animation: none;
+    opacity: 1;
+  }
+
+  .margin-annotation-card.is-selected::after {
+    animation: none;
+  }
+}
+
+#reader-ui .toolbar .start .margin-annotation-toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+  min-inline-size: 0 !important;
+  padding: 0 !important;
+  gap: 0;
+  border: 0 !important;
+  border-radius: 0;
+  color: var(--fill-secondary);
+  background: transparent !important;
+  -moz-appearance: none;
+  appearance: none;
+  box-shadow: none !important;
+  text-shadow: none;
+  cursor: pointer;
+  transition: none;
+}
+
+#reader-ui .toolbar .start .margin-annotation-toolbar-button::-moz-focus-inner {
+  padding: 0;
+  border: 0;
+}
+
+#reader-ui .toolbar .start .margin-annotation-toolbar-group {
+  --margin-toolbar-hover: var(--fill-quinary);
+  display: inline-flex;
+  flex: 0 0 46px;
+  flex-flow: row nowrap;
+  align-items: center;
+  box-sizing: border-box;
+  width: 46px;
+  height: 30px;
+  gap: 0;
+  margin: 0 2px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  overflow: hidden;
+  transition: none;
+}
+
+#reader-ui .toolbar .start .margin-annotation-toolbar-toggle {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 26px !important;
+  width: 26px !important;
+  min-width: 26px !important;
+  max-width: 26px !important;
+  margin-inline: 0;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+#reader-ui .toolbar .start .margin-annotation-toolbar-menu {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 16px !important;
+  width: 16px !important;
+  min-width: 16px !important;
+  max-width: 16px !important;
+  margin-inline: 0;
+  border-radius: 0;
+}
+
+#reader-ui .toolbar .start .margin-annotation-toolbar-toggle:focus,
+#reader-ui .toolbar .start .margin-annotation-toolbar-toggle:-moz-focusring,
+#reader-ui .toolbar .start .margin-annotation-toolbar-toggle:active,
+#reader-ui .toolbar .start .margin-annotation-toolbar-menu:focus,
+#reader-ui .toolbar .start .margin-annotation-toolbar-menu:-moz-focusring,
+#reader-ui .toolbar .start .margin-annotation-toolbar-menu:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#reader-ui
+  .toolbar
+  .start
+  .margin-annotation-toolbar-toggle[aria-pressed="true"] {
+  color: var(--accent-blue);
+}
+
+#reader-ui .toolbar .start .margin-annotation-toolbar-group:hover {
+  background: var(--margin-toolbar-hover);
+}
+
+#reader-ui
+  .toolbar
+  .start
+  .margin-annotation-toolbar-group:has(> button:focus-visible) {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 1px;
+}
+
+#reader-ui
+  .toolbar
+  .start
+  .margin-annotation-toolbar-toggle
+  > .margin-annotation-toolbar-icon {
+  display: block;
+  flex: 0 0 20px;
+  width: 20px;
+  min-width: 20px;
+  max-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+}
+
+#reader-ui
+  .toolbar
+  .start
+  .margin-annotation-toolbar-menu
+  > .margin-annotation-icon {
+  display: block;
+  flex: 0 0 12px;
+  width: 12px;
+  min-width: 12px;
+  max-width: 12px;
+  height: 12px;
+  min-height: 12px;
+  max-height: 12px;
+  pointer-events: none;
+}
+
+.margin-annotation-settings-popover {
+  --settings-surface: var(--material-background);
+  --settings-control: var(--material-button);
+  --settings-raised: var(--material-mix-quinary);
+  --settings-hover: var(--material-mix-quarternary);
+  --settings-text: var(--fill-primary);
+  --settings-muted: var(--fill-secondary);
+  --settings-border: var(--color-border50);
+  --settings-border-strong: var(--color-border);
+  position: fixed;
+  z-index: 2147483646;
+  width: 286px;
+  box-sizing: border-box;
+  padding: 12px;
+  color: var(--settings-text);
+  background: var(--settings-surface);
+  border: 1px solid var(--settings-border);
+  border-radius: 8px;
+  box-shadow:
+    0 14px 36px var(--color-border50),
+    0 2px 7px var(--fill-quinary);
+  backdrop-filter: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.margin-annotation-settings-popover[hidden] {
+  display: none;
+}
+
+.margin-annotation-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  margin-bottom: 9px;
+  color: var(--settings-text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.margin-annotation-settings-section {
+  display: grid;
+  gap: 6px;
+  padding: 9px 0;
+  border-top: 1px solid var(--settings-border);
+}
+
+.margin-annotation-settings-section:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.margin-annotation-settings-label,
+.margin-annotation-range-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--settings-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.margin-annotation-segmented {
+  position: relative;
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  isolation: isolate;
+  min-height: 30px;
+  padding: 2px;
+  background: var(--settings-raised);
+  border-radius: 6px;
+}
+
+.margin-annotation-segmented::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  z-index: 0;
+  border-radius: 4px;
+  background: var(--settings-control);
+  transform: translateX(var(--segment-offset, 0%));
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+.margin-annotation-segmented[data-segment-count="2"]::before {
+  width: calc(50% - 2px);
+}
+
+.margin-annotation-segmented[data-segment-count="3"]::before {
+  width: calc(33.333333% - 1.333333px);
+}
+
+.margin-annotation-segmented button {
+  appearance: none;
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  padding: 4px 7px;
+  overflow: hidden;
+  color: var(--settings-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.margin-annotation-settings-popover[data-pointer-active="true"]
+  .margin-annotation-segmented
+  button:not([aria-pressed="true"]):hover {
+  color: var(--settings-text);
+  background: var(--settings-hover);
+  outline: none;
+}
+
+.margin-annotation-segmented button:focus-visible {
+  color: var(--settings-text);
+  background: transparent;
+}
+
+.margin-annotation-segmented button[aria-pressed="true"] {
+  color: var(--settings-text);
+  background: transparent;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.margin-annotation-segmented button:focus,
+.margin-annotation-segmented button:focus-visible,
+.margin-annotation-segmented button:-moz-focusring {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
+.margin-annotation-segmented button::-moz-focus-inner {
+  border: 0;
+}
+
+.margin-annotation-setting-toggle {
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+  gap: 8px;
+  color: var(--settings-text);
+  cursor: pointer;
+}
+
+.margin-annotation-setting-toggle input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent-blue);
+}
+
+.margin-annotation-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 12px;
+}
+
+.margin-annotation-range {
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent-blue);
+}
+
+.margin-annotation-settings-reset {
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--settings-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.margin-annotation-settings-reset:hover,
+.margin-annotation-settings-reset:focus-visible {
+  color: var(--settings-text);
+  background: var(--settings-hover);
+  outline: none;
+}
