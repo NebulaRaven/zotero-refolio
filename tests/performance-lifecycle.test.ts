@@ -291,10 +291,11 @@ test('preference teardown removes observers and manual-journal callbacks and per
   const ctx = await load({ addon, config: { prefsPrefix: 'extensions.zotero.stylepersonal' },
     getPref: () => undefined, getString: testGetString, getErrorMessage: testGetErrorMessage, getPreferenceOptionLabel: testGetPreferenceOptionLabel, spSelectOptions() {}, spReadManualRanks: () => ({}), spManualRankFields: [],
     spElement: (doc, tag, parent, text) => { const element = doc.createElement(tag); element.textContent = text; parent?.append(element); return element; },
-    spFeatureGroups: ['journals', 'graph', 'reader', 'columns'].map(id => [id, `ui-group-${id}`]), spFeatureDefinitions: [], spInactivePreferences: new Set(),
+    spFeatureGroups: ['journals', 'graph', 'reader', 'columns'].map(id => [id, `ui-group-${id}`]),
+    spFeatureDefinitions: [['manualJournalRanks', 'journals', 'ui-feature-manualJournalRanks']], spOpenPrefsManager() {},
     readDefaultPreferences: () => new Map([['extensions.zotero.stylepersonal.enable', true]]),
     Zotero: { Prefs: { registerObserver(key, callback) { observers.set(++nextObserver, callback); return nextObserver; }, unregisterObserver(id) { observers.delete(id); } } } },
-    'app/ui.ts', 'upstream/features/preferences/preferenceWindow.ts', 'app/manualRanks.ts', 'app/preferences.ts');
+    'core/settingsSchema.ts', 'app/ui.ts', 'app/settingControls.ts', 'upstream/features/preferences/preferenceWindow.ts', 'app/manualRanks.ts', 'app/preferences.ts');
   await ctx.registerPrefsScripts(win); const count = observers.size;
   assert.ok(count > 0); assert.equal(typeof ctx.addon.api.openManualJournal, 'function');
   ctx.addon.data.prefs.release();

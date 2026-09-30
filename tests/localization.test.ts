@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { parse, Message, Term } from '@fluent/syntax';
 import { script } from './source.mts';
 import { testLocalizer, testLocaleAPI } from './localization.ts';
-import { spFeatureDefinitions, spFeatureGroups, spInactivePreferences } from '../src/core/features.ts';
+import { spFeatureDefinitions, spFeatureGroups } from '../src/core/features.ts';
 import { spManualRankFields } from '../src/core/manualRanks.ts';
 import { spFilterGraph } from '../src/core/graph.ts';
 import { domFixture } from './dom-fixture.ts';
@@ -96,17 +96,17 @@ test('settings render translated labels and preserve stored option values in all
   const defaults = new Map<string, string | number | boolean>();
   const prefix = 'extensions.zotero.stylepersonal';
   vm.runInNewContext(await fs.readFile(new URL('../addon/prefs.js', import.meta.url), 'utf8'), { pref: (key, value) => defaults.set(key, value) });
-  const sources = await Promise.all(['app/ui.ts', 'upstream/features/preferences/preferenceWindow.ts', 'app/preferences.ts'].map(file => script(new URL(`../src/${file}`, import.meta.url))));
+  const sources = await Promise.all(['core/settingsSchema.ts', 'app/ui.ts', 'app/settingControls.ts', 'upstream/features/preferences/preferenceWindow.ts', 'app/preferences.ts'].map(file => script(new URL(`../src/${file}`, import.meta.url))));
   for (const locale of locales) {
     const dom = domFixture(), container = new dom.Element();
     const win: any = new dom.Element('window'); win.document = dom.document; dom.document.defaultView = win;
     dom.document.querySelector = selector => selector === '#stylepersonal-settings' ? container : null;
     const api = testLocaleAPI(locale), saved = [];
     const context: vm.Context = {
-      ...api, addon: { data: {}, api: {} }, config: { prefsPrefix: prefix },
+      ...api, addon: { data: {}, api: {} }, config: { prefsPrefix: prefix, addonRef: 'stylepersonal' },
       getPref: key => defaults.get(`${prefix}.${key}`), setPref: (key, value) => saved.push([key, value]),
-      readDefaultPreferences: () => defaults, spFeatureDefinitions, spFeatureGroups, spInactivePreferences,
-      spRenderManualRanks: () => () => {}, spFilterGraph,
+      readDefaultPreferences: () => defaults, spFeatureDefinitions, spFeatureGroups,
+      spRenderManualRanks: () => () => {}, spOpenPrefsManager() {}, spFilterGraph, spPublicationNames: () => [],
       Zotero: { Prefs: { registerObserver() { return 1; }, unregisterObserver() {} } }
     };
     vm.createContext(context);
@@ -115,26 +115,35 @@ test('settings render translated labels and preserve stored option values in all
     const descendants = element => element.children.flatMap(child => [child, ...descendants(child)]);
     const all = descendants(container);
     const inputs = all.filter(element => element.dataset.pref);
+    const labelOf = element => {
+      let node = element;
+      while (node && !['sp-field', 'sp-check', 'sp-feature-head'].some(name => node.classList.contains(name))) node = node.parentElement;
+      return node?.children.find(child => child.tagName === 'span')?.textContent;
+    };
     for (const input of inputs) {
-      const label = input.parentElement.children.find(element => element.tagName === 'span')?.textContent;
+      const label = labelOf(input);
       assert.ok(label && !label.startsWith('stylepersonal-') && label !== input.dataset.pref, `${locale}: ${input.dataset.pref}: ${label}`);
     }
-    const graphMode = inputs.find(input => input.dataset.pref === 'graphView.mode')!;
-    assert.equal(graphMode.value, 'citations');
-    assert.equal(graphMode.localName, 'menulist');
-    assert.equal(graphMode.getAttribute('native'), 'true');
-    const options = graphMode.querySelectorAll('menuitem');
-    assert.equal(options.find(option => option.value === 'note').getAttribute('label'), api.getString('ui-mode-notes'));
-    assert.ok(!options.some(option => ['default', 'related'].includes(option.value)));
-    for (const value of ['note', 'citations']) {
-      graphMode.value = value;
-      await [...graphMode.listeners.get('change')!][0]();
+    for (const [key, , labelID] of spFeatureDefinitions) {
+      const head = inputs.find(input => input.dataset.pref === `function.${key}.enable`).parentElement;
+      const description = head.children.find(child => child.className === 'sp-feature-desc').textContent;
+      assert.ok(description && !description.startsWith('stylepersonal-'), `${locale}: ${labelID}`);
+    }
+    const labelField = inputs.find(input => input.dataset.pref === 'graphView.labelField')!;
+    assert.equal(labelField.value, 'authorYear');
+    assert.equal(labelField.localName, 'menulist');
+    assert.equal(labelField.getAttribute('native'), 'true');
+    const options = labelField.querySelectorAll('menuitem');
+    assert.equal(options.find(option => option.value === 'title').getAttribute('label'), api.getString('ui-title'));
+    for (const value of ['title', 'authorYear']) {
+      labelField.value = value;
+      await [...labelField.listeners.get('change')!][0]();
       assert.equal(saved.at(-1)[1], value);
     }
     const minYear = inputs.find(input => input.dataset.pref === 'graphView.minYear')!;
     minYear.value = 'invalid';
     await [...minYear.listeners.get('change')!][0]();
-    assert.equal(container.children.find(element => element.getAttribute('role') === 'status').textContent, api.getString('ui-error-invalid-year-range'));
+    assert.equal(all.find(element => element.getAttribute('role') === 'status').textContent, api.getString('ui-error-invalid-number'));
     context.addon.data.prefs.release();
   }
 });

@@ -30,7 +30,7 @@ export function spRenderManualRanks(doc, parent, status) {
   const create = spElement.bind(null, doc);
   const section = create("details", parent);
   section.id = "stylepersonal-manual-journals";
-  create("summary", section, getString("ui-journal-settings"));
+  create("summary", section, getString("ui-edit-journal-labels"));
   create("p", section, getString("ui-manual-sets-a-value-automatic-uses-provider-data-and")).className = "sp-help";
   const lookup = create("div", section); lookup.className = "sp-actions";
   const title = create("input", lookup); title.type = "text";
