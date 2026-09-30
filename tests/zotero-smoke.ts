@@ -182,7 +182,7 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
   });
   await check("Core settings pane loads without paid UI", async () => {
     const prefs = preferences = Zotero.Utilities.Internal.openPreferences("stylepersonal-preferences");
-    const container = await waitFor(() => prefs.document.querySelector("#stylepersonal-settings[data-loaded=true] textarea"), "Settings controls did not load");
+    const container = await waitFor(() => prefs.document.querySelector('#stylepersonal-settings[data-loaded=true] [data-pref="publicationTagsColumn.aliases"]'), "Settings controls did not load");
     assert(typeof JSON.parse(container.value) === "object", "Custom journal aliases were not initialized");
     assert(prefs.document.querySelector("#stylepersonal-settings").textContent.includes("CSCD"), "Built-in journal directory information is missing");
     assert(!prefs.document.querySelector("#stylepersonal-settings").textContent.includes("Style Pro"), "Paid UI remains");
@@ -208,8 +208,8 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     const original = addon.data.locale.current;
     const Localizer = original.constructor as new (...args: any[]) => typeof original;
     const expected = [
-      ['en-US', 'Journal settings'], ['zh-CN', '期刊设置'], ['zh-TW', '期刊設定'],
-      ['it-IT', 'Impostazioni delle riviste'], ['ru-RU', 'Настройки журналов']
+      ['en-US', 'Edit journal labels…'], ['zh-CN', '编辑期刊评级…'], ['zh-TW', '編輯期刊評級…'],
+      ['it-IT', 'Modifica etichette della rivista…'], ['ru-RU', 'Изменить метки журнала…']
     ];
     try {
       for (const [locale, title] of expected) {
@@ -217,24 +217,26 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
         addon.data.locale.current = new Localizer(['stylepersonal-addon.ftl'], true, undefined, [locale]);
         await addon.hooks.onPrefsEvent('load', { window: preferences });
         const panel = preferences.document.querySelector('#stylepersonal-settings');
-        assert(api.getString('ui-journal-settings') === title, `Wrong native Fluent language: ${locale}`);
+        assert(api.getString('ui-edit-journal-labels') === title, `Wrong native Fluent language: ${locale}`);
         assert(panel.textContent.includes(title), `Journal settings were not translated: ${locale}`);
         for (const input of panel.querySelectorAll('[data-pref]')) {
-          const label = input.closest('label').querySelector('span')?.textContent;
+          const label = input.closest('.sp-field, .sp-check, .sp-feature-head')?.querySelector('span')?.textContent;
           assert(label && !label.startsWith('stylepersonal-') && label !== input.dataset.pref,
             `Untranslated setting in ${locale}: ${input.dataset.pref}`);
         }
-        const mode = panel.querySelector('[data-pref="graphView.mode"]');
-        assert(mode.querySelector('menuitem[value="citations"]').getAttribute('label') === api.getString('ui-mode-citations'),
+        const labelField = panel.querySelector('[data-pref="graphView.labelField"]');
+        assert(labelField.querySelector('menuitem[value="title"]').getAttribute('label') === api.getString('ui-title'),
           `Graph option was not translated: ${locale}`);
-        assert(mode.value === api.getPref('graphView.mode'), `Graph option value changed: ${locale}`);
+        assert(labelField.value === (api.getPref('graphView.labelField') || 'authorYear'), `Graph option value changed: ${locale}`);
         const year = panel.querySelector('[data-pref="graphView.minYear"]');
-        const before = api.getPref('graphView.minYear');
-        year.value = 'invalid'; change(year);
-        assert(panel.querySelector('[role="status"]').textContent === api.getString('ui-error-invalid-year-range'),
-          `Validation message was not translated: ${locale}`);
-        assert(api.getPref('graphView.minYear') === before, 'Invalid input changed the saved year');
-        year.value = String(before ?? '');
+        const before = api.getPref('graphView.minYear'), beforeMax = api.getPref('graphView.maxYear');
+        api.setPref('graphView.maxYear', '2000');
+        try {
+          year.value = '2001'; change(year);
+          assert(panel.querySelector('[role="status"]').textContent === api.getString('ui-error-invalid-year-range'),
+            `Validation message was not translated: ${locale}`);
+          assert(api.getPref('graphView.minYear') === before, 'Invalid input changed the saved year');
+        } finally { api.setPref('graphView.maxYear', beforeMax); year.value = String(before ?? ''); }
         await capture(`settings-${locale}`, preferences);
       }
     } finally {
@@ -251,10 +253,21 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     toggle.checked = false; change(toggle);
     assert(api.getPref('function.manualJournalRanks.enable') === false, 'Switch did not persist');
     toggle.checked = before !== false; change(toggle);
-    const search = panel.querySelector('input[type=search]'); search.value = 'publicationTagsColumn';
-    search.dispatchEvent(new preferences.Event('input', { bubbles: true }));
-    assert(panel.querySelector('#sp-group-reader').hidden, 'Settings search did not hide unmatched groups');
-    search.value = ''; search.dispatchEvent(new preferences.Event('input', { bubbles: true }));
+    const search = preferences.document.getElementById('prefs-search');
+    const groupHidden = id => preferences.document.querySelector(`#sp-group-${id}`).classList.contains('hidden-by-search');
+    for (const id of ['general', 'journals', 'graph', 'columns', 'reader']) {
+      preferences.document.querySelector(`#sp-group-${id}`).scrollIntoView({ block: 'start' });
+      await capture(`settings-${id}`, preferences);
+    }
+    search.value = api.getString('pref-publicationTagsColumn-rankColors');
+    search.dispatchEvent(new preferences.Event('command', { bubbles: true }));
+    await waitFor(() => groupHidden('reader'), 'Zotero search did not hide unmatched Refolio groups');
+    assert(!groupHidden('journals'), 'Zotero search hid the matching group');
+    assert(panel.querySelector('#sp-group-journals details.sp-more').open, 'Matching advanced options stayed collapsed');
+    await capture('settings-search', preferences);
+    search.value = ''; search.dispatchEvent(new preferences.Event('command', { bubbles: true }));
+    await waitFor(() => !groupHidden('reader'), 'Clearing the search left Refolio groups hidden');
+    await preferences.Zotero_Preferences.navigateToPane('stylepersonal-preferences');
   });
   await check('Native journal controls merge bilingual ratings and display conflicts', async () => {
     const keys = ['publicationTagsColumn.automaticUpdates', 'publicationTagsColumn.source', 'easyscholar.secretKey',

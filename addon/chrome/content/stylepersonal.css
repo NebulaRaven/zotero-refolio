@@ -35,6 +35,8 @@
 #stylepersonal-settings .sp-color { display: inline-flex; align-items: center; gap: 8px; }
 #stylepersonal-settings .sp-color > input[type=color] { inline-size: 32px; block-size: 20px; padding: 0; margin: 0; border: 1px solid var(--color-border, ThreeDShadow); border-radius: 4px; background: none; }
 #stylepersonal-settings .sp-color-value { min-inline-size: 5.5em; color: var(--fill-secondary, GrayText); font-variant-numeric: tabular-nums; }
+#stylepersonal-settings .sp-color-value:empty { display: none; }
+#stylepersonal-settings .sp-color > input[type=color]:disabled { opacity: 0.35; }
 #stylepersonal-settings .sp-more { margin-block: 2px 4px; }
 #stylepersonal-settings .sp-more > summary { inline-size: fit-content; padding-block: 3px; color: var(--fill-secondary, GrayText); }
 #stylepersonal-settings .sp-more > summary:hover { color: var(--fill-primary, CanvasText); }

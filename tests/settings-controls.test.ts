@@ -41,7 +41,7 @@ test('auto colors disable the picker and read back as auto', () => {
   const shown = parent.querySelector('.sp-color-value');
   control.write('auto');
   assert.equal(auto.checked, true); assert.equal(control.input.disabled, true);
-  assert.equal(control.read(), 'auto'); assert.equal(shown.textContent, testGetString('ui-color-auto'));
+  assert.equal(control.read(), 'auto'); assert.equal(shown.textContent, '', 'the Auto checkbox already says auto');
   assert.match(control.input.value, /^#[0-9a-f]{6}$/);
   let changes = 0; control.onChange(() => changes++);
   auto.checked = false; auto.fire('change');

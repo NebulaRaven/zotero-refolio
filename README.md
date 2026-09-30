@@ -27,7 +27,7 @@ Refolio is a fully open-source fork of [Ethereal Style](https://github.com/Muise
 - **More complete journal matching.** A [built-in directory](data/README.md) connects English and Chinese titles from PKU Core, CSSCI, and CSCD. Set a custom query title when a journal uses a different name in the data service.
 - **Control over journal labels.** Add, override, or hide individual ratings. Conflicting query results show their sources and the value being used.
 - **More ways to explore connections.** Save directed citations and Zotero related items together, with manual linking and optional updates when adding papers. Explore genealogy, filter connections, and use a resizable canvas in light or dark themes.
-- **One place for settings.** Search for features and adjust their switches in a single panel. Reading-time tracking is optional and off by default.
+- **One place for settings.** Each feature keeps its switch, a one-line description, and its options together, and Zotero's settings search finds any of them. Reading-time tracking is optional and off by default.
 - **A smoother Zotero 10 experience.** Native colors and controls, fewer repeated refreshes, and improved tag editing, dragging, and view switching.
 
 ## Getting started

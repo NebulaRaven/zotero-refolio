@@ -47,7 +47,7 @@ function colorControl(doc: Document, parent: Element, setting: SettingDef, label
   let disabled = false;
   const sync = () => {
     const isAuto = Boolean(auto?.checked);
-    shown.textContent = isAuto ? getString("ui-color-auto") : color.value;
+    shown.textContent = isAuto ? "" : color.value;
     color.disabled = disabled || isAuto;
     if (auto) auto.disabled = disabled;
   };
