@@ -7,14 +7,13 @@ import { getElements } from "../../utils/dom.ts";
     declare menuID: string;
     declare destroyed: boolean;
     declare dialogHelper: any;
+    declare hasMenu: boolean;
 
-    constructor() {
+    constructor({ menu = true }: { menu?: boolean } = {}) {
       this.menuID = `${config.addonRef}-preference-manager`;
       this.destroyed = false;
-      this.init();
-    }
-    init() {
-      this.registerButton();
+      this.hasMenu = menu;
+      if (menu) this.registerButton();
     }
     registerButton() {
       ztoolkit.Menu.register("menuTools", {
@@ -35,7 +34,7 @@ import { getElements } from "../../utils/dom.ts";
         return;
       }
       this.destroyed = true;
-      ztoolkit.Menu.unregister(this.menuID);
+      if (this.hasMenu) ztoolkit.Menu.unregister(this.menuID);
       this.dialogHelper?.window?.close?.();
       this.dialogHelper = undefined;
     }
@@ -396,12 +395,8 @@ import { getElements } from "../../utils/dom.ts";
         namespace: "html",
         properties: {
           innerHTML: `
-          .row:hover {
-            background-color: rgba(250, 130, 154, .05); !important;
-          }
-          .row.selected {
-            background-color: rgba(250, 130, 154, .23);
-          }
+          .row:hover { background-color: var(--fill-quinary, rgba(128, 128, 128, .08)); }
+          .row.selected { background-color: color-mix(in srgb, var(--accent-blue, #4072e5) 20%, transparent); }
         `
         }
       }, dialogHelper.window.document.documentElement);
@@ -419,3 +414,9 @@ import { getElements } from "../../utils/dom.ts";
     }
   };
 
+  // Opened from the settings page, where the Tools menu entry may not exist yet.
+  export function spOpenPrefsManager() {
+    const manager = new PrefsManager({ menu: false });
+    manager.buildPopup().catch(error => ztoolkit.log("Preference manager failed", error));
+    return manager;
+  }
