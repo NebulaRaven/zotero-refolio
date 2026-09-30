@@ -149,3 +149,15 @@ test('validation messages and supplied values are formatted in the selected lang
     assert.equal(api.getErrorMessage(new Error('HTTP 503')), 'HTTP 503');
   }
 });
+
+test('every feature switch has a one-line description in every language', async () => {
+  for (const locale of locales) {
+    const translated = await messages(locale);
+    for (const [key, , labelID] of spFeatureDefinitions) {
+      assert.ok(translated.get(`stylepersonal-${labelID}-desc`)?.value, `${locale}: ${key}`);
+    }
+    for (const id of ['ui-more-options', 'ui-restart-required', 'ui-restart-now', 'ui-open-prefs-manager', 'ui-color-auto', 'ui-error-invalid-number']) {
+      assert.ok(translated.has(`stylepersonal-${id}`), `${locale}: ${id}`);
+    }
+  }
+});

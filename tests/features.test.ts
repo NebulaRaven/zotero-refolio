@@ -170,3 +170,22 @@ test('master disable leaves settings available without starting library or reade
   vm.runInNewContext(await script(new URL('../src/app/hooks.ts', import.meta.url)), ctx);
   await ctx.onMainWindowLoad({}); assert.deepEqual(started, ['settings-panel']);
 });
+const retired = ['function.Recent.enable', 'delayTime', 'cookies.cnki', 'titleColumn.odd', 'titleColumn.even',
+  'titleColumn.selected', 'IFColumn.info', 'nestedTags.sortord', 'nestedTags.linkSymbol', 'textTagsColumn.prefix',
+  'annotationColumn.style', 'annotationColumn.color', 'annotationColumn.circle'];
+test('settings that nothing reads stay off the settings page', () => {
+  for (const key of retired) assert.ok(spInactivePreferences.has(key), key);
+  assert.ok(!spFeatureDefinitions.some(([key]) => key === 'Recent'));
+});
+test('retired settings have no readers left in the source', async () => {
+  const base = new URL('../src/', import.meta.url);
+  const files = (await fs.readdir(base, { recursive: true })).map(file => file.replaceAll('\\', '/'))
+    .filter(file => file.endsWith('.ts') && !file.startsWith('vendor/') && !file.endsWith('utils/prefs.ts') && file !== 'core/features.ts');
+  const text = (await Promise.all(files.map(file => fs.readFile(new URL(file, base), 'utf8')))).join('\n');
+  for (const key of retired.filter(key => key !== 'function.Recent.enable')) {
+    assert.ok(!text.includes(key), key);
+    const column = key.match(/^\w+Column\.(\w+)$/);
+    if (column) assert.ok(!new RegExp(`\\$\\{\\w+\\}Column\\.${column[1]}\\b`).test(text), key);
+  }
+  assert.ok(!/isEnabel\(["'`]Recent|enabled\(["'`]Recent|function\.Recent/.test(text));
+});

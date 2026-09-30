@@ -30,7 +30,6 @@ export const spFeatureDefinitions = [
   ["collectionItemCount", "library", "ui-feature-collectionItemCount"],
   ["sortCollectionItem", "library", "ui-feature-sortCollectionItem"],
   ["favoriteCollections", "library", "ui-feature-favoriteCollections"],
-  ["Recent", "library", "ui-feature-Recent"],
   ["updateItemDateModified", "library", "ui-feature-updateItemDateModified"],
   ["PDFStyles", "reader", "ui-feature-PDFStyles"],
   ["annotationColors", "reader", "ui-feature-annotationColors"],
@@ -52,5 +51,9 @@ export const spFeatureDefinitions = [
 export const spInactivePreferences = new Set([
   "function.readStatus.enable", "function.ReadUnreadStatus.enable", "function.itemTypeFilter.enable",
   "function.renderItemAnnotations.enable", "function.renderItemNotes.enable", "AIGenerateTags.prompt",
-  "graphView.show", "graphView.theme", "graphView.enable", "viewGroups", "storage.in", "storage.filename", "genealogy.manualData"
+  "graphView.show", "graphView.theme", "graphView.enable", "viewGroups", "storage.in", "storage.filename", "genealogy.manualData",
+  // No code reads these any more; they stay in prefs.js so existing profiles keep their values.
+  "function.Recent.enable", "delayTime", "cookies.cnki", "titleColumn.odd", "titleColumn.even", "titleColumn.selected",
+  "IFColumn.info", "nestedTags.sortord", "nestedTags.linkSymbol", "textTagsColumn.prefix",
+  "annotationColumn.style", "annotationColumn.color", "annotationColumn.circle"
 ]);
