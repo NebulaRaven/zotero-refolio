@@ -27,6 +27,9 @@ const spSettingValidators: Record<string, (value: unknown) => void> = {
   "graphView.maxYear": value => { spFilterGraph({ nodes: {} }, [], { minYear: getPref("graphView.minYear"), maxYear: value as string }); }
 };
 
+// Kinds the user types into; an outside change must not overwrite text mid-edit.
+const spTypedKinds = new Set(["text", "secret", "number", "list", "code", "shortcut"]);
+
 export async function registerPrefsScripts(prefWindow) {
   const doc = prefWindow.document;
   const container = doc.querySelector("#stylepersonal-settings");
@@ -76,26 +79,37 @@ export async function registerPrefsScripts(prefWindow) {
   create("span", notice, getString("ui-restart-required"));
   const restart = create("button", notice, getString("ui-restart-now")); restart.type = "button";
   restart.addEventListener("click", () => Zotero.Utilities.Internal.quit(true));
-  const status = create("p", header); status.setAttribute("role", "status"); status.className = "sp-status";
   const showRestart = () => { notice.hidden = false; };
 
-  const bind = (setting: SettingDef, control: SettingControl, afterSave?: () => void) => {
+  // Errors sit next to the field: the top of the page is often scrolled away or hidden by Zotero search.
+  const errorLine = (row: Element) => {
+    let error: HTMLElement | null = null;
+    return (message: string) => {
+      if (!error && !message) return;
+      if (!error) { error = create("span", row); error.className = "sp-error"; error.setAttribute("role", "alert"); }
+      error.textContent = message; error.hidden = !message;
+    };
+  };
+  const bind = (setting: SettingDef, control: SettingControl, row: Element, afterSave?: () => void) => {
     const { key } = setting, fallback = fallbackOf(key);
+    const showError = errorLine(row);
+    const saved = afterSave ?? (setting.restart ? showRestart : undefined);
     control.input.dataset.pref = key;
     control.write(current(key));
     prefObservers.push(Zotero.Prefs.registerObserver(`${config.prefsPrefix}.${key}`, () => {
-      if (doc.activeElement === control.input) return;
-      control.write(current(key)); refresh();
+      const typing = spTypedKinds.has(setting.kind) && doc.activeElement === control.input && doc.hasFocus?.() !== false;
+      if (!typing) control.write(current(key));
+      refresh();
     }, true));
     control.onChange(async () => {
       try {
         const next = spSettingValue(setting, control.read(), fallback);
         spSettingValidators[key]?.(next);
         setPref(key, next);
-        status.textContent = "";
-        afterSave?.(); refresh();
+        showError("");
+        saved?.(); refresh();
         if (key.startsWith("graphView.")) await addon.api.refreshGraphView?.();
-      } catch (error) { status.textContent = getErrorMessage(error); }
+      } catch (error) { showError(getErrorMessage(error)); }
     });
   };
 
@@ -126,12 +140,12 @@ export async function registerPrefsScripts(prefWindow) {
         control = spSettingControl(doc, row, setting);
       }
       if (setting.visibleWhen) refreshers.push(() => { row.hidden = !spSettingVisible(setting, current); });
-      bind(setting, control); controls.push(control);
+      bind(setting, control, row); controls.push(control);
     }
   };
 
   const masterSetting: SettingDef = { key: "enable", label: "ui-enable-refolio", kind: "toggle" };
-  bind(masterSetting, spSettingControl(doc, masterRow, masterSetting), showRestart);
+  bind(masterSetting, spSettingControl(doc, masterRow, masterSetting), masterRow, showRestart);
   create("span", masterRow, getString("ui-enable-refolio")).className = "sp-feature-name";
 
   const groups = new Map<string, Element>();
@@ -149,7 +163,7 @@ export async function registerPrefsScripts(prefWindow) {
     const block = create("div", groups.get(groupID)); block.className = "sp-feature"; block.dataset.feature = key;
     const head = create("label", block); head.className = "sp-feature-head";
     const switchSetting: SettingDef = { key: `function.${key}.enable`, label: labelID, kind: "toggle" };
-    bind(switchSetting, spSettingControl(doc, head, switchSetting), showRestart);
+    bind(switchSetting, spSettingControl(doc, head, switchSetting), head, showRestart);
     create("span", head, getString(labelID)).className = "sp-feature-name";
     create("span", head, getString(`${labelID}-desc`)).className = "sp-feature-desc";
     if (!spec.settings.length && !spec.extra) continue;
@@ -162,7 +176,11 @@ export async function registerPrefsScripts(prefWindow) {
       action.type = "button"; action.className = "sp-action";
       action.addEventListener("click", () => spOpenPrefsManager());
     }
-    if (spec.extra === "manualRanks") releaseManualRanks = spRenderManualRanks(doc, body, status);
+    if (spec.extra === "manualRanks") {
+      const status = create("p"); status.setAttribute("role", "status"); status.className = "sp-status";
+      releaseManualRanks = spRenderManualRanks(doc, body, status);
+      body.append(status);
+    }
     refreshers.push(() => {
       const enabled = Boolean(current(switchSetting.key));
       if (enabled) delete body.dataset.disabled; else body.dataset.disabled = "true";

@@ -233,7 +233,7 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
         api.setPref('graphView.maxYear', '2000');
         try {
           year.value = '2001'; change(year);
-          assert(panel.querySelector('[role="status"]').textContent === api.getString('ui-error-invalid-year-range'),
+          assert(year.closest('.sp-field').querySelector('.sp-error')?.textContent === api.getString('ui-error-invalid-year-range'),
             `Validation message was not translated: ${locale}`);
           assert(api.getPref('graphView.minYear') === before, 'Invalid input changed the saved year');
         } finally { api.setPref('graphView.maxYear', beforeMax); year.value = String(before ?? ''); }

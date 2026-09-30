@@ -96,7 +96,9 @@ export function spSettingControl(doc: Document, parent: Element, setting: Settin
       }
       if (setting.kind === "secret") input.autocomplete = "off";
       if (setting.kind === "list") input.className = "sp-wide";
-      return plainControl(input, label, () => input.value, value => { input.value = String(value ?? ""); });
+      // Firefox reports unparsable number input as an empty value; badInput tells it apart from a cleared field.
+      const read = () => setting.kind === "number" && input.validity?.badInput ? "NaN" : input.value;
+      return plainControl(input, label, read, value => { input.value = String(value ?? ""); });
     }
   }
 }

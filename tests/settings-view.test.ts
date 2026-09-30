@@ -42,8 +42,13 @@ async function mountSettings(prefs: Record<string, unknown> = {}, search?: any) 
   const find = (key: string) => descendants(container).find(element => element.dataset.pref === key);
   const change = async element => { for (const listener of [...(element.listeners.get('change') ?? [])]) await listener({}); };
   const byClass = (name: string) => descendants(container).filter(element => element.classList.contains(name));
+  const errorOf = element => {
+    let row = element;
+    while (row && !row.classList.contains('sp-field')) row = row.parentElement;
+    return row?.children.find(child => child.className === 'sp-error');
+  };
   const external = (key: string, value: unknown) => { store.set(key, value); for (const callback of observers.get(`${prefix}.${key}`) ?? []) callback(); };
-  return { container, context, store, win, find, change, byClass, external };
+  return { container, context, store, win, find, change, byClass, external, errorOf };
 }
 
 test('a switched-off feature greys out its settings and a switch change asks for a restart', async () => {
@@ -84,7 +89,57 @@ test('numbers keep their stored type and invalid numbers are not saved', async (
   assert.equal(view.store.get('recordInterval'), 15);
   interval.value = 'soon'; await view.change(interval);
   assert.equal(view.store.get('recordInterval'), 15);
-  assert.equal(view.byClass('sp-status')[0].textContent, testGetString('ui-error-invalid-number'));
+  assert.equal(view.errorOf(interval).textContent, testGetString('ui-error-invalid-number'));
+  assert.equal(view.errorOf(interval).hidden, false);
+});
+
+test('clearing or mistyping a text-stored number keeps the saved value and explains why next to the field', async () => {
+  const view = await mountSettings();
+  const max = view.find('IFColumn.max');
+  max.value = ''; await view.change(max);
+  assert.equal(view.store.has('IFColumn.max'), false);
+  assert.equal(view.errorOf(max).hidden, false);
+  max.value = ''; max.validity = { badInput: true }; await view.change(max);
+  assert.equal(view.store.has('IFColumn.max'), false);
+  max.validity = { badInput: false }; max.value = '0'; await view.change(max);
+  assert.equal(view.store.has('IFColumn.max'), false);
+  max.value = '20'; await view.change(max);
+  assert.equal(view.store.get('IFColumn.max'), '20');
+  assert.equal(view.errorOf(max).hidden, true);
+});
+
+test('an empty graph year still clears the filter', async () => {
+  const view = await mountSettings({ 'graphView.minYear': '2001' });
+  const min = view.find('graphView.minYear'); min.value = ''; await view.change(min);
+  assert.equal(view.store.get('graphView.minYear'), '');
+});
+
+test('a switch changed elsewhere updates even when it was the last control clicked', async () => {
+  const view = await mountSettings({ 'function.showAnnotationColorName.enable': false });
+  const toggle = view.find('function.showAnnotationColorName.enable'); toggle.focus();
+  view.external('function.showAnnotationColorName.enable', true);
+  assert.equal(toggle.checked, true);
+  assert.equal(view.find('annotationColorNameDirection').disabled, false);
+});
+
+test('a text field being typed in keeps its text until the window loses focus', async () => {
+  const view = await mountSettings();
+  const max = view.find('IFColumn.max'); max.focus(); max.value = '2';
+  view.win.document.hasFocus = () => true;
+  view.external('IFColumn.max', '30'); assert.equal(max.value, '2');
+  view.win.document.hasFocus = () => false;
+  view.external('IFColumn.max', '31'); assert.equal(max.value, '31');
+});
+
+test('settings read only at startup ask for a restart', async () => {
+  for (const [key, value] of [['recordInterval', '15'], ['addTags.shortcut', 'Ctrl + G']]) {
+    const view = await mountSettings();
+    const input = view.find(key); input.value = value; await view.change(input);
+    assert.equal(view.byClass('sp-restart')[0].hidden, false, key);
+  }
+  const view = await mountSettings();
+  const recording = view.find('readingProgress.recordingEnabled'); recording.checked = true; await view.change(recording);
+  assert.equal(view.byClass('sp-restart')[0].hidden, false);
 });
 
 test('auto colors save auto and custom colors save hex values', async () => {

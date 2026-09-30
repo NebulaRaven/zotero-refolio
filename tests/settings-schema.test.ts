@@ -63,11 +63,18 @@ test('setting values keep the type stored in prefs.js', () => {
   assert.equal(spSettingValue({ kind: 'number' }, '12', 10), 12);
   assert.equal(spSettingValue({ kind: 'number' }, '', ''), '');
   assert.throws(() => spSettingValue({ kind: 'number' }, '', 10), { message: 'ui-error-invalid-number' });
+  assert.throws(() => spSettingValue({ kind: 'number' }, '', '15'), { message: 'ui-error-invalid-number' });
   assert.throws(() => spSettingValue({ kind: 'number' }, 'abc', '15'), { message: 'ui-error-invalid-number' });
   assert.throws(() => spSettingValue({ kind: 'number', min: 0, max: 1 }, '1.5', '1'), { message: 'ui-error-invalid-number' });
   assert.equal(spSettingValue({ kind: 'toggle' }, 1, false), true);
   assert.equal(spSettingValue({ kind: 'text' }, undefined, ''), '');
   assert.equal(spSettingValue({ kind: 'color' }, 'auto', 'auto'), 'auto');
+});
+
+test('settings read only at startup are marked as needing a restart', () => {
+  assert.deepEqual(allSettings().filter(setting => setting.restart).map(setting => setting.key).sort(), [
+    'addTags.shortcut', 'readingProgress.recordingEnabled', 'recordInterval', 'relatedItems.link.shortcut',
+    'titleTranslate.shortcut', 'toogleSidebar.left.shortcut', 'toogleSidebar.right.shortcut']);
 });
 
 test('colors are normalised for the native color picker', () => {

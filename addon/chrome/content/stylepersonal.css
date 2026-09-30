@@ -41,6 +41,8 @@
 #stylepersonal-settings .sp-more > summary { inline-size: fit-content; padding-block: 3px; color: var(--fill-secondary, GrayText); }
 #stylepersonal-settings .sp-more > summary:hover { color: var(--fill-primary, CanvasText); }
 #stylepersonal-settings .sp-help { color: var(--fill-secondary, GrayText); margin-block: 6px; }
+#stylepersonal-settings .sp-error { color: var(--accent-red, #d93025); font-size: 0.92em; }
+#stylepersonal-settings .sp-field > .sp-error { grid-column: 1 / -1; justify-self: start; }
 #stylepersonal-settings .sp-action { margin-block: 6px 0; }
 #stylepersonal-settings .sp-feature-body[data-disabled] > :is(.sp-field, .sp-checks, .sp-more, .sp-help) { opacity: 0.5; }
 #stylepersonal-settings #stylepersonal-manual-journals { margin-block: 4px 0; }

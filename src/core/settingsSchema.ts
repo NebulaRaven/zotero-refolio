@@ -13,6 +13,8 @@ export interface SettingDef {
   step?: number;
   allowAuto?: boolean;
   visibleWhen?: { readonly key: string; readonly equals: string };
+  // Read once at startup, so saving it should prompt a restart.
+  restart?: boolean;
 }
 export interface FeatureSettings {
   settings: SettingDef[];
@@ -56,7 +58,7 @@ export const spFeatureSettings: Readonly<Record<string, FeatureSettings>> = {
   IFColumn: { settings: [
     prefSetting("IFColumn.field", "choice", { choices: [["sciif"], ["sciif5"], ["综合影响因子"], ["复合影响因子"]] }),
     prefSetting("IFColumn.color", "color"),
-    prefSetting("IFColumn.max", "number", { min: 0, step: 1 }),
+    prefSetting("IFColumn.max", "number", { min: 1, step: 1 }),
     moreSetting(prefSetting("IFColumn.text", "toggle")),
     moreSetting(prefSetting("IFColumn.progress", "toggle")),
     moreSetting(prefSetting("IFColumn.progressType", "choice", { choices: [["1"], ["2"]] })),
@@ -88,7 +90,7 @@ export const spFeatureSettings: Readonly<Record<string, FeatureSettings>> = {
     moreSetting(prefSetting("titleColumn.tags", "toggle")),
     moreSetting(prefSetting("titleColumn.emojiTags", "toggle")),
     moreSetting(prefSetting("titleColumn.translate", "toggle")),
-    moreSetting(prefSetting("titleTranslate.shortcut", "shortcut"))
+    moreSetting(prefSetting("titleTranslate.shortcut", "shortcut", { restart: true }))
   ] },
   tagsColumn: { settings: [
     moreSetting(prefSetting("tagsColumn.align", "choice", { choices: [["left"], ["right"]] })),
@@ -131,11 +133,14 @@ export const spFeatureSettings: Readonly<Record<string, FeatureSettings>> = {
     moreSetting(prefSetting("readTime.progress", "toggle")),
     moreSetting(prefSetting("readTime.text", "toggle"))
   ] },
-  addTags: { settings: [prefSetting("addTags.shortcut", "shortcut")] },
-  relatedItems: { settings: [prefSetting("relatedItems.link.shortcut", "shortcut")] },
+  addTags: { settings: [prefSetting("addTags.shortcut", "shortcut", { restart: true })] },
+  relatedItems: { settings: [prefSetting("relatedItems.link.shortcut", "shortcut", { restart: true })] },
   showAnnotationColorName: { settings: [prefSetting("annotationColorNameDirection", "choice", { choices: [["horizontal"], ["vertical"]] })] },
   tldr: { settings: [prefSetting("tldr.autoTranslate", "toggle")] },
-  toogleSidebar: { settings: [prefSetting("toogleSidebar.left.shortcut", "shortcut"), prefSetting("toogleSidebar.right.shortcut", "shortcut")] },
+  toogleSidebar: { settings: [
+    prefSetting("toogleSidebar.left.shortcut", "shortcut", { restart: true }),
+    prefSetting("toogleSidebar.right.shortcut", "shortcut", { restart: true })
+  ] },
   prefsManager: { settings: [], extra: "prefsManager" },
   styleEditor: { settings: [prefSetting("styleEditor.value", "code")] }
 };
@@ -144,8 +149,8 @@ export const spFeatureSettings: Readonly<Record<string, FeatureSettings>> = {
 export const spGroupSettings: Readonly<Record<string, SettingDef[]>> = {
   graph: [{ key: "", label: "ui-citation-arrows-point-to-the-cited-paper-select-an", kind: "note" }],
   reader: [
-    { key: "readingProgress.recordingEnabled", label: "ui-record-reading-time", kind: "toggle" },
-    prefSetting("recordInterval", "number", { min: 1, step: 1 })
+    { key: "readingProgress.recordingEnabled", label: "ui-record-reading-time", kind: "toggle", restart: true },
+    prefSetting("recordInterval", "number", { min: 1, step: 1, restart: true })
   ]
 };
 
@@ -160,7 +165,8 @@ export function spSettingValue(setting: Pick<SettingDef, "kind" | "min" | "max">
   const text = String(raw ?? "");
   if (setting.kind !== "number") return text;
   const trimmed = text.trim();
-  if (!trimmed && typeof fallback === "string") return "";
+  // Only settings whose default is empty (the graph years) may be cleared.
+  if (!trimmed && fallback === "") return "";
   const value = Number(trimmed);
   const outside = (setting.min !== undefined && value < setting.min) || (setting.max !== undefined && value > setting.max);
   if (!trimmed || !Number.isFinite(value) || outside) throw new Error("ui-error-invalid-number");

@@ -143,7 +143,8 @@ test('settings render translated labels and preserve stored option values in all
     const minYear = inputs.find(input => input.dataset.pref === 'graphView.minYear')!;
     minYear.value = 'invalid';
     await [...minYear.listeners.get('change')!][0]();
-    assert.equal(all.find(element => element.getAttribute('role') === 'status').textContent, api.getString('ui-error-invalid-number'));
+    const minYearError = minYear.parentElement.children.find(child => child.className === 'sp-error');
+    assert.equal(minYearError.textContent, api.getString('ui-error-invalid-number'));
     context.addon.data.prefs.release();
   }
 });
