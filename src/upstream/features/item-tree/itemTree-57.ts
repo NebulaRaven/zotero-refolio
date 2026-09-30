@@ -193,7 +193,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
             tag: "menu",
             id: "style-plugin-menu",
             label: "Refolio",
-            icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
+            icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
             getVisibility: () => {
               const items = ZoteroPane.getSelectedItems();
               return items.some(i => i.isRegularItem());
@@ -204,7 +204,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
               getVisibility: () => {
                 return isEnabel("AIGenerateTags") && ZoteroPane.getSelectedItems().some(i => i.isRegularItem());
               },
-              icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
+              icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
               commandListener: async () => {
                 const items = ZoteroPane.getSelectedItems().filter(i => i.isRegularItem());
                 addon.api.generateAITags(items);
@@ -215,7 +215,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
               getVisibility: () => {
                 return isEnabel("AIGenerateRemark") && ZoteroPane.getSelectedItems().some(i => i.isRegularItem());
               },
-              icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
+              icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
               commandListener: async () => {
                 const items = ZoteroPane.getSelectedItems().filter(i => i.isRegularItem());
                 addon.api.generateAIRemark(items);
@@ -231,7 +231,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
               tag: "menuitem",
               label: getString("update") + " " + getString("column-publicationTags"),
               getVisibility: () => isEnabel("publicationTagsColumn"),
-              icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
+              icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
               commandListener: async () => {
                 const arr = [...new Set(ZoteroPane.getSelectedItems().map(i => getPublicationTitle(i)))];
                 for (const i of arr) {

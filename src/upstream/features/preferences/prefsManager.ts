@@ -21,7 +21,7 @@ import { getElements } from "../../utils/dom.ts";
         tag: "menuitem",
         id: this.menuID,
         label: getString("preference-manager"),
-        icon: `chrome://${config.addonRef}/content/icons/favicon@32x32.png`,
+        icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
         commandListener: () => {
           if (this.destroyed) {
             return;

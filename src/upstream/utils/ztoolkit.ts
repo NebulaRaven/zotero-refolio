@@ -16,7 +16,7 @@ import { installBoundedElementRecord } from "./weakRecordList.ts";
     _ztoolkit.UI.basicOptions.ui.enableElementDOMLog = false;
     _ztoolkit.basicOptions.debug.disableDebugBridgePassword = false;
     _ztoolkit.basicOptions.api.pluginID = config.addonID;
-    _ztoolkit.ProgressWindow.setIconURI("default", `chrome://${config.addonRef}/content/icons/favicon.png`);
+    _ztoolkit.ProgressWindow.setIconURI("default", `chrome://${config.addonRef}/content/icons/refolio.svg`);
     _ztoolkit.ProgressWindow.setIconURI("success", `chrome://${config.addonRef}/content/icons/tick.png`);
     _ztoolkit.ProgressWindow.setIconURI("fail", `chrome://${config.addonRef}/content/icons/cross.png`);
   }

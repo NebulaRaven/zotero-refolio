@@ -13,7 +13,7 @@ export async function registerPrefs() {
   await Zotero.PreferencePanes.register({
     pluginID: config.addonID, id: "stylepersonal-preferences",
     src: rootURI + "chrome/content/preferences.xhtml", label: "Refolio",
-    image: `chrome://${config.addonRef}/content/icons/favicon@32x32.png`
+    image: `chrome://${config.addonRef}/content/icons/refolio.svg`
   });
 }
 export async function registerPrefsScripts(prefWindow) {

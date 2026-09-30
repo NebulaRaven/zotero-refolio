@@ -214,7 +214,7 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
           namespace: "xul",
           tag: "image",
           styles: {
-            listStyleImage: `url(chrome://${config.addonRef}/content/icons/favicon@32x32.png)`,
+            listStyleImage: `url(chrome://${config.addonRef}/content/icons/refolio.svg)`,
             width: "18px",
             height: "18px"
           }

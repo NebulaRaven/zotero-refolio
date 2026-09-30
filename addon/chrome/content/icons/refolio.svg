@@ -1,14 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#174e63"/>
-  <rect x="11" y="21" width="27" height="32" rx="4" fill="#73d6bd"/>
-  <path d="M24 11h14l11 11v23a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4V15a4 4 0 0 1 4-4Z" fill="#f7fffc"/>
-  <path d="M38 11v7a4 4 0 0 0 4 4h7Z" fill="#bae9dd"/>
-  <path d="M27 27h14M27 33h9" fill="none" stroke="#174e63" stroke-width="3" stroke-linecap="round"/>
-  <path d="m31 44 17-6" fill="none" stroke="#174e63" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M48 38v15" fill="none" stroke="#73d6bd" stroke-width="3.5"/>
-  <g fill="#73d6bd" stroke="#174e63" stroke-width="2.5">
-    <circle cx="31" cy="44" r="4"/>
-    <circle cx="48" cy="38" r="4"/>
-    <circle cx="48" cy="53" r="4"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#17625A"/>
+  <g transform="translate(8.32 7.58) scale(0.74)">
+    <path d="M28 30h12l10 24v6l-6-4-6 4v-6Z" fill="#F2A93B"/>
+    <path d="M14 10a4 4 0 0 1 4-4h16a15 15 0 0 1 0 30h-8v18a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4ZM26 15h7a6 6 0 0 1 0 12h-7Z" fill="#FBF6EC" fill-rule="evenodd"/>
   </g>
 </svg>
