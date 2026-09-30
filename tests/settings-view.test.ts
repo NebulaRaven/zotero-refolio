@@ -138,3 +138,22 @@ test('remounting does not duplicate groups and release removes everything it add
   assert.equal(view.byClass('main-section').length, count);
   view.context.addon.data.prefs.release();
 });
+
+test('Zotero settings search expands more options and restores them afterwards', async () => {
+  const search = new (domFixture().Element)('search-textbox');
+  const view = await mountSettings({}, search);
+  const more = view.byClass('sp-more');
+  assert.ok(more.length > 3);
+  more[0].open = true;
+  search.value = 'opacity'; search.fire('input');
+  assert.ok(more.every(details => details.open));
+  search.value = ''; search.fire('command');
+  assert.equal(more[0].open, true);
+  assert.ok(more.slice(1).every(details => !details.open));
+  view.context.addon.data.prefs.release();
+  assert.equal(search.listeners.get('input').size, 0);
+  assert.equal(search.listeners.get('command').size, 0);
+  await view.context.registerPrefsScripts(view.win);
+  assert.equal(search.listeners.get('input').size, 1);
+  view.context.addon.data.prefs.release();
+});

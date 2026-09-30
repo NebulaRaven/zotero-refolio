@@ -170,5 +170,23 @@ export async function registerPrefsScripts(prefWindow) {
       if (action) action.disabled = !enabled;
     });
   }
+  // Zotero's search matches text inside closed <details> but cannot reveal it.
+  const search = doc.getElementById?.("prefs-search");
+  if (search) {
+    let before: boolean[] | null = null;
+    const onSearch = () => {
+      const searching = Boolean(String(search.value ?? "").trim());
+      if (searching && !before) {
+        before = moreSections.map(details => Boolean(details.open));
+        for (const details of moreSections) details.open = true;
+      } else if (!searching && before) {
+        moreSections.forEach((details, index) => { details.open = before[index]; });
+        before = null;
+      }
+    };
+    for (const type of ["input", "command"]) search.addEventListener(type, onSearch, true);
+    cleanups.push(() => { for (const type of ["input", "command"]) search.removeEventListener(type, onSearch, true); });
+    onSearch();
+  }
   refresh();
 }
