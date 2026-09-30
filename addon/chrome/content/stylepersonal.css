@@ -13,23 +13,42 @@
 .stylepersonal-ui .sp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 10px; }
 .stylepersonal-ui .sp-actions input { flex: 1; min-width: 180px; }
 
-#stylepersonal-settings { max-width: 780px; padding: 0; }
-#stylepersonal-settings h1 { font-size: 1.2em; margin-block: 0 12px; }
-#stylepersonal-settings h2 { font-size: 1em; margin-block: 0 8px; }
-#stylepersonal-settings section { margin-block: 20px; }
-#stylepersonal-settings .sp-field { display: grid; grid-template-columns: minmax(170px, 1fr) minmax(200px, 1fr); gap: 12px; align-items: center; margin-block: 8px; }
-#stylepersonal-settings .sp-field :is(input:not([type=checkbox]), .sp-select, textarea) { width: 100%; }
-#stylepersonal-settings .sp-field.sp-toggle { display: flex; gap: 6px; margin-block: 6px; }
-#stylepersonal-settings .sp-field textarea { min-height: 80px; }
-#stylepersonal-settings .sp-search { width: 100%; margin-block: 0 10px; }
-#stylepersonal-settings .sp-navigation { gap: 12px; padding-block-end: 10px; border-block-end: 1px solid var(--color-border, ThreeDShadow); }
+#stylepersonal-settings { max-width: 760px; padding: 0; }
+#stylepersonal-settings .sp-header { display: flex; flex-direction: column; gap: 8px; margin-block-end: 4px; }
+#stylepersonal-settings .sp-master .sp-feature-name { font-weight: 600; }
+#stylepersonal-settings .sp-restart { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 6px 6px 12px; border-radius: 6px; background: color-mix(in srgb, var(--accent-yellow, #ffb000) 16%, transparent); }
+#stylepersonal-settings .sp-status { margin: 0; }
+#stylepersonal-settings .sp-group-settings { margin-block: 4px 12px; }
+#stylepersonal-settings .sp-feature { margin-block: 12px; }
+#stylepersonal-settings .sp-feature-head { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; row-gap: 1px; }
+#stylepersonal-settings .sp-feature-head > input { grid-row: 1 / span 2; margin: 2px 0 0; }
+#stylepersonal-settings .sp-feature-desc { color: var(--fill-secondary, GrayText); font-size: 0.92em; }
+#stylepersonal-settings .sp-feature-body { margin-block: 6px 0; }
+#stylepersonal-settings .sp-field { display: grid; grid-template-columns: minmax(10em, max-content) minmax(0, 320px); gap: 4px 14px; align-items: center; margin-block: 6px; }
+#stylepersonal-settings .sp-field > :is(input, textarea, .sp-select) { width: 100%; margin: 0; }
+#stylepersonal-settings .sp-field > input.sp-number { width: 7em; }
+#stylepersonal-settings .sp-field:has(> textarea) { grid-template-columns: minmax(0, 1fr); }
+#stylepersonal-settings .sp-code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.92em; min-height: 5.5em; resize: vertical; }
+#stylepersonal-settings .sp-checks { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-block: 6px; }
+#stylepersonal-settings .sp-check { display: inline-flex; align-items: center; gap: 6px; }
+#stylepersonal-settings .sp-check > input { margin: 0; }
+#stylepersonal-settings .sp-color { display: inline-flex; align-items: center; gap: 8px; }
+#stylepersonal-settings .sp-color > input[type=color] { inline-size: 32px; block-size: 20px; padding: 0; margin: 0; border: 1px solid var(--color-border, ThreeDShadow); border-radius: 4px; background: none; }
+#stylepersonal-settings .sp-color-value { min-inline-size: 5.5em; color: var(--fill-secondary, GrayText); font-variant-numeric: tabular-nums; }
+#stylepersonal-settings .sp-more { margin-block: 2px 4px; }
+#stylepersonal-settings .sp-more > summary { inline-size: fit-content; padding-block: 3px; color: var(--fill-secondary, GrayText); }
+#stylepersonal-settings .sp-more > summary:hover { color: var(--fill-primary, CanvasText); }
+#stylepersonal-settings .sp-help { color: var(--fill-secondary, GrayText); margin-block: 6px; }
+#stylepersonal-settings .sp-action { margin-block: 6px 0; }
+#stylepersonal-settings .sp-feature-body[data-disabled] > :is(.sp-field, .sp-checks, .sp-more, .sp-help) { opacity: 0.5; }
+#stylepersonal-settings #stylepersonal-manual-journals { margin-block: 4px 0; }
 #stylepersonal-settings .sp-rank-table { width: 100%; border-collapse: collapse; margin-block: 10px; }
-#stylepersonal-settings .sp-rank-table :is(th, td) { padding: 4px; text-align: start; }
+#stylepersonal-settings .sp-rank-table th { color: var(--fill-secondary, GrayText); font-weight: normal; }
+#stylepersonal-settings .sp-rank-table :is(th, td) { padding: 4px 6px 4px 0; text-align: start; }
 #stylepersonal-settings .sp-rank-table :is(input, .sp-select) { width: 100%; }
 #stylepersonal-settings .sp-journal-conflicts td { white-space: pre-line; overflow-wrap: anywhere; vertical-align: top; }
-#stylepersonal-settings .sp-status { margin-block: 6px; }
-@media (max-width: 580px) {
-  #stylepersonal-settings .sp-field { grid-template-columns: 1fr; gap: 4px; }
+@media (max-width: 560px) {
+  #stylepersonal-settings .sp-field { grid-template-columns: minmax(0, 1fr); }
 }
 
 .stylepersonal-ui.sp-graph { position: relative; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; background: var(--material-background, Canvas); }
