@@ -26,9 +26,10 @@
   "devDependencies": {
     "@fluent/bundle": "0.19.1",
     "@fluent/syntax": "0.19.0",
-    "@types/node": "24.13.5",
-    "esbuild": "0.25.10",
-    "typescript": "5.9.3",
-    "zotero-types": "4.0.0"
+    "@types/node": "24.19.0",
+    "acorn": "8.18.0",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "zotero-types": "4.0.5"
   }
 }

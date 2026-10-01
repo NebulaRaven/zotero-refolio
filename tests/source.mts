@@ -1,29 +1,29 @@
 import fs from 'node:fs/promises';
-import ts from 'typescript';
+import { transform } from 'esbuild';
+import { parse } from 'acorn';
 
 /** Compile one real module against the small host fixture supplied by a unit test. */
 export async function script(filename: string | URL, declaration?: string): Promise<string> {
   const source = await fs.readFile(filename, 'utf8');
-  const tree = ts.createSourceFile(String(filename), source, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
-  const names: string[] = [];
-  const statements = tree.statements.filter(node => {
-    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) return false;
-    if (!declaration) return true;
-    return (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node)) && node.name?.text === declaration;
+  // esbuild removes the types; acorn then finds the top-level statements to keep.
+  const { code } = await transform(source, {
+    loader: 'ts', format: 'esm', target: 'es2022', sourcefile: String(filename),
+    tsconfigRaw: { compilerOptions: { useDefineForClassFields: false } }
   });
-  const printer = ts.createPrinter();
-  const body = statements.map(node => {
-    const name = (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node)) ? node.name : undefined;
-    if (name) names.push(name.text);
-    if (ts.isVariableStatement(node)) for (const entry of node.declarationList.declarations) {
-      if (ts.isIdentifier(entry.name)) names.push(entry.name.text);
+  const names: string[] = [];
+  const kept: string[] = [];
+  for (const statement of parse(code, { ecmaVersion: 'latest', sourceType: 'module' }).body) {
+    if (statement.type === 'ImportDeclaration' || statement.type === 'ExportAllDeclaration') continue;
+    const node = statement.type === 'ExportNamedDeclaration' || statement.type === 'ExportDefaultDeclaration' ? statement.declaration : statement;
+    if (!node) continue;
+    const name = node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration' ? node.id?.name : undefined;
+    if (declaration && name !== declaration) continue;
+    if (name) names.push(name);
+    if (node.type === 'VariableDeclaration') {
+      for (const entry of node.declarations) if (entry.id.type === 'Identifier') names.push(entry.id.name);
     }
-    const plain = ts.canHaveModifiers(node) ? ts.factory.replaceModifiers(node,
-      ts.getModifiers(node)?.filter(modifier => modifier.kind !== ts.SyntaxKind.ExportKeyword && modifier.kind !== ts.SyntaxKind.DefaultKeyword)) : node;
-    return printer.printNode(ts.EmitHint.Unspecified, plain, tree);
-  }).join('\n');
-  if (declaration && !statements.length) throw new Error(`Declaration not found: ${declaration}`);
-  return ts.transpileModule(body, {
-    fileName: String(filename), compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None, useDefineForClassFields: false }
-  }).outputText + '\n' + names.map(name => `globalThis.${name} = ${name};`).join('\n');
+    kept.push(code.slice(node.start, node.end));
+  }
+  if (declaration && !kept.length) throw new Error(`Declaration not found: ${declaration}`);
+  return kept.join('\n') + '\n' + names.map(name => `globalThis.${name} = ${name};`).join('\n');
 }
