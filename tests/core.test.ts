@@ -87,9 +87,10 @@ test('API credentials are redacted in diagnostic URLs', () => {
   assert.ok(!value.includes('PRIVATE'));assert.ok(!value.includes('OTHER'));assert.ok(value.includes('Sleep'));
 });
 
-// Exercise the exact bundled Day.js implementation with real DST boundaries.
-const { require_dayjs_min, require_utc } = await import('../src/vendor/index.js');
-const dayjs = require_dayjs_min(); dayjs.extend(require_utc());
+// Exercise the bundled Day.js release with real DST boundaries.
+const { default: dayjs } = await import('dayjs');
+const { default: utc } = await import('dayjs/plugin/utc.js');
+dayjs.extend(utc);
 
 test('date formatting follows system DST, preserves UTC zero and supports fractional offsets', () => {
   const before=process.env.TZ;process.env.TZ='Australia/Sydney';

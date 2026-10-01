@@ -22,7 +22,7 @@ import { getPref,setPref } from "../../utils/prefs.ts";
 import { spDisplayDate } from "../../../core/dates.ts";
 import { isTitleColumnItem,reconcileTitleCellDecorations } from "./titleCell.ts";
 import { drawOpacityProgress } from "../../utils/draw.ts";
-import { ColorRNA_default } from "../../../vendor/index.js";
+import ColorRNA_default from "color-rna";
 import { Tags } from "../tags/tags.ts";
 import { garden_default } from "../../utils/garden.ts";
 import { easyscholar_default } from "../../utils/easyscholar.ts";

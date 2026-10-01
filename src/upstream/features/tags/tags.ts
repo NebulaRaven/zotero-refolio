@@ -1,7 +1,7 @@
 import type { TagElement } from '../../../types/ui.ts';
 import { requireItemsView } from "../../utils/zoteroPane.ts";
 import { getPref,setPref } from "../../utils/prefs.ts";
-import { ColorRNA_default } from "../../../vendor/index.js";
+import ColorRNA_default from "color-rna";
 import { appendOwnedEntry } from "../../utils/ownedResource.ts";
 import { requireCollectionsView } from "../../utils/zoteroPane.ts";
 import { getElements } from "../../utils/dom.ts";

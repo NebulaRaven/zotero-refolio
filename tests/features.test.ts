@@ -180,7 +180,7 @@ test('settings that nothing reads stay off the settings page', () => {
 test('retired settings have no readers left in the source', async () => {
   const base = new URL('../src/', import.meta.url);
   const files = (await fs.readdir(base, { recursive: true })).map(file => file.replaceAll('\\', '/'))
-    .filter(file => file.endsWith('.ts') && !file.startsWith('vendor/') && !file.endsWith('utils/prefs.ts') && file !== 'core/features.ts');
+    .filter(file => file.endsWith('.ts') && !file.endsWith('utils/prefs.ts') && file !== 'core/features.ts');
   const text = (await Promise.all(files.map(file => fs.readFile(new URL(file, base), 'utf8')))).join('\n');
   for (const key of retired.filter(key => key !== 'function.Recent.enable')) {
     assert.ok(!text.includes(key), key);

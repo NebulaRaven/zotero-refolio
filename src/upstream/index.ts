@@ -1,4 +1,4 @@
-import { BasicTool } from "../vendor/index.js";
+import { BasicTool } from "zotero-plugin-toolkit";
 import { config } from "./config.ts";
 import { BROWSER_GLOBAL_NAMES,resolveBrowserGlobal } from "./utils/browserGlobals.ts";
 import { addon_default } from "./addon.ts";
@@ -21,7 +21,7 @@ import { addon_default } from "./addon.ts";
     });
     addonRegistry[config.addonInstance] = addon;
   }
-  export function getBrowserWindow() {
+  export function getBrowserWindow(): Window {
     try {
       const mainWindow = zotero.getMainWindow?.();
       if (mainWindow) {
@@ -32,7 +32,8 @@ import { addon_default } from "./addon.ts";
     if (!hiddenWindow) {
       throw new Error("Browser global window is unavailable");
     }
-    return hiddenWindow;
+    // The hidden window is a full DOM window at runtime; its XPCOM type leaves that out.
+    return hiddenWindow as unknown as Window;
   }
   export function defineGlobal(name, getter?) {
     Object.defineProperty(_globalThis, name, {
@@ -45,141 +46,3 @@ import { addon_default } from "./addon.ts";
       }
     });
   }
-/*! Bundled license information:
-
-lucide/dist/esm/icons/app-window.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/book-open.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/compass.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/database.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/eye.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/folder-plus.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/highlighter.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/layers.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/link-2.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/menu.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/notebook-pen.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/panel-left.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/quote.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/settings-2.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/table-properties.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/icons/tags.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide/dist/esm/lucide.mjs:
-  (**
-   * @license lucide v1.24.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-*/

@@ -1,4 +1,4 @@
-import { ZoteroToolkit } from "../../vendor/index.js";
+import { ZoteroToolkit } from "zotero-plugin-toolkit/ztoolkit";
 import { config } from "../config.ts";
 import { installBoundedElementRecord } from "./weakRecordList.ts";
   // src/utils/ztoolkit.ts

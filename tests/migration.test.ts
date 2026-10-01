@@ -20,7 +20,8 @@ test('production modules initialize Refolio with the existing preference identit
   };
   const context: vm.Context = {
     Zotero: host, rootURI: 'test://refolio/', console: silent,
-    ChromeUtils: { importESModule: () => ({ AddonManager: {} }) },
+    // getGlobalForObject is the Gecko API zotero-plugin-toolkit 5.2 uses to wrap patched functions.
+    ChromeUtils: { importESModule: () => ({ AddonManager: {} }), getGlobalForObject: () => globalThis },
     Services: {
       wm: { addListener() {}, removeListener() {} },
       io: { getProtocolHandler: () => ({ wrappedJSObject: { _extensions: {} } }) }
