@@ -18,7 +18,7 @@ export interface SettingDef {
 }
 export interface FeatureSettings {
   settings: SettingDef[];
-  extra?: "manualRanks" | "prefsManager";
+  extra?: "manualRanks";
 }
 
 const moreSetting = (setting: SettingDef): SettingDef => ({ ...setting, tier: "more" });
@@ -140,7 +140,6 @@ export const spFeatureSettings: Readonly<Record<string, FeatureSettings>> = {
     prefSetting("toogleSidebar.left.shortcut", "shortcut", { restart: true }),
     prefSetting("toogleSidebar.right.shortcut", "shortcut", { restart: true })
   ] },
-  prefsManager: { settings: [], extra: "prefsManager" },
   styleEditor: { settings: [prefSetting("styleEditor.value", "code")] }
 };
 

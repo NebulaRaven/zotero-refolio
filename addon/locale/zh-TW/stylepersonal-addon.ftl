@@ -60,7 +60,6 @@ stylepersonal-filter-nested-tags = 篩選巢狀標籤
 
 stylepersonal-toggleSidebar = 展開/摺疊側邊欄
 
-stylepersonal-preference-manager = 偏好設定管理
 
 stylepersonal-user-info = 使用者資訊
 
@@ -111,15 +110,7 @@ stylepersonal-margin-format-bold = 粗體
 stylepersonal-margin-format-italic = 斜體
 stylepersonal-margin-apply-recent-color = 套用最近顏色
 
-stylepersonal-prefs-import = 匯入
-stylepersonal-prefs-undo-import = 復原匯入
-stylepersonal-prefs-help = 說明
 stylepersonal-prefs-export = 匯出
-stylepersonal-prefs-export-tip-rename = 建議更改檔名，並移動到其他資料夾
-stylepersonal-prefs-export-tip-auto-clean = 此資料夾下的檔案可能被系統自動清除
-stylepersonal-prefs-help-tip-1 = 1. 按住 Shift 再點擊核取方塊，可以實現反向選擇
-stylepersonal-prefs-help-tip-2 = 2. 如果套用後想回到原來的設定，點擊匯入，選擇最新的 backup.json 結尾檔案（自動產生），然後套用即可
-stylepersonal-prefs-help-tip-3 = 3. 包含金鑰的設定檔請三思後再公開分享哦~
 
 stylepersonal-fulltext-translate = 全文翻譯
 stylepersonal-fulltext-translate-toggle-original = 全文翻譯：顯示/隱藏原文
@@ -624,7 +615,6 @@ stylepersonal-ui-feature-toogleSidebar = 側邊欄快捷鍵
 stylepersonal-ui-feature-darkLightButton = 明暗主題按鈕
 stylepersonal-ui-feature-tabMenu = 分頁選單工具
 stylepersonal-ui-feature-commands = Refolio 命令面板
-stylepersonal-ui-feature-prefsManager = 設定匯入／匯出
 stylepersonal-ui-feature-styleEditor = 自訂 CSS
 stylepersonal-ui-feature-publicationTagsColumn-desc = 在文獻列表中顯示影響因子、JCR 分區等期刊評級。
 stylepersonal-ui-feature-IFColumn-desc = 用條形圖直觀比較影響因子。
@@ -663,12 +653,10 @@ stylepersonal-ui-feature-toogleSidebar-desc = 用快捷鍵展開或收合左右�
 stylepersonal-ui-feature-darkLightButton-desc = 在工具列新增明暗主題切換按鈕。
 stylepersonal-ui-feature-tabMenu-desc = 像瀏覽器一樣在清單中管理多個分頁。
 stylepersonal-ui-feature-commands-desc = 在可搜尋的命令面板中執行 Refolio 操作。
-stylepersonal-ui-feature-prefsManager-desc = 備份、匯入和匯出外掛設定。
 stylepersonal-ui-feature-styleEditor-desc = 將自訂 CSS 套用到 Zotero 介面。
 stylepersonal-ui-more-options = 更多選項
 stylepersonal-ui-restart-required = 功能開關已變更，重新啟動 Zotero 後生效。
 stylepersonal-ui-restart-now = 立即重新啟動
-stylepersonal-ui-open-prefs-manager = 開啟偏好設定管理…
 stylepersonal-ui-color-auto = 自動
 stylepersonal-ui-error-invalid-number = 請輸入有效數字。
 stylepersonal-ui-api-key = { $provider } API 金鑰
@@ -722,7 +710,6 @@ stylepersonal-ui-remove-view-confirm = 移除檢視「{ $name }」？
 stylepersonal-ui-remove-tags-confirm = 「{ $tag }」符合 { $count } 個標籤，是否移除？
 stylepersonal-ui-remove-tag-confirm = 移除標籤「{ $tag }」？
 stylepersonal-ui-add-tag-confirm = 新增標籤「{ $tag }」？
-stylepersonal-ui-json-files = JSON 檔案（*.json）
 stylepersonal-ui-error-translation-ui-unavailable = 無法開啟翻譯面板。
 stylepersonal-ui-formula = 公式
 stylepersonal-ui-favorites-count = 收藏：{ $count } 項
@@ -755,7 +742,6 @@ stylepersonal-ui-attachment = 附件
 stylepersonal-ui-select-tags = 選取標籤
 stylepersonal-ui-select-or-enter-tag = 選取或輸入標籤。
 stylepersonal-ui-selected-tag-count = 已選取 { $count } 個標籤
-stylepersonal-ui-select-file = 選取檔案
 stylepersonal-ui-tag-ascending = 標籤名稱（升冪）
 stylepersonal-ui-tag-descending = 標籤名稱（降冪）
 stylepersonal-ui-frequency-ascending = 使用次數（由少到多）

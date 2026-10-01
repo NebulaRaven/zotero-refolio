@@ -126,5 +126,4 @@ pref("extensions.zotero.stylepersonal.graphView.maxYear", "");
 pref("extensions.zotero.stylepersonal.function.tabMenu.enable", true);
 pref("extensions.zotero.stylepersonal.function.fulltextTranslate.enable", true);
 pref("extensions.zotero.stylepersonal.function.commands.enable", true);
-pref("extensions.zotero.stylepersonal.function.prefsManager.enable", true);
 pref("extensions.zotero.stylepersonal.function.addColorNameTag.enable", false);

@@ -27,7 +27,7 @@ async function mountSettings(prefs: Record<string, unknown> = {}, search?: any) 
     addon: { data: {}, api: {} }, config: { prefsPrefix: prefix, addonRef: 'stylepersonal' },
     getPref: key => store.get(key), setPref: (key, value) => store.set(key, value),
     readDefaultPreferences: () => defaults, spFeatureDefinitions, spFeatureGroups, spFilterGraph, spPublicationNames: () => [],
-    spRenderManualRanks: () => () => {}, spOpenPrefsManager: () => { context.managerOpened = true; },
+    spRenderManualRanks: () => () => {},
     Zotero: {
       Prefs: {
         registerObserver: (key, callback) => { observers.set(key, [...(observers.get(key) ?? []), callback]); return observers.size; },
@@ -151,16 +151,6 @@ test('auto colors save auto and custom colors save hex values', async () => {
   assert.match(String(view.store.get('textTagsColumn.textColor')), /^#[0-9a-f]{6}$/);
   color.value = '#123456'; await view.change(color);
   assert.equal(view.store.get('textTagsColumn.textColor'), '#123456');
-});
-
-test('the preference manager button follows its switch', async () => {
-  const view = await mountSettings({ 'function.prefsManager.enable': false });
-  const [button] = view.byClass('sp-action');
-  assert.equal(button.disabled, true);
-  const toggle = view.find('function.prefsManager.enable'); toggle.checked = true; await view.change(toggle);
-  assert.equal(button.disabled, false);
-  for (const listener of button.listeners.get('click')) listener({});
-  assert.equal(view.context.managerOpened, true);
 });
 
 test('changes made elsewhere update the open settings page', async () => {

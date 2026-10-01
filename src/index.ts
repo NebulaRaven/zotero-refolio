@@ -59,7 +59,6 @@ import "./upstream/features/item-tree/itemTree-57.ts";
 import "./upstream/features/reader/readerResourceLifecycle.ts";
 import "./upstream/features/reader/PDFStyles.ts";
 import "./upstream/platform/zotero/patches.ts";
-import "./upstream/features/preferences/prefsManager.ts";
 import "./upstream/features/workspace/buttons.ts";
 import "./upstream/features/annotations/marginAnnotationIcons.ts";
 import "./upstream/features/preferences/defaultPreferences.ts";

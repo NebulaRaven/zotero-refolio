@@ -43,7 +43,6 @@ export const spFeatureDefinitions = [
   ["darkLightButton", "workspace", "ui-feature-darkLightButton"],
   ["tabMenu", "workspace", "ui-feature-tabMenu"],
   ["commands", "workspace", "ui-feature-commands"],
-  ["prefsManager", "workspace", "ui-feature-prefsManager"],
   ["styleEditor", "workspace", "ui-feature-styleEditor"]
 ];
 
@@ -54,5 +53,5 @@ export const spRetiredPreferences = [
   "delayTime", "cookies.cnki", "titleColumn.odd", "titleColumn.even",
   "titleColumn.selected", "IFColumn.info", "nestedTags.sortord", "nestedTags.linkSymbol",
   "textTagsColumn.prefix", "annotationColumn.style", "annotationColumn.color", "annotationColumn.circle",
-  "AIGenerateTags.prompt", "remarkColumn.prompt", "function.menuVisibility.enable"
+  "AIGenerateTags.prompt", "remarkColumn.prompt", "function.menuVisibility.enable", "function.prefsManager.enable"
 ];

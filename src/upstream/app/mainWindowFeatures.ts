@@ -17,7 +17,6 @@ import { ItemTree } from "../features/item-tree/itemTree-57.ts";
 import { reportFeatureFailure } from "../../app/hooks.ts";
 import { getPref } from "../utils/prefs.ts";
 import { Record } from "../features/reader/record.ts";
-import { PrefsManager } from "../features/preferences/prefsManager.ts";
 import { addStyle } from "../features/workspace/style.ts";
 import { ViewManager } from "../features/item-tree/viewManager.ts";
 import { initCollectionTree } from "../features/collections/collectionTree.ts";
@@ -109,13 +108,6 @@ import { FulltextTranslate } from "../features/reader/fulltextTranslate.ts";
           record.destroy();
           delete addon2.api.record;
         };
-      }
-    }, {
-      id: "preference-manager",
-      isEnabled: enabled("prefsManager"),
-      start: () => {
-        const feature = new PrefsManager();
-        return () => feature.destroy();
       }
     }, {
       id: "custom-style",

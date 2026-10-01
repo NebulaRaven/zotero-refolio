@@ -106,7 +106,7 @@ test('settings render translated labels and preserve stored option values in all
       ...api, addon: { data: {}, api: {} }, config: { prefsPrefix: prefix, addonRef: 'stylepersonal' },
       getPref: key => defaults.get(`${prefix}.${key}`), setPref: (key, value) => saved.push([key, value]),
       readDefaultPreferences: () => defaults, spFeatureDefinitions, spFeatureGroups,
-      spRenderManualRanks: () => () => {}, spOpenPrefsManager() {}, spFilterGraph, spPublicationNames: () => [],
+      spRenderManualRanks: () => () => {}, spFilterGraph, spPublicationNames: () => [],
       Zotero: { Prefs: { registerObserver() { return 1; }, unregisterObserver() {} } }
     };
     vm.createContext(context);
@@ -166,7 +166,7 @@ test('every feature switch has a one-line description in every language', async 
     for (const [key, , labelID] of spFeatureDefinitions) {
       assert.ok(translated.get(`stylepersonal-${labelID}-desc`)?.value, `${locale}: ${key}`);
     }
-    for (const id of ['ui-more-options', 'ui-restart-required', 'ui-restart-now', 'ui-open-prefs-manager', 'ui-color-auto', 'ui-error-invalid-number']) {
+    for (const id of ['ui-more-options', 'ui-restart-required', 'ui-restart-now', 'ui-color-auto', 'ui-error-invalid-number']) {
       assert.ok(translated.has(`stylepersonal-${id}`), `${locale}: ${id}`);
     }
   }
@@ -182,7 +182,7 @@ test('every menu label used in the source exists in every language', async () =>
       for (const match of text.matchAll(/["'](stylepersonal-menu-[\w-]+)["']/g)) used.add(match[1]);
     }
   }
-  assert.ok(used.size >= 11, `only ${used.size} menu labels found`);
+  assert.ok(used.size >= 10, `only ${used.size} menu labels found`);
   for (const locale of locales) {
     const translated = await messages(locale, 'stylepersonal-mainWindow.ftl');
     for (const id of used) assert.ok(translated.get(id)?.attributes.some(attribute => attribute.id.name === 'label'), `${locale}: ${id}`);

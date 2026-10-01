@@ -292,7 +292,7 @@ test('preference teardown removes observers and manual-journal callbacks and per
     getPref: () => undefined, getString: testGetString, getErrorMessage: testGetErrorMessage, getPreferenceOptionLabel: testGetPreferenceOptionLabel, spSelectOptions() {}, spReadManualRanks: () => ({}), spManualRankFields: [],
     spElement: (doc, tag, parent, text) => { const element = doc.createElement(tag); element.textContent = text; parent?.append(element); return element; },
     spFeatureGroups: ['journals', 'graph', 'reader', 'columns'].map(id => [id, `ui-group-${id}`]),
-    spFeatureDefinitions: [['manualJournalRanks', 'journals', 'ui-feature-manualJournalRanks']], spOpenPrefsManager() {},
+    spFeatureDefinitions: [['manualJournalRanks', 'journals', 'ui-feature-manualJournalRanks']],
     readDefaultPreferences: () => new Map([['extensions.zotero.stylepersonal.enable', true]]),
     Zotero: { Prefs: { registerObserver(key, callback) { observers.set(++nextObserver, callback); return nextObserver; }, unregisterObserver(id) { observers.delete(id); } } } },
     'core/settingsSchema.ts', 'app/ui.ts', 'app/settingControls.ts', 'upstream/features/preferences/preferenceWindow.ts', 'app/manualRanks.ts', 'app/preferences.ts');

@@ -62,7 +62,6 @@ stylepersonal-toggleSidebar = Toggle Sidebar
 
 stylepersonal-TLDR = TLDR
 
-stylepersonal-preference-manager = Preference Manager
 
 stylepersonal-user-info = User Information
 
@@ -113,15 +112,7 @@ stylepersonal-margin-format-bold = Bold
 stylepersonal-margin-format-italic = Italic
 stylepersonal-margin-apply-recent-color = Apply recent color
 
-stylepersonal-prefs-import = Import
-stylepersonal-prefs-undo-import = Undo Import
-stylepersonal-prefs-help = Help
 stylepersonal-prefs-export = Export
-stylepersonal-prefs-export-tip-rename = Rename the file and move it to another folder
-stylepersonal-prefs-export-tip-auto-clean = Files in this folder may be auto-cleaned by the system
-stylepersonal-prefs-help-tip-1 = 1. Hold Shift while clicking a checkbox to invert selection
-stylepersonal-prefs-help-tip-2 = 2. After applying, to revert to your config: click Import, select the latest backup.json file (auto-generated), then apply
-stylepersonal-prefs-help-tip-3 = 3. Think twice before publicly sharing config files containing API keys
 
 stylepersonal-fulltext-translate = Full-text Translation
 stylepersonal-fulltext-translate-toggle-original = Full-text Translation: Show/Hide Original
@@ -627,7 +618,6 @@ stylepersonal-ui-feature-toogleSidebar = Sidebar shortcuts
 stylepersonal-ui-feature-darkLightButton = Light / dark button
 stylepersonal-ui-feature-tabMenu = Tab menu tools
 stylepersonal-ui-feature-commands = Refolio command palette
-stylepersonal-ui-feature-prefsManager = Settings import / export
 stylepersonal-ui-feature-styleEditor = Custom CSS
 stylepersonal-ui-feature-publicationTagsColumn-desc = Show impact factors, JCR quartiles and other journal ratings in the item list.
 stylepersonal-ui-feature-IFColumn-desc = Compare impact factors at a glance with bars.
@@ -666,12 +656,10 @@ stylepersonal-ui-feature-toogleSidebar-desc = Collapse or expand the side panes 
 stylepersonal-ui-feature-darkLightButton-desc = Add a light and dark theme button to the toolbar.
 stylepersonal-ui-feature-tabMenu-desc = Manage many open tabs from a list, as in a browser.
 stylepersonal-ui-feature-commands-desc = Run Refolio actions from a searchable command palette.
-stylepersonal-ui-feature-prefsManager-desc = Back up, import and export plugin preferences.
 stylepersonal-ui-feature-styleEditor-desc = Apply your own CSS to the Zotero interface.
 stylepersonal-ui-more-options = More options
 stylepersonal-ui-restart-required = Feature switches changed. Restart Zotero to apply them.
 stylepersonal-ui-restart-now = Restart now
-stylepersonal-ui-open-prefs-manager = Open preference manager…
 stylepersonal-ui-color-auto = Auto
 stylepersonal-ui-error-invalid-number = Enter a valid number.
 stylepersonal-ui-api-key = { $provider } API key
@@ -725,7 +713,6 @@ stylepersonal-ui-remove-view-confirm = Remove the view “{ $name }”?
 stylepersonal-ui-remove-tags-confirm = “{ $tag }” matches { $count } tags. Remove them?
 stylepersonal-ui-remove-tag-confirm = Remove the tag “{ $tag }”?
 stylepersonal-ui-add-tag-confirm = Add the tag “{ $tag }”?
-stylepersonal-ui-json-files = JSON files (*.json)
 stylepersonal-ui-error-translation-ui-unavailable = The translation panel is unavailable.
 stylepersonal-ui-formula = Formula
 stylepersonal-ui-favorites-count = Favorites: { $count }
@@ -758,7 +745,6 @@ stylepersonal-ui-attachment = Attachment
 stylepersonal-ui-select-tags = Select tags
 stylepersonal-ui-select-or-enter-tag = Select or enter a tag.
 stylepersonal-ui-selected-tag-count = Selected tags: { $count }
-stylepersonal-ui-select-file = Select a file
 stylepersonal-ui-tag-ascending = Tag (A–Z)
 stylepersonal-ui-tag-descending = Tag (Z–A)
 stylepersonal-ui-frequency-ascending = Frequency (low to high)

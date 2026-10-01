@@ -10,7 +10,6 @@ import { getPref, setPref } from "../upstream/utils/prefs.ts";
 import { spPublicationNames } from "../core/journals.ts";
 import { spFilterGraph } from "../core/graph.ts";
 import { spRenderManualRanks } from "./manualRanks.ts";
-import { spOpenPrefsManager } from "../upstream/features/preferences/prefsManager.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 export async function registerPrefs() {
   await Zotero.PreferencePanes.register({
@@ -170,12 +169,6 @@ export async function registerPrefsScripts(prefWindow) {
     const body = create("div", block); body.className = "sp-feature-body indented-pref";
     const controls: SettingControl[] = [];
     renderSettings(body, spec.settings, controls);
-    let action: HTMLButtonElement | null = null;
-    if (spec.extra === "prefsManager") {
-      action = create("button", body, getString("ui-open-prefs-manager"));
-      action.type = "button"; action.className = "sp-action";
-      action.addEventListener("click", () => spOpenPrefsManager());
-    }
     if (spec.extra === "manualRanks") {
       const status = create("p"); status.setAttribute("role", "status"); status.className = "sp-status";
       releaseManualRanks = spRenderManualRanks(doc, body, status);
@@ -185,7 +178,6 @@ export async function registerPrefsScripts(prefWindow) {
       const enabled = Boolean(current(switchSetting.key));
       if (enabled) delete body.dataset.disabled; else body.dataset.disabled = "true";
       for (const control of controls) control.setDisabled(!enabled);
-      if (action) action.disabled = !enabled;
     });
   }
   // Zotero's search matches text inside closed <details> but cannot reveal it.

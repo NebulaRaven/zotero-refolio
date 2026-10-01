@@ -158,7 +158,7 @@ test('reader recording and formerly unconditional tools follow their own switche
   vm.runInNewContext(await script(new URL('../src/upstream/app/mainWindowFeatures.ts', import.meta.url)), context);
   const features = [...context.createImmediateFeatures(), ...context.createStandardFeatures(), ...context.createFinalFeatures()];
   assert.equal(features.find(f => f.id === 'reading-time-recorder').isEnabled(), true);
-  for (const [id, key] of [['tab-menu', 'tabMenu'], ['commands', 'commands'], ['preference-manager', 'prefsManager'], ['fulltext-translate', 'fulltextTranslate']]) {
+  for (const [id, key] of [['tab-menu', 'tabMenu'], ['commands', 'commands'], ['fulltext-translate', 'fulltextTranslate']]) {
     const feature = features.find(f => f.id === id); prefs[`function.${key}.enable`] = false; assert.equal(feature.isEnabled(), false);
     prefs[`function.${key}.enable`] = true; assert.equal(feature.isEnabled(), true);
   }

@@ -129,7 +129,6 @@ export interface PreferenceValues {
   "function.tabMenu.enable": boolean;
   "function.fulltextTranslate.enable": boolean;
   "function.commands.enable": boolean;
-  "function.prefsManager.enable": boolean;
   "function.addColorNameTag.enable": boolean;
 }
 export type PreferenceValue = string | number | boolean;
