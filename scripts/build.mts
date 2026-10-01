@@ -46,15 +46,24 @@ export async function sourceFiles(): Promise<ArchiveEntry[]> {
   }
   return entries.sort((a, b) => a[0].localeCompare(b[0], 'en'));
 }
+// The only third-party code bundled into the plugin.
+export const runtimePackages = ['zotero-plugin-toolkit', 'dayjs', 'runes', 'color-rna'] as const;
+export function runtimePackage(specifier: string): string | undefined {
+  return runtimePackages.find(name => specifier === name || specifier.startsWith(name + '/'));
+}
 export const bundleOptions: BuildOptions = {
-  absWorkingDir: root, bundle: true, write: false, format: 'iife', platform: 'neutral',
+  absWorkingDir: root, bundle: true, write: false, format: 'iife', platform: 'neutral', mainFields: ['module', 'main'],
   target: 'firefox140', keepNames: true, treeShaking: false, legalComments: 'inline',
   tsconfigRaw: { compilerOptions: { useDefineForClassFields: false } },
   plugins: [{
     name: 'project-sources',
     setup(build) {
-      // Every runtime dependency is vendored; resolve only explicit project files.
-      build.onResolve({ filter: /.*/ }, ({ path: filename, importer }) => {
+      // Project files resolve inside the project; only runtimePackages come from node_modules.
+      build.onResolve({ filter: /.*/ }, ({ path: filename, importer, namespace }) => {
+        const insidePackage = namespace === 'file' && importer !== '';
+        if (insidePackage && filename.startsWith('.')) return undefined;
+        if (runtimePackage(filename)) return undefined;
+        if (insidePackage) throw new Error(`Dependency outside project: ${filename}`);
         const resolved = path.resolve(importer ? path.join(root, path.dirname(importer)) : root, filename);
         if (path.relative(root, resolved).startsWith('..')) throw new Error(`Dependency outside project: ${filename}`);
         return { path: path.relative(root, resolved).replaceAll('\\', '/'), namespace: 'refolio' };
@@ -65,7 +74,8 @@ export const bundleOptions: BuildOptions = {
           const directory = JSON.parse(contents) as { journals: JournalName[] };
           contents = JSON.stringify({ journals: directory.journals.map(({ zh, en, aliases }) => ({ zh, en, aliases })) });
         }
-        return { contents, loader: filename.endsWith('.json') ? 'json' : filename.endsWith('.ts') ? 'ts' : 'js' };
+        return { contents, resolveDir: path.join(root, path.dirname(filename)),
+          loader: filename.endsWith('.json') ? 'json' : filename.endsWith('.ts') ? 'ts' : 'js' };
       });
     }
   }]
