@@ -41,7 +41,7 @@ async function fixture(items = [paper(1), paper(2)], disk: Record<string, any> =
     Zotero: {
       getMainWindow: () => context.window,
       Items: { getAll: async library => items.filter(item => item.libraryID === library),
-        get: id => items.find(item => item.id === id), getAsync: async id => items.find(item => item.id === id) },
+        get: id => items.find(item => item.id === id) ?? false, getAsync: async id => items.find(item => item.id === id) ?? false },
       Libraries: { get: id => ({ id, name: `Library ${id}`, editable: true }) },
       DB: { executeTransaction: async operation => { transactions++; await operation(); } },
       Promise: { delay: async () => {} }, logError: error => errors.push(error),
@@ -174,6 +174,16 @@ test('empty-graph prompts run only on entry, coalesce concurrent entries and sto
   await f.context.spPromptEmptyCitationGraph(1, () => true);
   assert.equal(f.prompts.length, 2);
   assert.equal(f.requests.length, 0);
+});
+
+test('new-item observer skips IDs Zotero no longer knows about', async () => {
+  const f = await fixture([paper(1), paper(2)]);
+  const stop = f.context.spRegisterCitationUpdates();
+  f.notify('add', [99, 2]);
+  assert.equal(f.timers.size, 1);
+  await f.flush(); assert.equal(f.prompts.length, 1);
+  assert.deepEqual(f.errors, []);
+  stop();
 });
 
 test('new-item observer batches papers, ignores attachments and existing-item edits, and handles a DOI supplied later', async () => {

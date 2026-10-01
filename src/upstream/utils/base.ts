@@ -236,7 +236,7 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
       const configuredColors = getPref(`annotationColors`);
       for (const id of ids) {
         const item = Zotero.Items.get(id);
-        if (!item?.isAnnotation()) {
+        if (!item || !item.isAnnotation()) {
           continue;
         }
         const configuredName = findAnnotationColorName(configuredColors, item.annotationColor);

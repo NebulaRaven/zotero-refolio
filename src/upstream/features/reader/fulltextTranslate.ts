@@ -237,6 +237,9 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
       this.ensureActive(signal);
       const pdfItem = await Zotero.Items.getAsync(itemID);
       this.ensureActive(signal);
+      if (!pdfItem) {
+        throw new Error(getString("fulltext-pdf-path-unavailable"));
+      }
       const filepath = await pdfItem.getFilePathAsync();
       this.ensureActive(signal);
       if (!filepath) {
@@ -823,6 +826,9 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
     async attachSnapshot(htmlString, itemID, signal) {
       const pdfItem = await Zotero.Items.getAsync(itemID);
       this.ensureActive(signal);
+      if (!pdfItem) {
+        throw new Error(getString("fulltext-pdf-path-unavailable"));
+      }
       const attItem = await Zotero.Attachments.importFromSnapshotContent({
         title: pdfItem.parentItem?.getField("title"),
         url: "https://github.com/MuiseDestiny/zotero-style",

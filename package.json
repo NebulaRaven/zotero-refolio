@@ -30,6 +30,6 @@
     "acorn": "8.18.0",
     "esbuild": "0.28.2",
     "typescript": "7.0.2",
-    "zotero-types": "4.0.5"
+    "zotero-types": "4.1.3"
   }
 }

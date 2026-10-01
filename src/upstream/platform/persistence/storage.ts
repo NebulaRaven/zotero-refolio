@@ -382,7 +382,8 @@ ${JSON.stringify(noteData)}`);
         return ids.filter(id => {
           let parentID;
           try {
-            parentID = Zotero.Items.get(id).parentID;
+            const item = Zotero.Items.get(id);
+            parentID = item ? item.parentID : undefined;
           } catch {
             return true;
           }

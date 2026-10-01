@@ -1540,6 +1540,9 @@ ${JSON.stringify(data.data)}`;
               type: "click",
               listener: async () => {
                 const item = await Zotero.Items.getAsync(data.id);
+                if (!item) {
+                  return;
+                }
                 const tags = item.getTags();
                 const update = buildRatingStorageUpdate({
                   currentValue: data.rate,
@@ -1647,6 +1650,9 @@ ${JSON.stringify(data.data)}`;
             const ids = await s.search();
             for (const id2 of ids) {
               const i = Zotero.Items.get(id2);
+              if (!i) {
+                continue;
+              }
               const text = i.getField("extra").split("\n").find(i2 => i2.startsWith("remark:"));
               let value = text?.slice(8);
               if (value?.trim()) {
@@ -1718,6 +1724,9 @@ ${JSON.stringify(data.data)}`;
         });
         editableText.addEventListener("change", async () => {
           const item = Zotero.Items.get(data.id);
+          if (!item) {
+            return;
+          }
           let text = item.getField("extra");
           if (text.indexOf("remark") >= 0) {
             text = text.split("\n").filter(s => !s.startsWith("remark")).join("\n");

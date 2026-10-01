@@ -165,7 +165,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           const valid = await Promise.all(ids.map(async id => {
             try {
               const item = await Zotero.Items.getAsync(id);
-              return Boolean(item?.isRegularItem() && !item.isFeedItem);
+              return Boolean(item && item.isRegularItem() && !item.isFeedItem);
             } catch {
               return false;
             }
@@ -223,6 +223,9 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           if (ids.length > 0) {
             ids.forEach(id => {
               const item = Zotero.Items.get(id);
+              if (!item) {
+                return;
+              }
               const title = item.getField("title");
               const ele = ztoolkit.UI.createElement(document, "div", {
                 namespace: "html",
@@ -280,7 +283,8 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
     }]);
     const getItem = () => {
       const id = Zotero.Reader.getByTabID(Zotero_Tabs.selectedID)?.itemID;
-      const readingItem = id ? Zotero.Items.get(id).parentItem : undefined;
+      const reading = id ? Zotero.Items.get(id) : false;
+      const readingItem = reading ? reading.parentItem : undefined;
       const selectedItems = ZoteroPane.getSelectedItems();
       const item = readingItem || selectedItems?.[0];
       return item;
@@ -398,12 +402,19 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
         let totalTime = 0;
         for (let i = 0; i < ids.length; i++) {
           const noteItem = Zotero.Items.get(ids[i]);
+          if (!noteItem) {
+            continue;
+          }
           try {
             const data = JSON.parse(noteItem.note.replace(/<.+?>/g, "").replace(/[^\n{]+/, ""));
             if (!data.itemKey) {
               const s = new Zotero.Search();
               s.addCondition("title", "contains", data.title);
-              data.itemKey = Zotero.Items.get((await s.search())[0]).key;
+              const match = Zotero.Items.get((await s.search())[0]);
+              if (!match) {
+                continue;
+              }
+              data.itemKey = match.key;
               ztoolkit.log(data.itemKey);
             }
             totalTime += Object.values(data.pageTime as Record<string, number>).reduce((a, b) => a + b, 0);
@@ -726,7 +737,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           if (!isPromptActive()) {
             return;
           }
-          const allItems = (await Promise.all(ids.map(id => Zotero.Items.getAsync(id)))).filter(item => item !== null);
+          const allItems = (await Promise.all(ids.map(id => Zotero.Items.getAsync(id)))).filter((item): item is Zotero.Item => Boolean(item));
           if (!isPromptActive()) {
             return;
           }
@@ -784,7 +795,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           if (!isPromptActive()) {
             return;
           }
-          const ftItems = (await Promise.all(ids2.map(id => Zotero.Items.getAsync(id)))).filter(item => item !== null && item.attachmentReaderType == "snapshot");
+          const ftItems = (await Promise.all(ids2.map(id => Zotero.Items.getAsync(id)))).filter((item): item is Zotero.Item => !!item && item.attachmentReaderType == "snapshot");
           if (!isPromptActive()) {
             return;
           }

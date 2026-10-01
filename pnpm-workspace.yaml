@@ -1,4 +1,5 @@
 allowBuilds:
-  core-js: false
   es5-ext: false
   esbuild: true
+# zotero-types pulls its pdf.js and epub.js typings straight from GitHub.
+blockExoticSubdeps: false

@@ -147,7 +147,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
           if (!active) {
             return;
           }
-          const exist = (attItem.isPDFAttachment() || attItem.isSnapshotAttachment()) && (await attItem.fileExists());
+          const exist = attItem && (attItem.isPDFAttachment() || attItem.isSnapshotAttachment()) && (await attItem.fileExists());
           if (exist) {
             attItems.push(attItem);
           }

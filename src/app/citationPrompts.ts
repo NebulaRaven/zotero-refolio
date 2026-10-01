@@ -49,7 +49,7 @@ export function spRegisterCitationUpdates() {
         }
         if (event === "modify" && !awaitingDOI.has(id)) continue;
         const item = Zotero.Items.get(id);
-        if (!item?.isRegularItem() || item.deleted || !item.isEditable()) continue;
+        if (!item || !item.isRegularItem() || item.deleted || !item.isEditable()) continue;
         if (!spNormalizeDOI(item.getField("DOI"))) { awaitingDOI.add(id); continue; }
         awaitingDOI.delete(id);
         if (!pending.has(item.libraryID)) pending.set(item.libraryID, new Set());
