@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Refolio",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Journal labels, literature graphs and library tools for Zotero",
   "author": "NebulaRaven; based on Style by Polygon",
   "icons": {
