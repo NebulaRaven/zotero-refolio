@@ -12,6 +12,9 @@ import { spRetiredPreferences } from "../core/features.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Lifecycle follows MuiseDestiny/zotero-addon-template (bootstrap branch).
 export var windowRuntimes = new Map();
+// Menu labels registered through Zotero.MenuManager are Fluent messages from this file.
+const mainWindowFTL = () => `${config.addonRef}-mainWindow.ftl`;
+const removeMainWindowFTL = win => win.document?.querySelector(`link[href="${mainWindowFTL()}"]`)?.remove();
 let stopCitationUpdates: (() => void) | undefined;
 export async function onStartup() {
   await waitForZotero();
@@ -30,8 +33,7 @@ export async function onMainWindowLoad(win) {
   if (windowRuntimes.has(win) || !addon.data.alive) return;
   const runtime = new FeatureRuntime({ addon, window: win }, reportFeatureFailure);
   windowRuntimes.set(win, runtime);
-  // Menu labels registered through Zotero.MenuManager are Fluent messages from this file.
-  win.MozXULElement?.insertFTLIfNeeded(`${config.addonRef}-mainWindow.ftl`);
+  win.MozXULElement?.insertFTLIfNeeded(mainWindowFTL());
   try {
     await runtime.start({ id: "settings-panel", start: () => spRegisterSettingsMenu() });
     if (getPref("enable") === false) return;
@@ -49,7 +51,7 @@ export async function onMainWindowUnload(win) {
   if (!runtime) return;
   windowRuntimes.delete(win);
   await runtime.stopAll();
-  win.document?.querySelector(`link[href="${config.addonRef}-mainWindow.ftl"]`)?.remove();
+  removeMainWindowFTL(win);
 }
 export async function onShutdown() {
   addon.data.alive = false;
@@ -57,7 +59,10 @@ export async function onShutdown() {
   stopCitationUpdates = undefined;
   try { await spShutdownCitations(); }
   catch (error) { reportFeatureFailure({ featureID: "citation-updates", phase: "stop", error }); }
-  for (const runtime of [...windowRuntimes.values()].reverse()) await runtime.stopAll();
+  for (const [win, runtime] of [...windowRuntimes].reverse()) {
+    await runtime.stopAll();
+    removeMainWindowFTL(win);
+  }
   windowRuntimes.clear();
   addon.data.prefs?.release?.();
   Zotero.PreferencePanes.unregister?.("stylepersonal-preferences");

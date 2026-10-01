@@ -71,6 +71,15 @@ test('shutdown unregisters the preference pane by pane ID, not plugin ID',async(
   vm.runInNewContext(await script(root+'/src/app/hooks.ts')+';globalThis.stop=onShutdown;',context);
   await context.stop();assert.equal(removed,'stylepersonal-preferences');assert.equal(addon.data.alive,false);
 });
+test('shutdown removes the menu labels resource from every main window',async()=>{
+  const addon={data:{alive:true},api:{}};let removed=0;
+  const win={document:{querySelector:selector=>selector==='link[href="stylepersonal-mainWindow.ftl"]'?{remove:()=>{removed++;}}:null}};
+  const context: vm.Context = {addon,spShutdownCitations:async()=>{},config:{addonRef:'stylepersonal',addonInstance:'StylePersonal'},
+    Zotero:{StylePersonal:addon,PreferencePanes:{unregister(){}}},ztoolkit:{unregisterAll:()=>{}}};
+  vm.runInNewContext(await script(root+'/src/app/hooks.ts')+';globalThis.stop=onShutdown;',context);
+  context.windowRuntimes.set(win,{stopAll:async()=>{}});
+  await context.stop();assert.equal(removed,1);assert.equal(context.windowRuntimes.size,0);
+});
 test('packaged default settings use the script loader and preserve existing preferences',async()=>{
   const values=new Map([['extensions.zotero.stylepersonal.existing',false]]);
   const packageURI='jar:file:///isolated/style.xpi!/';
