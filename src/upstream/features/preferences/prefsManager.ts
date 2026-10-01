@@ -2,31 +2,32 @@ import type { PreferenceRow } from '../../../types/ui.ts';
 import { config } from "../../config.ts";
 import { getString } from "../../utils/locale.ts";
 import { getElements } from "../../utils/dom.ts";
+import { spRegisterMenu } from "../../../app/menus.ts";
   // src/features/preferences/prefsManager.ts
   export class PrefsManager {
-    declare menuID: string;
     declare destroyed: boolean;
     declare dialogHelper: any;
-    declare hasMenu: boolean;
+    declare releaseMenu: (() => void) | undefined;
 
     constructor({ menu = true }: { menu?: boolean } = {}) {
-      this.menuID = `${config.addonRef}-preference-manager`;
       this.destroyed = false;
-      this.hasMenu = menu;
-      if (menu) this.registerButton();
+      this.releaseMenu = menu ? this.registerButton() : undefined;
     }
     registerButton() {
-      ztoolkit.Menu.register("menuTools", {
-        tag: "menuitem",
-        id: this.menuID,
-        label: getString("preference-manager"),
-        icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
-        commandListener: () => {
-          if (this.destroyed) {
-            return;
+      return spRegisterMenu({
+        menuID: "refolio-preference-manager-menu",
+        target: "main/menubar/tools",
+        menus: [{
+          menuType: "menuitem",
+          l10nID: "stylepersonal-menu-preference-manager",
+          icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
+          onCommand: () => {
+            if (this.destroyed) {
+              return;
+            }
+            this.buildPopup().catch(error => ztoolkit.log("Preference manager failed", error));
           }
-          this.buildPopup().catch(error => ztoolkit.log("Preference manager failed", error));
-        }
+        }]
       });
     }
     destroy() {
@@ -34,7 +35,8 @@ import { getElements } from "../../utils/dom.ts";
         return;
       }
       this.destroyed = true;
-      if (this.hasMenu) ztoolkit.Menu.unregister(this.menuID);
+      this.releaseMenu?.();
+      this.releaseMenu = undefined;
       this.dialogHelper?.window?.close?.();
       this.dialogHelper = undefined;
     }

@@ -16,7 +16,7 @@ import { getString, getPreferenceOptionLabel } from "../../utils/locale.ts";
 
 import { spGetJournalRanks,spGetManualJournalRecord,spOpenSettings } from "../../../app/manualRanks.ts";
 import { spGetAutomaticJournalRanks } from "../../../app/journalLookup.ts";
-import { registerStyleMenuItemContribution } from "./itemTreeExtension.ts";
+import { spRegisterMenu } from "../../../app/menus.ts";
 import { buildRatingStorageUpdate,isLegacyRatingTagName,isStatusTagName,resolveRating } from "./ratingTags.ts";
 import { getPref,setPref } from "../../utils/prefs.ts";
 import { spDisplayDate } from "../../../core/dates.ts";
@@ -185,34 +185,40 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       if (!this.active || !addon.data.alive) {
         return;
       }
+      const refolioIcon = `chrome://${config.addonRef}/content/icons/refolio.svg`;
+      const regularItems = (context: { items?: Zotero.Item[] }) => (context.items ?? []).filter(item => item.isRegularItem());
       this.trackCleanup(await startItemTreeContributions([{
         id: "menu:style",
-        start: () => {
-          ztoolkit.Menu.unregister("style-plugin-menu");
-          const registered = ztoolkit.Menu.register("item", {
-            tag: "menu",
-            id: "style-plugin-menu",
-            label: "Refolio",
-            icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
-            getVisibility: () => {
-              const items = ZoteroPane.getSelectedItems();
-              return items.some(i => i.isRegularItem());
-            },
-            children: [{
-              tag: "menuitem",
-              label: getString("ui-edit-journal-labels"),
-              getVisibility: () => isEnabel("manualJournalRanks"),
-              commandListener: () => spOpenSettings(getPublicationTitle(ZoteroPane.getSelectedItems()[0]))
+        // Feature switches are read at startup, so skip a submenu that would stay empty.
+        isEnabled: () => Boolean(isEnabel("manualJournalRanks") || isEnabel("publicationTagsColumn")),
+        start: () => spRegisterMenu({
+          menuID: "refolio-item-menu",
+          target: "main/library/item",
+          menus: [{
+            menuType: "submenu",
+            l10nID: "stylepersonal-menu-refolio",
+            icon: refolioIcon,
+            menus: [{
+              menuType: "menuitem",
+              l10nID: "stylepersonal-menu-edit-journal-labels",
+              onShowing: (_event, context) => {
+                context.setVisible(Boolean(isEnabel("manualJournalRanks")));
+                context.setEnabled(regularItems(context).length > 0);
+              },
+              onCommand: (_event, context) => spOpenSettings(getPublicationTitle(regularItems(context)[0]))
             }, {
-              tag: "menuitem",
-              label: getString("update") + " " + getString("column-publicationTags"),
-              getVisibility: () => isEnabel("publicationTagsColumn"),
-              icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
-              commandListener: async () => {
-                const arr = [...new Set(ZoteroPane.getSelectedItems().map(i => getPublicationTitle(i)))];
-                for (const i of arr) {
+              menuType: "menuitem",
+              l10nID: "stylepersonal-menu-update-journal-labels",
+              icon: refolioIcon,
+              onShowing: (_event, context) => {
+                context.setVisible(Boolean(isEnabel("publicationTagsColumn")));
+                context.setEnabled(regularItems(context).length > 0);
+              },
+              onCommand: async (_event, context) => {
+                const titles = [...new Set(regularItems(context).map(item => getPublicationTitle(item)))];
+                for (const title of titles) {
                   try {
-                    await updatePublicationTags(this.localStorage, i, "context-menu");
+                    await updatePublicationTags(this.localStorage, title, "context-menu");
                   } catch (e) {
                     ztoolkit.log(e);
                   }
@@ -220,18 +226,14 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
                 await requireItemsView().refreshAndMaintainSelection();
               }
             }]
-          });
-          if (registered === false) {
-            throw new Error("Unable to register Style item menu");
-          }
-          return () => ztoolkit.Menu.unregister("style-plugin-menu");
-        }
+          }]
+        })
       }, {
         id: "menu:related-items",
         isEnabled: () => Boolean(isEnabel("relatedItems")),
         start: () => {
-          const relatedItemsCallback = async (operation = "add") => {
-            const items = ZoteroPane.getSelectedItems().filter(i => i.isRegularItem());
+          const relatedItemsCallback = async (selected: Zotero.Item[], operation = "add") => {
+            const items = selected.filter(i => i.isRegularItem());
             for (const item1 of items) {
               for (const item2 of items) {
                 if (item1 != item2) {
@@ -248,45 +250,29 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
             }
             await addon.api.refreshGraphView();
           };
-          ztoolkit.Menu.unregister("stylepersonal-related-items-menu");
-          const registered = ztoolkit.Menu.register("item", {
-            tag: "menu",
-            id: "stylepersonal-related-items-menu",
-            label: getString("related-items"),
-            getVisibility: () => {
-              const items = ZoteroPane.getSelectedItems();
-              return items.filter(i => i.isRegularItem()).length >= 2;
-            },
-            icon: `chrome://${config.addonRef}/content/icons/related.svg`,
-            styles: {
-              fill: "red",
-              stroke: "teal"
-            },
-            children: [{
-              tag: "menuitem",
-              label: getString("link"),
-              commandListener: async () => {
-                await relatedItemsCallback("add");
-              }
-            }, {
-              tag: "menuitem",
-              label: getString("unlink"),
-              commandListener: async () => {
-                await relatedItemsCallback("remove");
-              }
+          const releaseMenu = spRegisterMenu({
+            menuID: "refolio-related-items-menu",
+            target: "main/library/item",
+            menus: [{
+              menuType: "submenu",
+              l10nID: "stylepersonal-menu-related-items",
+              icon: `chrome://${config.addonRef}/content/icons/related.svg`,
+              menus: ([["stylepersonal-menu-link-items", "add"], ["stylepersonal-menu-unlink-items", "remove"]] as const).map(([l10nID, operation]) => ({
+                menuType: "menuitem" as const,
+                l10nID,
+                onShowing: (_event: Event, context: _ZoteroTypes.MenuManager.LibraryMenuContext) => context.setEnabled(regularItems(context).length >= 2),
+                onCommand: async (_event: Event, context: _ZoteroTypes.MenuManager.LibraryMenuContext) => {
+                  await relatedItemsCallback(context.items ?? [], operation);
+                }
+              }))
             }]
           });
-          if (registered === false) {
-            throw new Error("Unable to register related item menu");
-          }
           const stopShortcut = registerShortcut("relatedItems.link.shortcut", async () => {
-            await relatedItemsCallback();
+            await relatedItemsCallback(ZoteroPane.getSelectedItems());
           });
           return () => {
             stopShortcut();
-            if (registered !== false) {
-              ztoolkit.Menu.unregister("stylepersonal-related-items-menu");
-            }
+            releaseMenu();
           };
         }
       }], ({
@@ -320,9 +306,6 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       this.stopRenderCellPatch?.();
       this.stopRenderCellPatch = undefined;
       this.patchRenderCell.length = 0;
-    }
-    registerStyleMenuItem(descriptor) {
-      return this.trackCleanup(registerStyleMenuItemContribution(window.document, ztoolkit.Menu, descriptor));
     }
     async registerColumn(key, getData, renderCell) {
       if (!this.active || !addon.data.alive) {

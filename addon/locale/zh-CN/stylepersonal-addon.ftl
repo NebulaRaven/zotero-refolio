@@ -59,9 +59,6 @@ stylepersonal-apply = 应用
 stylepersonal-update = 更新
 stylepersonal-remove = 删除
 
-stylepersonal-related-items = 关联条目
-stylepersonal-link = 关联
-stylepersonal-unlink = 断开
 stylepersonal-merge = 合并
 stylepersonal-filter-nested-tags = 筛选嵌套标签
 
@@ -514,7 +511,6 @@ stylepersonal-ui-delete = 删除
 stylepersonal-ui-deleted-you-can-undo-this-deletion = 已删除，可撤销。
 stylepersonal-ui-relationship-saved-locally = 谱系关系已保存到本地。
 stylepersonal-ui-deletion-undone = 已撤销删除。
-stylepersonal-ui-refolio-settings = Refolio · 功能设置
 stylepersonal-ui-journal-settings = 期刊设置
 stylepersonal-ui-manual-sets-a-value-automatic-uses-provider-data-and = “手动”设置评级值，“自动”使用数据源结果，“隐藏”关闭该字段。匹配到的中英文刊名共用设置。
 stylepersonal-ui-journal-name = 期刊名称
@@ -741,7 +737,6 @@ stylepersonal-ui-enter-status-name = 输入状态名称。
 stylepersonal-ui-enter-status-color = 输入状态颜色。
 stylepersonal-ui-move-up = ↑ 上移
 stylepersonal-ui-move-down = ↓ 下移
-stylepersonal-ui-add-favorite = 添加到收藏
 stylepersonal-ui-remove-favorite = 从收藏移除
 stylepersonal-ui-enter-api-key = 在 Refolio 设置中填写 { $provider } API 密钥。
 stylepersonal-ui-not-found = 未找到

@@ -4,6 +4,7 @@ import { spNormalizeJournalName,spPublicationNames } from "../core/journals.ts";
 import { spEffectiveRanks,spManualRankFields,spManualRankRecord,spReadManualRanks,spSaveManualRankRecord,spValidateManualRank } from "../core/manualRanks.ts";
 import { config } from "../upstream/config.ts";
 import { spElement,spSelect,spSelectOptions } from "./ui.ts";
+import { spRegisterMenu } from "./menus.ts";
 import { getPublicationTitle,updatePublicationTags } from "../upstream/utils/base.ts";
 import { spGetAutomaticJournalRanks,spGetJournalLookup,spJournalChosenValue } from "./journalLookup.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -22,9 +23,10 @@ export function spOpenSettings(journal?: string) {
   return win;
 }
 export function spRegisterSettingsMenu() {
-  const id = `${config.addonRef}-settings-panel`;
-  ztoolkit.Menu.register("menuTools", { tag: "menuitem", id, label: getString("ui-refolio-settings"), commandListener: () => spOpenSettings() });
-  return () => ztoolkit.Menu.unregister(id);
+  return spRegisterMenu({
+    menuID: "refolio-settings-menu", target: "main/menubar/tools",
+    menus: [{ menuType: "menuitem", l10nID: "stylepersonal-menu-settings", onCommand: () => spOpenSettings() }]
+  });
 }
 export function spRenderManualRanks(doc, parent, status) {
   const create = spElement.bind(null, doc);

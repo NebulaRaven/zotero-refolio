@@ -7,7 +7,7 @@ import { testGetString } from './localization.ts';
 test('the preference manager opens from settings without adding a Tools menu item', async () => {
   const registered: unknown[] = [], unregistered: string[] = [];
   const context: vm.Context = { config: { addonRef: 'stylepersonal' }, getString: testGetString, getElements: () => [],
-    ztoolkit: { Menu: { register: (...args) => registered.push(args), unregister: id => unregistered.push(id) }, log() {} } };
+    ztoolkit: { log() {} }, spRegisterMenu: options => { registered.push(options.menuID); return () => unregistered.push(options.menuID); } };
   vm.runInNewContext(await script(new URL('../src/upstream/features/preferences/prefsManager.ts', import.meta.url)), context);
   let built = 0;
   context.PrefsManager.prototype.buildPopup = async function () { built++; };
@@ -16,5 +16,6 @@ test('the preference manager opens from settings without adding a Tools menu ite
   fromSettings.destroy(); assert.deepEqual(unregistered, []);
   const fromMenu = new context.PrefsManager();
   assert.equal(registered.length, 1);
-  fromMenu.destroy(); assert.deepEqual(unregistered, ['stylepersonal-preference-manager']);
+  assert.deepEqual(registered, ['refolio-preference-manager-menu']);
+  fromMenu.destroy(); assert.deepEqual(unregistered, ['refolio-preference-manager-menu']);
 });

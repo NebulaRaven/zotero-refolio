@@ -30,6 +30,8 @@ export async function onMainWindowLoad(win) {
   if (windowRuntimes.has(win) || !addon.data.alive) return;
   const runtime = new FeatureRuntime({ addon, window: win }, reportFeatureFailure);
   windowRuntimes.set(win, runtime);
+  // Menu labels registered through Zotero.MenuManager are Fluent messages from this file.
+  win.MozXULElement?.insertFTLIfNeeded(`${config.addonRef}-mainWindow.ftl`);
   try {
     await runtime.start({ id: "settings-panel", start: () => spRegisterSettingsMenu() });
     if (getPref("enable") === false) return;
@@ -47,6 +49,7 @@ export async function onMainWindowUnload(win) {
   if (!runtime) return;
   windowRuntimes.delete(win);
   await runtime.stopAll();
+  win.document?.querySelector(`link[href="${config.addonRef}-mainWindow.ftl"]`)?.remove();
 }
 export async function onShutdown() {
   addon.data.alive = false;

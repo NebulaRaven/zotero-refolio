@@ -55,9 +55,6 @@ stylepersonal-apply = Apply
 stylepersonal-update = Update
 stylepersonal-remove = Remove
 
-stylepersonal-related-items = Link Items
-stylepersonal-link = Link
-stylepersonal-unlink = Unlink
 stylepersonal-merge = Merge
 stylepersonal-filter-nested-tags = Filter Nested Tags
 
@@ -511,7 +508,6 @@ stylepersonal-ui-delete = Delete
 stylepersonal-ui-deleted-you-can-undo-this-deletion = Deleted. You can undo this deletion.
 stylepersonal-ui-relationship-saved-locally = Relationship saved locally.
 stylepersonal-ui-deletion-undone = Deletion undone.
-stylepersonal-ui-refolio-settings = Refolio · Settings
 stylepersonal-ui-journal-settings = Journal settings
 stylepersonal-ui-manual-sets-a-value-automatic-uses-provider-data-and = Manual sets a value, Automatic uses provider data, and Hide hides the field. Matched journal aliases share these settings.
 stylepersonal-ui-journal-name = Journal name
@@ -738,7 +734,6 @@ stylepersonal-ui-enter-status-name = Enter a status name.
 stylepersonal-ui-enter-status-color = Enter a status color.
 stylepersonal-ui-move-up = ↑ Move up
 stylepersonal-ui-move-down = ↓ Move down
-stylepersonal-ui-add-favorite = Add to favorites
 stylepersonal-ui-remove-favorite = Remove from favorites
 stylepersonal-ui-enter-api-key = Enter your { $provider } API key in Refolio settings.
 stylepersonal-ui-not-found = Not found

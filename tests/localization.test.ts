@@ -171,3 +171,20 @@ test('every feature switch has a one-line description in every language', async 
     }
   }
 });
+
+test('every menu label used in the source exists in every language', async () => {
+  const used = new Set<string>();
+  for (const dir of ['app', 'upstream']) {
+    const base = new URL(`../src/${dir}/`, import.meta.url);
+    for (const file of await fs.readdir(base, { recursive: true })) {
+      if (!file.endsWith('.ts')) continue;
+      const text = await fs.readFile(new URL(file.replaceAll('\\', '/'), base), 'utf8');
+      for (const match of text.matchAll(/["'](stylepersonal-menu-[\w-]+)["']/g)) used.add(match[1]);
+    }
+  }
+  assert.ok(used.size >= 11, `only ${used.size} menu labels found`);
+  for (const locale of locales) {
+    const translated = await messages(locale, 'stylepersonal-mainWindow.ftl');
+    for (const id of used) assert.ok(translated.get(id)?.attributes.some(attribute => attribute.id.name === 'label'), `${locale}: ${id}`);
+  }
+});

@@ -14,6 +14,7 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
 import { getFirstSelectedCollectionOrSearch } from "../../utils/zoteroSelection.ts";
 import { buildMenuPopup } from "../../platform/zotero/menu.ts";
 import { isEnabel } from "../../utils/base.ts";
+import { spRegisterMenu } from "../../../app/menus.ts";
   // src/features/collections/collectionTree.ts
   export var collectionItemCountClassNames = createCollectionItemCountClassNames(config.addonRef);
   export var collectionItemCountPatchKey = `${config.addonRef}CollectionItemCountPatch`;
@@ -303,9 +304,6 @@ import { isEnabel } from "../../utils/base.ts";
     };
   }
   export var favoritePrefKey = `${config.addonRef}.collectionItem.favoriteKeys`;
-  export var FAVORITE_MENU_SEPARATOR_ID = `${config.addonRef}-favorite-collections-separator`;
-  export var FAVORITE_ADD_MENU_ID = `${config.addonRef}-favorite-collections-add`;
-  export var FAVORITE_REMOVE_MENU_ID = `${config.addonRef}-favorite-collections-remove`;
   export async function favoriteCollections() {
     let active = true;
     let refreshGeneration = 0;
@@ -600,45 +598,33 @@ import { isEnabel } from "../../utils/base.ts";
         return 0;
       }
     };
-    ztoolkit.Menu.register("collection", {
-      tag: "menuseparator",
-      id: FAVORITE_MENU_SEPARATOR_ID
-    });
-    ztoolkit.Menu.register("collection", {
-      tag: "menuitem",
-      id: FAVORITE_ADD_MENU_ID,
-      label: getString("ui-add-favorite"),
-      getVisibility: () => {
-        return isInFavorite() == 0;
-      },
-      // icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
-      commandListener: () => {
-        let data = JSON.parse(String(Zotero.Prefs.get(favoritePrefKey) || "[]"));
-        const col = getSelectedCollection();
-        data = [{
-          type: col.objectType,
-          key: col.key,
-          libraryID: col.libraryID
-        }, ...data];
-        Zotero.Prefs.set(favoritePrefKey, JSON.stringify(data));
-        scheduleRefresh();
-      }
-    });
-    ztoolkit.Menu.register("collection", {
-      tag: "menuitem",
-      id: FAVORITE_REMOVE_MENU_ID,
-      label: getString("ui-remove-favorite"),
-      getVisibility: () => {
-        return isInFavorite() == 1;
-      },
-      // icon: `chrome://${config.addonRef}/content/icons/favicon.png`,
-      commandListener: () => {
-        let data = JSON.parse(String(Zotero.Prefs.get(favoritePrefKey) || "[]"));
-        const col = getSelectedCollection();
-        data = data.filter(i => i.key != col.key || i.libraryID != col.libraryID);
-        Zotero.Prefs.set(favoritePrefKey, JSON.stringify(data));
-        scheduleRefresh();
-      }
+    const updateFavorites = (change: (data: any[], col: any) => any[]) => {
+      const data = JSON.parse(String(Zotero.Prefs.get(favoritePrefKey) || "[]"));
+      Zotero.Prefs.set(favoritePrefKey, JSON.stringify(change(data, getSelectedCollection())));
+      scheduleRefresh();
+    };
+    const releaseMenu = spRegisterMenu({
+      menuID: "refolio-favorite-collections-menu",
+      target: "main/library/collection",
+      menus: [{
+        menuType: "submenu",
+        l10nID: "stylepersonal-menu-favorite-collections",
+        menus: [{
+          menuType: "menuitem",
+          l10nID: "stylepersonal-menu-add-favorite",
+          onShowing: (_event, context) => context.setVisible(isInFavorite() == 0),
+          onCommand: () => updateFavorites((data, col) => [{
+            type: col.objectType,
+            key: col.key,
+            libraryID: col.libraryID
+          }, ...data])
+        }, {
+          menuType: "menuitem",
+          l10nID: "stylepersonal-menu-remove-favorite",
+          onShowing: (_event, context) => context.setVisible(isInFavorite() == 1),
+          onCommand: () => updateFavorites((data, col) => data.filter(i => i.key != col.key || i.libraryID != col.libraryID))
+        }]
+      }]
     });
     return () => {
       if (!active) {
@@ -650,9 +636,7 @@ import { isEnabel } from "../../utils/base.ts";
       splitterCleanup = undefined;
       document.querySelector("#favorite-collections")?.remove();
       document.querySelector("#favorite-splitter")?.remove();
-      ztoolkit.Menu.unregister(FAVORITE_MENU_SEPARATOR_ID);
-      ztoolkit.Menu.unregister(FAVORITE_ADD_MENU_ID);
-      ztoolkit.Menu.unregister(FAVORITE_REMOVE_MENU_ID);
+      releaseMenu();
     };
   }
   export async function initCollectionTree() {

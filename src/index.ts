@@ -48,7 +48,6 @@ import "./upstream/utils/garden.ts";
 import "./upstream/utils/date.ts";
 import "./upstream/utils/keyedTaskGate.ts";
 import "./upstream/features/item-tree/itemTree.ts";
-import "./upstream/features/item-tree/itemTreeExtension.ts";
 import "./upstream/features/item-tree/columnFieldPicker.ts";
 import "./upstream/features/item-tree/ratingTags.ts";
 import "./upstream/features/item-tree/titleCell.ts";
