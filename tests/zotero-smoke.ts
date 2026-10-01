@@ -513,6 +513,132 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     } finally { reader.close(); }
   });
   if (preferences && !preferences.closed) preferences.close();
+  await check('Toolkit keyboard shortcuts fire and unregister', async () => {
+    let fired = 0;
+    const stop = api.registerShortcut('Ctrl + Shift + Y', () => { fired++; }, 'string');
+    // The toolkit collects the combination on keydown and runs callbacks on keyup.
+    const press = () => { for (const type of ['keydown', 'keyup']) win.dispatchEvent(new win.KeyboardEvent(type, { key: 'Y', code: 'KeyY', ctrlKey: true, shiftKey: true, bubbles: true })); };
+    try {
+      press(); await waitFor(() => fired === 1, 'Registered shortcut did not fire');
+    } finally { stop(); }
+    press(); await Zotero.Promise.delay(100);
+    assert(fired === 1, 'Unregistered shortcut still fired');
+  });
+  await check('Shift + P opens the command palette with Refolio commands', async () => {
+    const press = () => mainDocument.documentElement.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'P', code: 'KeyP', shiftKey: true, bubbles: true }));
+    // The toolkit shows and hides the parent of the prompt container.
+    const palette = (await waitFor(() => mainDocument.querySelector('#zotero-plugin-toolkit-prompt'), 'Command palette is missing')).parentElement as HTMLElement;
+    assert(palette.style.display === 'none', 'Command palette was already open');
+    press();
+    await waitFor(() => palette.style.display !== 'none', 'Command palette did not open');
+    try {
+      assert(palette.textContent.includes(api.getString('fulltext-translate')), 'Refolio command missing from the palette');
+      await capture('command-palette');
+    } finally {
+      // Escape in an empty search box closes the palette.
+      palette.querySelector('input').dispatchEvent(new win.KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', bubbles: true }));
+    }
+    await waitFor(() => palette.style.display === 'none', 'Command palette did not close');
+  });
+  // Zotero builds plugin menus from popup events and may fold them into a "More" submenu. The checks
+  // send those events instead of opening real popups, which close on their own when the window loses focus.
+  const customMenu = '.zotero-custom-menu-item';
+  const popupEvent = (popup, type: string) => popup.dispatchEvent(new win.Event(type));
+  const showSubmenu = menu => {
+    const popup = menu.querySelector(':scope > menupopup');
+    popupEvent(popup, 'popupshowing');
+    return popup;
+  };
+  const findMenu = (popup, l10nID: string) => {
+    const find = () => popup.querySelector(`${customMenu}[data-l10n-id="${l10nID}"]`);
+    const more = popup.querySelector(`:scope > ${customMenu}.zotero-custom-menu-group-submenu`);
+    if (!find() && more) showSubmenu(more);
+    const menu = find();
+    assert(menu, `${l10nID} is missing from ${popup.id}`);
+    return menu;
+  };
+  const labelOf = menu => waitFor(() => menu.getAttribute('label'), `${menu.dataset.l10nId} has no translated label`);
+  // Hiding releases the command listeners Zotero added for this showing.
+  const withPopup = async (popup, read: (popup) => unknown) => {
+    try { await read(popup); } finally {
+      for (const submenu of [...popup.querySelectorAll(`${customMenu} > menupopup`)].reverse()) popupEvent(submenu, 'popuphidden');
+      popupEvent(popup, 'popuphidden');
+    }
+  };
+  const toolsMenu = async (read: (popup) => unknown) => {
+    const popup = mainDocument.querySelector('#menu_ToolsPopup');
+    popupEvent(popup, 'popupshowing');
+    await withPopup(popup, read);
+  };
+  const settingsEntries = popup => popup.querySelectorAll(`${customMenu}[data-l10n-id="stylepersonal-menu-settings"]`);
+  const contextMenu = async (id: string, build: () => Promise<unknown>, read: (popup) => unknown) => {
+    await build();
+    await withPopup(mainDocument.querySelector(`#${id}`), read);
+  };
+  await check('Tools menu lists Refolio settings once with a translated label', async () => {
+    await toolsMenu(async popup => {
+      const entries = settingsEntries(popup);
+      assert(entries.length === 1, `Expected one settings entry, found ${entries.length}`);
+      await labelOf(entries[0]);
+    });
+  });
+  await check('Item menu offers Refolio and Link Items submenus that follow the selection', async () => {
+    const first = new Zotero.Item('journalArticle'), second = new Zotero.Item('journalArticle');
+    for (const [item, title] of [[first, 'Refolio native smoke: link A'], [second, 'Refolio native smoke: link B']] as const) {
+      item.libraryID = libraryID; item.setField('title', title); item.setField('publicationTitle', 'Refolio Smoke Journal'); await item.saveTx();
+    }
+    await collectionView().selectLibrary(libraryID);
+    const pane = win.ZoteroPane;
+    const select = async (items: Zotero.Item[]) => {
+      await pane.selectItems(items.map(item => item.id));
+      await waitFor(() => pane.getSelectedItems().length === items.length, 'Items were not selected');
+    };
+    const itemMenu = (read: (popup) => unknown) => contextMenu('zotero-itemmenu', () => pane.buildItemContextMenu(), read);
+    const linkEntries = async popup => {
+      const submenu = showSubmenu(findMenu(popup, 'stylepersonal-menu-related-items'));
+      return ['stylepersonal-menu-link-items', 'stylepersonal-menu-unlink-items'].map(id => submenu.querySelector(`[data-l10n-id="${id}"]`));
+    };
+    const related = () => first.relatedItems.includes(second.key) && second.relatedItems.includes(first.key);
+    await select([first]);
+    await itemMenu(async popup => {
+      const refolio = findMenu(popup, 'stylepersonal-menu-refolio');
+      await labelOf(refolio);
+      const submenu = showSubmenu(refolio);
+      for (const id of ['stylepersonal-menu-edit-journal-labels', 'stylepersonal-menu-update-journal-labels']) {
+        const entry = submenu.querySelector(`[data-l10n-id="${id}"]`);
+        assert(entry && !entry.hidden && !entry.disabled, `${id} is unavailable for a regular item`);
+      }
+      const [link, unlink] = await linkEntries(popup);
+      assert(link?.disabled && unlink?.disabled, 'Link Items is enabled for a single item');
+    });
+    await select([first, second]);
+    await itemMenu(async popup => {
+      const [link] = await linkEntries(popup);
+      assert(!link.disabled, 'Link Items is disabled for two items');
+      link.doCommand();
+    });
+    await waitFor(related, 'Link did not relate the selected items');
+    await itemMenu(async popup => { (await linkEntries(popup))[1].doCommand(); });
+    await waitFor(() => !related(), 'Unlink left the items related');
+  });
+  await check('Collection menu adds and removes favourite collections', async () => {
+    const collection = new Zotero.Collection();
+    Object.assign(collection, { libraryID, name: 'Refolio favourite test ' + Date.now() });
+    await collection.saveTx();
+    const favourite = () => JSON.parse(String(api.getPref('collectionItem.favoriteKeys') || '[]')).some(entry => entry.key === collection.key);
+    const favouriteEntries = (read: (add, remove) => void) => contextMenu('zotero-collectionmenu', () => win.ZoteroPane.buildCollectionContextMenu(), async popup => {
+      const submenu = showSubmenu(findMenu(popup, 'stylepersonal-menu-favorite-collections'));
+      const [add, remove] = ['stylepersonal-menu-add-favorite', 'stylepersonal-menu-remove-favorite'].map(id => submenu.querySelector(`[data-l10n-id="${id}"]`));
+      read(add, remove);
+    });
+    try {
+      await collectionView().selectCollection(collection.id);
+      await favouriteEntries((add, remove) => { assert(!add.hidden && remove.hidden, 'A new collection should only offer "add"'); add.doCommand(); });
+      await waitFor(favourite, 'Collection was not added to favourites');
+      await favouriteEntries((add, remove) => { assert(add.hidden && !remove.hidden, 'A favourite should only offer "remove"'); remove.doCommand(); });
+      await waitFor(() => !favourite(), 'Collection stayed in favourites');
+    } finally { await collectionView().selectLibrary(libraryID); }
+  });
   await check('Reload releases graph DOM, storage and hooks without duplicates', async () => {
     const storage = addon.api.journalStorage;
     const frame = graphFrame();
@@ -521,10 +647,15 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     assert(storage.disposed, 'Old journal storage remains active');
     assert(!frame.isConnected && !win.document.querySelector('#graph'), 'Old graph DOM remains attached');
     assert(!addon.api.refreshGraphView, 'Old graph callback remains registered');
+    await toolsMenu(async popup => assert(settingsEntries(popup).length === 0, 'Settings menu survived unload'));
     await addon.hooks.onMainWindowLoad(win); await addon.api.itemTreeReady;
     await waitFor(() => graphFrame()?.contentWindow?.renderer, 'Reloaded graph did not initialize');
     assert(win.document.querySelectorAll('#graph').length === 1, 'Duplicate graph panels');
-    assert(win.document.querySelectorAll('#stylepersonal-settings-panel').length === 1, 'Duplicate settings menu');
+    await toolsMenu(async popup => {
+      const entries = settingsEntries(popup);
+      assert(entries.length === 1, `Expected one settings entry after reload, found ${entries.length}`);
+      await labelOf(entries[0]);
+    });
     assert(addon.data.patch.getItems?.data.length === hookCount, 'Item-filter hooks accumulated on reload');
     assert(addon.api.journalStorage !== storage, 'Reload reused disposed journal storage');
     assert(!(addon.api.featureFailures || []).length, JSON.stringify(addon.api.featureFailures));

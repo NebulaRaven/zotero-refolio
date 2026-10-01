@@ -4,7 +4,7 @@ import { spGraphLabel } from '../src/core/graph.ts';
 import { spDisplayDate } from '../src/core/dates.ts';
 import { import_dayjs } from '../src/upstream/features/item-tree/itemTree.ts';
 import { getPref, setPref } from '../src/upstream/utils/prefs.ts';
-import { requests, updatePublicationTags } from '../src/upstream/utils/base.ts';
+import { registerShortcut, requests, updatePublicationTags } from '../src/upstream/utils/base.ts';
 import { spGetJournalLookup, spGetAutomaticJournalRanks } from '../src/app/journalLookup.ts';
 import { spGetJournalRanks } from '../src/app/manualRanks.ts';
 import { getString } from '../src/upstream/utils/locale.ts';
@@ -14,7 +14,7 @@ import { spGetCitationGraph, spConfirmCitationUpdate } from '../src/app/citation
 
 interface DayjsValue { format(template: string): string; local(): DayjsValue; utcOffset(minutes: number): DayjsValue; }
 export const nativeSmoke = { spRenameTags, spRemoveTags, spGraphLabel, spDisplayDate,
-  getPref, setPref, requests, updatePublicationTags, spGetJournalLookup, spGetAutomaticJournalRanks,
+  getPref, setPref, requests, updatePublicationTags, registerShortcut, spGetJournalLookup, spGetAutomaticJournalRanks,
   spGetJournalRanks, spGetCitationGraph, spConfirmCitationUpdate, getString, spFeatureDefinitions, version: version2,
   dayjs: import_dayjs.default as { utc(value: unknown): DayjsValue } };
 (addon.api as typeof addon.api & { __nativeSmoke: typeof nativeSmoke }).__nativeSmoke = nativeSmoke;
