@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import { spFilterGraph, spSharedGraph } from '../src/core/graph.ts';
 import { spNormalizeJournalName, spPublicationNames, spJournalQuery } from '../src/core/journals.ts';
 import { spManualRankRecord, spSaveManualRankRecord, spEffectiveRanks, spValidateManualRank } from '../src/core/manualRanks.ts';
-import { spFeatureDefinitions, spInactivePreferences } from '../src/core/features.ts';
+import { spFeatureDefinitions, spRetiredPreferences } from '../src/core/features.ts';
 import { spGenealogyRelations, spGenealogyGraph, SPGenealogyClient } from '../src/core/genealogy.ts';
 
 const graph = { nodes: {
@@ -148,7 +148,7 @@ test('every active default feature switch is represented by a readable panel ent
   const defaults = new Map();
   vm.runInNewContext(await fs.readFile(new URL('../addon/prefs.js', import.meta.url), 'utf8'), { pref: (key, value) => defaults.set(key.replace('extensions.zotero.stylepersonal.', ''), value) });
   const switches = new Set(spFeatureDefinitions.map(([key]) => `function.${key}.enable`));
-  for (const [key] of defaults) if (key.startsWith('function.') && !spInactivePreferences.has(key)) assert.ok(switches.has(key), key);
+  for (const [key] of defaults) if (key.startsWith('function.')) assert.ok(switches.has(key), key);
   for (const key of switches) assert.equal(typeof defaults.get(key), 'boolean', key);
   assert.equal(switches.size, spFeatureDefinitions.length);
 });
@@ -170,12 +170,26 @@ test('master disable leaves settings available without starting library or reade
   vm.runInNewContext(await script(new URL('../src/app/hooks.ts', import.meta.url)), ctx);
   await ctx.onMainWindowLoad({}); assert.deepEqual(started, ['settings-panel']);
 });
-const retired = ['function.Recent.enable', 'delayTime', 'cookies.cnki', 'titleColumn.odd', 'titleColumn.even',
-  'titleColumn.selected', 'IFColumn.info', 'nestedTags.sortord', 'nestedTags.linkSymbol', 'textTagsColumn.prefix',
-  'annotationColumn.style', 'annotationColumn.color', 'annotationColumn.circle'];
-test('settings that nothing reads stay off the settings page', () => {
-  for (const key of retired) assert.ok(spInactivePreferences.has(key), key);
+const retired = ['function.readStatus.enable', 'function.ReadUnreadStatus.enable', 'function.itemTypeFilter.enable',
+  'function.renderItemAnnotations.enable', 'function.renderItemNotes.enable', 'graphView.show', 'graphView.theme',
+  'function.Recent.enable', 'delayTime', 'cookies.cnki', 'titleColumn.odd', 'titleColumn.even', 'titleColumn.selected',
+  'IFColumn.info', 'nestedTags.sortord', 'nestedTags.linkSymbol', 'textTagsColumn.prefix',
+  'annotationColumn.style', 'annotationColumn.color', 'annotationColumn.circle', 'AIGenerateTags.prompt', 'remarkColumn.prompt'];
+test('retired settings are gone from the defaults and cleared from existing profiles', async () => {
+  const defaults = new Set<string>();
+  vm.runInNewContext(await fs.readFile(new URL('../addon/prefs.js', import.meta.url), 'utf8'),
+    { pref: (key: string) => defaults.add(key.replace('extensions.zotero.stylepersonal.', '')) });
+  for (const key of retired) {
+    assert.ok(!defaults.has(key), `${key} still has a default`);
+    assert.ok(spRetiredPreferences.includes(key), `${key} is not cleared from profiles`);
+  }
   assert.ok(!spFeatureDefinitions.some(([key]) => key === 'Recent'));
+  const cleared: string[] = [];
+  const context: vm.Context = { spRetiredPreferences, config: { prefsPrefix: 'extensions.zotero.stylepersonal' },
+    Zotero: { Prefs: { clear: (key: string, global: boolean) => { assert.equal(global, true); cleared.push(key); } } } };
+  vm.runInNewContext(await script(new URL('../src/app/hooks.ts', import.meta.url), 'clearRetiredPreferences'), context);
+  context.clearRetiredPreferences();
+  assert.deepEqual(cleared, spRetiredPreferences.map(key => `extensions.zotero.stylepersonal.${key}`));
 });
 test('retired settings have no readers left in the source', async () => {
   const base = new URL('../src/', import.meta.url);

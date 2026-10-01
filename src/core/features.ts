@@ -48,12 +48,12 @@ export const spFeatureDefinitions = [
   ["styleEditor", "workspace", "ui-feature-styleEditor"]
 ];
 
-export const spInactivePreferences = new Set([
-  "function.readStatus.enable", "function.ReadUnreadStatus.enable", "function.itemTypeFilter.enable",
-  "function.renderItemAnnotations.enable", "function.renderItemNotes.enable", "AIGenerateTags.prompt",
-  "graphView.show", "graphView.theme", "graphView.enable", "viewGroups", "storage.in", "storage.filename", "genealogy.manualData",
-  // No code reads these any more; they stay in prefs.js so existing profiles keep their values.
-  "function.Recent.enable", "delayTime", "cookies.cnki", "titleColumn.odd", "titleColumn.even", "titleColumn.selected",
-  "IFColumn.info", "nestedTags.sortord", "nestedTags.linkSymbol", "textTagsColumn.prefix",
-  "annotationColumn.style", "annotationColumn.color", "annotationColumn.circle"
-]);
+// Settings no code reads any more; startup clears their leftover values from profiles.
+export const spRetiredPreferences = [
+  "function.readStatus.enable", "function.ReadUnreadStatus.enable", "function.itemTypeFilter.enable", "function.renderItemAnnotations.enable",
+  "function.renderItemNotes.enable", "graphView.show", "graphView.theme", "function.Recent.enable",
+  "delayTime", "cookies.cnki", "titleColumn.odd", "titleColumn.even",
+  "titleColumn.selected", "IFColumn.info", "nestedTags.sortord", "nestedTags.linkSymbol",
+  "textTagsColumn.prefix", "annotationColumn.style", "annotationColumn.color", "annotationColumn.circle",
+  "AIGenerateTags.prompt", "remarkColumn.prompt"
+];

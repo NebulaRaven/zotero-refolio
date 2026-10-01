@@ -8,6 +8,7 @@ import { createFinalFeatures,createImmediateFeatures,createStandardFeatures } fr
 import { spShutdownCitations } from "./citations.ts";
 import { spRegisterCitationUpdates } from "./citationPrompts.ts";
 import { config } from "../upstream/config.ts";
+import { spRetiredPreferences } from "../core/features.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Lifecycle follows MuiseDestiny/zotero-addon-template (bootstrap branch).
 export var windowRuntimes = new Map();
@@ -15,11 +16,15 @@ let stopCitationUpdates: (() => void) | undefined;
 export async function onStartup() {
   await waitForZotero();
   await restoreMissingDefaultPreferences();
+  clearRetiredPreferences();
   if (["default", "related"].includes(getPref("graphView.mode"))) setPref("graphView.mode", "citations");
   initLocale();
   await registerPrefs();
   for (const win of Zotero.getMainWindows()) await onMainWindowLoad(win);
   if (getPref("enable") !== false && getPref("function.citationGraph.enable") !== false) stopCitationUpdates ??= spRegisterCitationUpdates();
+}
+export function clearRetiredPreferences() {
+  for (const key of spRetiredPreferences) Zotero.Prefs.clear(`${config.prefsPrefix}.${key}`, true);
 }
 export async function onMainWindowLoad(win) {
   if (windowRuntimes.has(win) || !addon.data.alive) return;

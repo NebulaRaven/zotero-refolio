@@ -200,30 +200,6 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
             },
             children: [{
               tag: "menuitem",
-              label: getString("AI-generate-tags"),
-              getVisibility: () => {
-                return isEnabel("AIGenerateTags") && ZoteroPane.getSelectedItems().some(i => i.isRegularItem());
-              },
-              icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
-              commandListener: async () => {
-                const items = ZoteroPane.getSelectedItems().filter(i => i.isRegularItem());
-                addon.api.generateAITags(items);
-              }
-            }, {
-              tag: "menuitem",
-              label: getString("AI-generate-remark"),
-              getVisibility: () => {
-                return isEnabel("AIGenerateRemark") && ZoteroPane.getSelectedItems().some(i => i.isRegularItem());
-              },
-              icon: `chrome://${config.addonRef}/content/icons/refolio.svg`,
-              commandListener: async () => {
-                const items = ZoteroPane.getSelectedItems().filter(i => i.isRegularItem());
-                addon.api.generateAIRemark(items);
-              }
-            }, {
-              tag: "menuseparator"
-            }, {
-              tag: "menuitem",
               label: getString("ui-edit-journal-labels"),
               getVisibility: () => isEnabel("manualJournalRanks"),
               commandListener: () => spOpenSettings(getPublicationTitle(ZoteroPane.getSelectedItems()[0]))
@@ -783,60 +759,6 @@ ${JSON.stringify(data.data)}`;
         this.trackCleanup(replaceOwnedProperty(Zotero.Tags, "removeFromLibrary", wrappedRemoveFromLibrary));
       } catch (error) {
         ztoolkit.log("Failed to patch tag deletion refresh", error);
-      }
-      if (isEnabel("AIGenerateTags")) {
-        const generateAITags = async items => {
-          if (!this.active || !addon.data.alive) {
-            return;
-          }
-          if (!Array.isArray(items)) {
-            items = [items];
-          }
-          const Meet = window.Meet;
-          for (const item of items) {
-            if (!this.active || !addon.data.alive) {
-              return;
-            }
-            const popupWin = new ztoolkit.ProgressWindow(getString("AI-generate-tags"), {
-              closeTime: -1
-            }).createLine({
-              text: item.topLevelItem.getField("title"),
-              icon: item.topLevelItem.getImageSrc()
-            }).show();
-            let abs = item.getField("abstractNote");
-            if (!abs) {
-              const pdfItem = await item.getBestAttachment();
-              if (pdfItem && (await pdfItem.fileExists())) {
-                abs = (await Zotero.PDFWorker.getFullText(pdfItem.id, 1)).text;
-              } else {
-                continue;
-              }
-            }
-            ztoolkit.log("abs", abs);
-            ZoteroPane.selectItem(item.id);
-            const text = await Meet.OpenAI.getGPTResponse(`
-                  Read the abstract of the article below:
-                  ${abs}
-                  ---
-                  ${getPref("AIGenerateTags.prompt")}
-                  The result can be parsed by JSON.parse().`);
-            ztoolkit.log("AI Text", text);
-            try {
-              const tags = JSON.parse(text.replace(/<think>[\s\S]*<\/think>/, "").match(/\[[\s\S]+\]/)[0]);
-              tags.forEach(tag => item.addTag(tag));
-              await item.saveTx({
-                skipSelect: true
-              });
-              popupWin.createLine({
-                text: tags.join(", "),
-                type: "success"
-              }).startCloseTimer(2000);
-            } catch (e) {
-              ztoolkit.log("AI Generate Tags Error", e);
-            }
-          }
-        };
-        this.trackCleanup(replaceOwnedProperty(addon.api, "generateAITags", generateAITags));
       }
     }
     async textTags() {
@@ -1739,56 +1661,6 @@ ${text}`);
         return span;
       });
       this.patchItemBox(key, getString("column-" + key), "itemType", "before");
-      if (isEnabel("AIGenerateRemark")) {
-        const generateAIRemark = async items => {
-          if (!this.active || !addon.data.alive) {
-            return;
-          }
-          if (!Array.isArray(items)) {
-            items = [items];
-          }
-          const Meet = window.Meet;
-          for (const item of items) {
-            if (!this.active || !addon.data.alive) {
-              return;
-            }
-            const popupWin = new ztoolkit.ProgressWindow(getString("AI-generate-remark"), {
-              closeTime: -1
-            }).createLine({
-              text: item.topLevelItem.getField("title"),
-              icon: item.topLevelItem.getImageSrc()
-            }).show();
-            let abs = item.getField("abstractNote");
-            const title = item.getField("title");
-            if (!abs) {
-              const pdfItem = await item.getBestAttachment();
-              if (pdfItem && (await pdfItem.fileExists())) {
-                abs = (await Zotero.PDFWorker.getFullText(pdfItem.id, 1)).text;
-              } else {
-                continue;
-              }
-            }
-            ZoteroPane.selectItem(item.id);
-            const text = await Meet.OpenAI.getGPTResponse(`
-                  Below is the abstract of paper "${title}"
-                  ${abs}
-                  ---
-                  ${getPref(`remarkColumn.prompt`)}`);
-            const remarkText = text.replace(/<think>[\s\S]*<\/think>/, "").replace(/^<p>/, "").replace(/<\/p>$/, "").replace(/\n/g, "");
-            await ztoolkit.ExtraField.setExtraField(item, "remark", remarkText);
-            popupWin.createLine({
-              text: remarkText,
-              type: "success"
-            }).startCloseTimer(2000);
-          }
-        };
-        this.trackCleanup(replaceOwnedProperty(addon.api, "generateAIRemark", generateAIRemark));
-      }
-      this.patchSetting(key, [{
-        prefKey: `remarkColumn.prompt`,
-        name: getString("ui-column-summary-prompt"),
-        type: "input"
-      }], 500);
     }
     async creator() {
       if (!getPref(`function.creatorColumn.enable`)) {

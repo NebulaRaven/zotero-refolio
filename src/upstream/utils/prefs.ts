@@ -11,13 +11,11 @@ export interface PreferenceValues {
   "dateModifiedColumn.format": string;
   "dateModifiedColumn.deltaHour": string;
   "function.favoriteCollections.enable": boolean;
-  "AIGenerateTags.prompt": string;
   "function.tldr.enable": boolean;
   "tldr.autoTranslate": boolean;
   "function.toogleSidebar.enable": boolean;
   "toogleSidebar.left.shortcut": string;
   "toogleSidebar.right.shortcut": string;
-  "delayTime": number;
   "function.styleEditor.enable": boolean;
   "styleEditor.value": string;
   "function.updateItemDateModified.enable": boolean;
@@ -38,14 +36,10 @@ export interface PreferenceValues {
   "graphView.modes.genealogy": boolean;
   "citations.onAdd": string;
   "citations.onEmpty": string;
-  "graphView.show": boolean;
-  "graphView.theme": string;
-  "cookies.cnki": string;
   "function.tagsColumn.enable": boolean;
   "tagsColumn.margin": string;
   "tagsColumn.align": string;
   "function.textTagsColumn.enable": boolean;
-  "textTagsColumn.prefix": string;
   "textTagsColumn.match": string;
   "textTagsColumn.opacity": string;
   "textTagsColumn.backgroundColor": string;
@@ -57,9 +51,6 @@ export interface PreferenceValues {
   "titleColumn.tags": boolean;
   "titleColumn.emojiTags": boolean;
   "titleColumn.opacity": string;
-  "titleColumn.odd": string;
-  "titleColumn.even": string;
-  "titleColumn.selected": string;
   "titleColumn.translate": boolean;
   "function.IFColumn.enable": boolean;
   "IFColumn.field": string;
@@ -69,8 +60,6 @@ export interface PreferenceValues {
   "IFColumn.opacity": string;
   "IFColumn.max": string;
   "IFColumn.progressType": string;
-  "IFColumn.info": boolean;
-  "function.readStatus.enable": boolean;
   "function.publicationTagsColumn.enable": boolean;
   "publicationTagsColumn.fields": string;
   "publicationTagsColumn.rankColors": string;
@@ -82,10 +71,7 @@ export interface PreferenceValues {
   "publicationTagsColumn.padding": string;
   "publicationTagsColumn.opacity": string;
   "function.annotationColumn.enable": boolean;
-  "annotationColumn.style": string;
-  "annotationColumn.color": string;
   "annotationColumn.opacity": string;
-  "annotationColumn.circle": boolean;
   "function.ratingColumn.enable": boolean;
   "ratingColumn.storage": string;
   "ratingColumn.selectedStar": string;
@@ -98,7 +84,6 @@ export interface PreferenceValues {
   "function.annotationColors.enable": boolean;
   "annotationColors": string;
   "annotationColorsGroups": string;
-  "function.itemTypeFilter.enable": boolean;
   "function.collectionItemCount.enable": boolean;
   "function.sortCollectionItem.enable": boolean;
   "collectionItem.sortBy": string;
@@ -109,11 +94,7 @@ export interface PreferenceValues {
   "creatorColumn.join": string;
   "function.publicationColumn.enable": boolean;
   "publicationColumn.fields": string;
-  "nestedTags.sortord": string;
-  "nestedTags.linkSymbol": string;
   "function.PDFStyles.enable": boolean;
-  "function.renderItemAnnotations.enable": boolean;
-  "function.renderItemNotes.enable": boolean;
   "storage.in": string;
   "storage.filename": string;
   "readingProgress.recordingEnabled": boolean;
@@ -121,8 +102,6 @@ export interface PreferenceValues {
   "publicationTagsColumn.source": string;
   "garden.apiKey": string;
   "publicationTagsColumn.gardenFields": string;
-  "function.Recent.enable": boolean;
-  "function.ReadUnreadStatus.enable": boolean;
   "function.readTimeColumn.enable": boolean;
   "readTime.color": string;
   "readTime.opacity": string;
@@ -130,7 +109,6 @@ export interface PreferenceValues {
   "readTime.progress": boolean;
   "readTime.text": boolean;
   "function.remarkColumn.enable": boolean;
-  "remarkColumn.prompt": string;
   "function.statusColumn.enable": boolean;
   "function.darkLightButton.enable": boolean;
   "function.reader.mergeAnnotations.enable": boolean;

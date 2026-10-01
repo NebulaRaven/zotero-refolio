@@ -36,7 +36,5 @@ export interface AddonAPI {
   addTagsUI?: AddTags;
   itemTreeReady?: Promise<unknown>;
   renderCell?: (item: Zotero.Item, key: string) => HTMLElement;
-  generateAITags?: (items: Zotero.Item[]) => Promise<void>;
-  generateAIRemark?: (items: Zotero.Item[]) => Promise<void>;
   tabManager?: { getTabGroups(): Promise<TabGroup[]>; setTabGroups(groups: TabGroup[]): Promise<void> };
 }

@@ -124,7 +124,6 @@ export const spFeatureSettings: Readonly<Record<string, FeatureSettings>> = {
     prefSetting("ratingColumn.unselectedStar", "text"),
     moreSetting(prefSetting("ratingColumn.padding", "number", spacing))
   ] },
-  remarkColumn: { settings: [moreSetting(prefSetting("remarkColumn.prompt", "code"))] },
   annotationColumn: { settings: [moreSetting(prefSetting("annotationColumn.opacity", "number", opacity))] },
   readTimeColumn: { settings: [
     prefSetting("readTime.color", "color"),
@@ -156,8 +155,9 @@ export const spGroupSettings: Readonly<Record<string, SettingDef[]>> = {
 
 // Edited by other Refolio interfaces; showing them as raw text would only invite broken JSON.
 export const spStatePreferences: ReadonlySet<string> = new Set([
-  "graphView.mode", "graphView.height", "collectionItem.sortBy",
-  "annotationColors", "annotationColorsGroups", "publicationTagsColumn.manualRanks"
+  "graphView.mode", "graphView.height", "graphView.enable", "collectionItem.sortBy", "viewGroups",
+  "annotationColors", "annotationColorsGroups", "publicationTagsColumn.manualRanks",
+  "storage.in", "storage.filename", "genealogy.manualData"
 ]);
 
 export function spSettingValue(setting: Pick<SettingDef, "kind" | "min" | "max">, raw: unknown, fallback: unknown): string | number | boolean {

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import { parse, Message } from '@fluent/syntax';
-import { spFeatureDefinitions, spFeatureGroups, spInactivePreferences } from '../src/core/features.ts';
+import { spFeatureDefinitions, spFeatureGroups } from '../src/core/features.ts';
 import { spFeatureSettings, spGroupSettings, spStatePreferences, spSettingValue, spColorHex, spSettingVisible, type SettingDef } from '../src/core/settingsSchema.ts';
 
 const prefix = 'extensions.zotero.stylepersonal.';
@@ -23,7 +23,6 @@ test('every default preference has exactly one place', async () => {
   for (const [key] of spFeatureDefinitions) add(`function.${key}.enable`, 'feature switch');
   for (const setting of allSettings()) if (setting.kind !== 'note') add(setting.key, 'settings page');
   for (const key of spStatePreferences) add(key, 'managed elsewhere');
-  for (const key of spInactivePreferences) add(key, 'inactive');
   for (const key of values.keys()) assert.equal(homes.get(key)?.length, 1, `${key}: ${homes.get(key)?.join(', ') ?? 'nowhere'}`);
   for (const key of homes.keys()) assert.ok(values.has(key), `${key} has no default in prefs.js`);
 });
