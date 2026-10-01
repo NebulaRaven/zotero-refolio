@@ -89,19 +89,7 @@ stylepersonal-preview-no-attachment = The selected item has no attachment or it 
 stylepersonal-preview-no-left-item = No item on the left
 stylepersonal-preview-no-right-item = No item on the right
 
-stylepersonal-menu-visibility-disable = Disable Menu Manager
-stylepersonal-menu-visibility-disabled-success = Menu Manager disabled. Restart Zotero to take effect.
 
-stylepersonal-menu-visibility-hidden-count = Hidden Menus ({ $count })
-stylepersonal-menu-visibility-load-first = Please right-click on an item first to load the current menu state!
-stylepersonal-menu-visibility-reset-order = Reset Order
-stylepersonal-menu-visibility-save = Save Settings
-stylepersonal-menu-visibility-cancel = Cancel
-stylepersonal-menu-visibility-settings-title = Menu Settings
-stylepersonal-menu-visibility-saved = Settings saved! Takes effect on next right-click.
-stylepersonal-menu-visibility-hide-with-ellipsis = Hide Menu...
-stylepersonal-menu-visibility-hide = Hide Menu
-stylepersonal-menu-visibility-manage = Manage Hidden
 
 stylepersonal-note-load-all = Load all { $count } notes
 stylepersonal-note-load-progress = Loading notes { $loaded } / { $count }...
@@ -641,7 +629,6 @@ stylepersonal-ui-feature-tldr = TLDR panel
 stylepersonal-ui-feature-fulltextTranslate = Full-text translation commands
 stylepersonal-ui-feature-toogleSidebar = Sidebar shortcuts
 stylepersonal-ui-feature-darkLightButton = Light / dark button
-stylepersonal-ui-feature-menuVisibility = Customise menus
 stylepersonal-ui-feature-tabMenu = Tab menu tools
 stylepersonal-ui-feature-commands = Refolio command palette
 stylepersonal-ui-feature-prefsManager = Settings import / export
@@ -681,7 +668,6 @@ stylepersonal-ui-feature-tldr-desc = Show a short TLDR summary in the item pane.
 stylepersonal-ui-feature-fulltextTranslate-desc = Add a command that translates the full text of a PDF.
 stylepersonal-ui-feature-toogleSidebar-desc = Collapse or expand the side panes with keyboard shortcuts.
 stylepersonal-ui-feature-darkLightButton-desc = Add a light and dark theme button to the toolbar.
-stylepersonal-ui-feature-menuVisibility-desc = Hide or reorder context menu items.
 stylepersonal-ui-feature-tabMenu-desc = Manage many open tabs from a list, as in a browser.
 stylepersonal-ui-feature-commands-desc = Run Refolio actions from a searchable command palette.
 stylepersonal-ui-feature-prefsManager-desc = Back up, import and export plugin preferences.

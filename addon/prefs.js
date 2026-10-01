@@ -1,5 +1,4 @@
 pref("extensions.zotero.stylepersonal.enable", true);
-pref("extensions.zotero.stylepersonal.function.menuVisibility.enable", false);
 pref("extensions.zotero.stylepersonal.function.dateAddedColumn.enable", true);
 pref("extensions.zotero.stylepersonal.dateAddedColumn.dateType", "absolute");
 pref("extensions.zotero.stylepersonal.dateAddedColumn.format", "YYYY/M/D H:m:s");

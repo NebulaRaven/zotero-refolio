@@ -141,9 +141,6 @@ stylepersonal-Add-Tags =
     .tooltiptext = 在不同狀態下按下快速鍵，即可開啟新增標籤面板，選取現有標籤並新增至目標項目。目標項目可以是筆記、附件、註解或一般項目。
 stylepersonal-Shortcut = 快速鍵：
 
-stylepersonal-Menu-Visibility-Manager =
-    .label = 隱藏右鍵選單項目
-    .tooltiptext = 開啟後可在右鍵選單中隱藏或排序選單項目。
 
 stylepersonal-Related-Items =
     .label = 關聯項目

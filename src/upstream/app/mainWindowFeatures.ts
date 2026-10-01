@@ -11,7 +11,6 @@ import { registerAllButtons } from "../features/workspace/buttons.ts";
 import { registerNotify } from "../platform/zotero/notifier.ts";
 import { handleItemActivity } from "./itemActivity.ts";
 import { patchAll } from "../platform/zotero/patches.ts";
-import { MenuVisibilityManager } from "../features/workspace/menuVisibilityManager.ts";
 import { initStorage } from "../platform/persistence/storage.ts";
 import { startDeferredItemTree } from "../features/item-tree/itemTreeLifecycle.ts";
 import { ItemTree } from "../features/item-tree/itemTree-57.ts";
@@ -92,13 +91,6 @@ import { FulltextTranslate } from "../features/reader/fulltextTranslate.ts";
     }, {
       id: "zotero-patches",
       start: () => patchAll()
-    }, {
-      id: "menu-visibility",
-      isEnabled: enabled("menuVisibility"),
-      start: () => {
-        const feature = new MenuVisibilityManager();
-        return () => feature.destroy();
-      }
     }, {
       id: "storage",
       start: () => initStorage()

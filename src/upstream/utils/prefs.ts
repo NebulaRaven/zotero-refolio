@@ -2,7 +2,6 @@ import { config } from '../config.ts';
 
 export interface PreferenceValues {
   "enable": boolean;
-  "function.menuVisibility.enable": boolean;
   "function.dateAddedColumn.enable": boolean;
   "dateAddedColumn.dateType": string;
   "dateAddedColumn.format": string;

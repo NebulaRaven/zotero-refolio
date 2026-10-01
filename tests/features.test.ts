@@ -174,7 +174,8 @@ const retired = ['function.readStatus.enable', 'function.ReadUnreadStatus.enable
   'function.renderItemAnnotations.enable', 'function.renderItemNotes.enable', 'graphView.show', 'graphView.theme',
   'function.Recent.enable', 'delayTime', 'cookies.cnki', 'titleColumn.odd', 'titleColumn.even', 'titleColumn.selected',
   'IFColumn.info', 'nestedTags.sortord', 'nestedTags.linkSymbol', 'textTagsColumn.prefix',
-  'annotationColumn.style', 'annotationColumn.color', 'annotationColumn.circle', 'AIGenerateTags.prompt', 'remarkColumn.prompt'];
+  'annotationColumn.style', 'annotationColumn.color', 'annotationColumn.circle', 'AIGenerateTags.prompt', 'remarkColumn.prompt',
+  'function.menuVisibility.enable'];
 test('retired settings are gone from the defaults and cleared from existing profiles', async () => {
   const defaults = new Set<string>();
   vm.runInNewContext(await fs.readFile(new URL('../addon/prefs.js', import.meta.url), 'utf8'),

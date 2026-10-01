@@ -92,19 +92,7 @@ stylepersonal-preview-no-attachment = 所选文献无附件或附件不存在，
 stylepersonal-preview-no-left-item = 左侧目前无文献
 stylepersonal-preview-no-right-item = 右侧目前无文献
 
-stylepersonal-menu-visibility-disable = 禁用此功能
-stylepersonal-menu-visibility-disabled-success = 功能已禁用，重启 Zotero 后生效。
 
-stylepersonal-menu-visibility-hidden-count = 隐藏菜单 ({$count})
-stylepersonal-menu-visibility-load-first = 请先在条目上右键点击一次以加载当前状态的菜单！
-stylepersonal-menu-visibility-reset-order = 重置顺序
-stylepersonal-menu-visibility-save = 保存设置
-stylepersonal-menu-visibility-cancel = 取消
-stylepersonal-menu-visibility-settings-title = 菜单设置
-stylepersonal-menu-visibility-saved = 设置已保存！下一次右键生效。
-stylepersonal-menu-visibility-hide-with-ellipsis = 隐藏菜单...
-stylepersonal-menu-visibility-hide = 隐藏菜单
-stylepersonal-menu-visibility-manage = 管理隐藏
 
 stylepersonal-note-load-all = 加载全部 { $count } 条笔记
 stylepersonal-note-load-progress = 正在加载笔记 { $loaded } / { $count }...
@@ -644,7 +632,6 @@ stylepersonal-ui-feature-tldr = TLDR 面板
 stylepersonal-ui-feature-fulltextTranslate = 全文翻译命令
 stylepersonal-ui-feature-toogleSidebar = 侧栏快捷键
 stylepersonal-ui-feature-darkLightButton = 明暗主题按钮
-stylepersonal-ui-feature-menuVisibility = 菜单显隐管理
 stylepersonal-ui-feature-tabMenu = 标签页菜单工具
 stylepersonal-ui-feature-commands = Refolio 命令面板
 stylepersonal-ui-feature-prefsManager = 设置导入导出
@@ -684,7 +671,6 @@ stylepersonal-ui-feature-tldr-desc = 在条目面板显示 TLDR 简短摘要。
 stylepersonal-ui-feature-fulltextTranslate-desc = 添加翻译 PDF 全文的命令。
 stylepersonal-ui-feature-toogleSidebar-desc = 用快捷键展开或折叠左右侧栏。
 stylepersonal-ui-feature-darkLightButton-desc = 在工具栏添加明暗主题切换按钮。
-stylepersonal-ui-feature-menuVisibility-desc = 隐藏或调整右键菜单项的顺序。
 stylepersonal-ui-feature-tabMenu-desc = 像浏览器一样在列表中管理多个标签页。
 stylepersonal-ui-feature-commands-desc = 在可搜索的命令面板中执行 Refolio 操作。
 stylepersonal-ui-feature-prefsManager-desc = 备份、导入和导出插件设置。

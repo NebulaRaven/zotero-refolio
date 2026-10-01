@@ -141,9 +141,6 @@ stylepersonal-Add-Tags =
     .tooltiptext = Press the shortcut key in different states to bring up the tag addition panel, where you can select existing tags and add them to target entries. Target entries could be notes, attachment entries, annotations, or regular entries.
 stylepersonal-Shortcut = Shortcut:
 
-stylepersonal-Menu-Visibility-Manager =
-    .label = Hide Right-Click Menu Items
-    .tooltiptext = Enable the menu manager to hide or reorder items in the right-click context menu.
 
 stylepersonal-Related-Items =
     .label = Related Items

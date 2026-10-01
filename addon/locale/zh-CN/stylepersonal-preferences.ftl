@@ -141,9 +141,6 @@ stylepersonal-Add-Tags =
     .tooltiptext = 在不同状态下，按下快捷键后将唤醒添加标签面板，可在里面选择已经存在的标签，并添加到目标条目下。目标条目可能是笔记、附件条目、标注和常规条目。
 stylepersonal-Shortcut = 快捷键:
 
-stylepersonal-Menu-Visibility-Manager =
-    .label = 隐藏右键菜单项
-    .tooltiptext = 开启后可以在右键菜单中隐藏或排序菜单项。
 
 stylepersonal-Related-Items =
     .label = 关联条目

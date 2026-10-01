@@ -41,7 +41,6 @@ export const spFeatureDefinitions = [
   ["fulltextTranslate", "reader", "ui-feature-fulltextTranslate"],
   ["toogleSidebar", "workspace", "ui-feature-toogleSidebar"],
   ["darkLightButton", "workspace", "ui-feature-darkLightButton"],
-  ["menuVisibility", "workspace", "ui-feature-menuVisibility"],
   ["tabMenu", "workspace", "ui-feature-tabMenu"],
   ["commands", "workspace", "ui-feature-commands"],
   ["prefsManager", "workspace", "ui-feature-prefsManager"],
@@ -55,5 +54,5 @@ export const spRetiredPreferences = [
   "delayTime", "cookies.cnki", "titleColumn.odd", "titleColumn.even",
   "titleColumn.selected", "IFColumn.info", "nestedTags.sortord", "nestedTags.linkSymbol",
   "textTagsColumn.prefix", "annotationColumn.style", "annotationColumn.color", "annotationColumn.circle",
-  "AIGenerateTags.prompt", "remarkColumn.prompt"
+  "AIGenerateTags.prompt", "remarkColumn.prompt", "function.menuVisibility.enable"
 ];
