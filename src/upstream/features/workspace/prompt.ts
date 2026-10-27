@@ -7,6 +7,63 @@ import { getString } from "../../utils/locale.ts";
 import { drawOpacityProgress } from "../../utils/draw.ts";
 import { editAnnotationColors } from "../../../app/annotationColors.ts";
   // src/features/workspace/prompt.ts
+  /** Search-result summary: field values stay plain text and the publication is italicized. */
+  export function appendItemDescription(parent, item) {
+    const parts: Array<string | { italic: string }> = [];
+    let authorDate = item.firstCreator || "";
+    let date = item.getField("date", true, true);
+    if (date && (date = date.substr(0, 4)) !== "0000") {
+      authorDate += " (" + parseInt(date) + ")";
+    }
+    authorDate = authorDate.trim();
+    if (authorDate) {
+      parts.push(authorDate);
+    }
+    const publicationTitle = item.getField("publicationTitle", false, true);
+    if (publicationTitle) {
+      parts.push({ italic: publicationTitle });
+    }
+    let volumeIssue = item.getField("volume");
+    const issue = item.getField("issue");
+    if (issue) {
+      volumeIssue += "(" + issue + ")";
+    }
+    if (volumeIssue) {
+      parts.push(volumeIssue);
+    }
+    const publisherPlace = [item.getField("publisher"), item.getField("place")].filter(Boolean);
+    if (publisherPlace.length) {
+      parts.push(publisherPlace.join(": "));
+    }
+    const pages = item.getField("pages");
+    if (pages) {
+      parts.push(pages);
+    }
+    if (!parts.length && item.getField("url")) {
+      parts.push(item.getField("url"));
+    }
+    let text = "";
+    parts.forEach((part, index) => {
+      if (index) {
+        text += ", ";
+      }
+      if (typeof part === "string") {
+        text += part;
+        return;
+      }
+      if (text) {
+        parent.append(text);
+      }
+      text = "";
+      parent.append(ztoolkit.UI.createElement(document, "i", { namespace: "html", properties: { textContent: part.italic } }));
+    });
+    if (parts.length) {
+      text += ".";
+    }
+    if (text) {
+      parent.append(text);
+    }
+  }
   export async function registerAllCommands() {
     let active = true;
     let searchGeneration = 0;
@@ -93,74 +150,6 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
         const text = prompt2.inputNode.value;
         suppressSearch(text);
         const isCurrent = () => active && generation === searchGeneration && prompt2.promptNode.isConnected && prompt2.promptNode.style.display !== "none" && prompt2.inputNode.value === text;
-        function getItemDescription(item) {
-          const nodes = [];
-          let str = "";
-          let author;
-          let authorDate = "";
-          if (item.firstCreator) {
-            author = authorDate = item.firstCreator;
-          }
-          let date = item.getField("date", true, true);
-          if (date && (date = date.substr(0, 4)) !== "0000") {
-            authorDate += " (" + parseInt(date) + ")";
-          }
-          authorDate = authorDate.trim();
-          if (authorDate) {
-            nodes.push(authorDate);
-          }
-          const publicationTitle = item.getField("publicationTitle", false, true);
-          if (publicationTitle) {
-            nodes.push(`<i>${publicationTitle}</i>`);
-          }
-          let volumeIssue = item.getField("volume");
-          const issue = item.getField("issue");
-          if (issue) {
-            volumeIssue += "(" + issue + ")";
-          }
-          if (volumeIssue) {
-            nodes.push(volumeIssue);
-          }
-          const publisherPlace = [];
-          let field;
-          if (field = item.getField("publisher")) {
-            publisherPlace.push(field);
-          }
-          if (field = item.getField("place")) {
-            publisherPlace.push(field);
-          }
-          if (publisherPlace.length) {
-            nodes.push(publisherPlace.join(": "));
-          }
-          const pages = item.getField("pages");
-          if (pages) {
-            nodes.push(pages);
-          }
-          if (!nodes.length) {
-            const url = item.getField("url");
-            if (url) {
-              nodes.push(url);
-            }
-          }
-          for (let i = 0, n = nodes.length; i < n; i++) {
-            const node = nodes[i];
-            if (i != 0) {
-              str += ", ";
-            }
-            if (typeof node === "object") {
-              const label = document.createElement("label");
-              label.setAttribute("value", str);
-              label.setAttribute("crop", "end");
-              str = "";
-            } else {
-              str += node;
-            }
-          }
-          if (str.length) {
-            str += ".";
-          }
-          return str;
-        }
         async function filter(ids) {
           const valid = await Promise.all(ids.map(async id => {
             try {
@@ -259,18 +248,17 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
                   properties: {
                     innerText: title
                   }
-                }, {
-                  tag: "span",
-                  styles: {
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap"
-                  },
-                  properties: {
-                    innerHTML: getItemDescription(item)
-                  }
                 }]
               });
+              const description = ztoolkit.UI.createElement(document, "span", {
+                styles: {
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }
+              });
+              appendItemDescription(description, item);
+              ele.append(description);
               container.appendChild(ele);
             });
           } else {
