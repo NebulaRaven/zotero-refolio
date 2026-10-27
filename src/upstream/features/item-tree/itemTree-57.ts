@@ -1218,14 +1218,15 @@ ${JSON.stringify(data.data)}`;
         if (tag) {
           return {
             sortIndex: tag.tag,
-            data: tag
+            data: { ...tag, itemID: item.id }
           };
         } else {
           return {
             sortIndex: "",
             data: {
               tag: false,
-              color: ""
+              color: "",
+              itemID: item.id
             }
           };
         }
@@ -1366,7 +1367,10 @@ ${JSON.stringify(data.data)}`;
               menuitem.remove();
             }
             menuitem.addEventListener("command", async () => {
-              const item = ZoteroPane.getSortedItems()[index];
+              const item = Zotero.Items.get(tag.itemID);
+              if (!item) {
+                return;
+              }
               item.getTags().forEach(tag2 => {
                 if (isStatusTagName(tag2.tag)) {
                   item.removeTag(tag2.tag);
@@ -1391,7 +1395,10 @@ ${JSON.stringify(data.data)}`;
               listener: () => {
                 const tag2 = window.prompt(getString("ui-enter-status-name"));
                 const color = window.prompt(getString("ui-enter-status-color"), "#6196bc");
-                const item = ZoteroPane.getSelectedItems()[0];
+                const item = Zotero.Items.get(tag.itemID);
+                if (!item) {
+                  return;
+                }
                 if (tag2 && color && color?.startsWith("#")) {
                   const tagName = "/" + tag2.trim();
                   item.addTag(tagName);
@@ -1652,9 +1659,8 @@ ${text}`);
       const key = "firstCreator";
       this.addRenderCellPatch({
         key,
-        renderCell: (cellSpan, index) => {
+        renderCell: (cellSpan, index, item) => {
           try {
-            const item = ZoteroPane.getSortedItems()[index];
             if (!item || !item.isRegularItem()) {
               return cellSpan;
             }
@@ -1705,9 +1711,11 @@ ${text}`);
       const key = "publicationTitle";
       this.addRenderCellPatch({
         key,
-        renderCell: (cellSpan, index) => {
+        renderCell: (cellSpan, index, item) => {
+          if (!item?.isRegularItem?.()) {
+            return cellSpan;
+          }
           try {
-            const item = ZoteroPane.getSortedItems()[index];
             cellSpan.innerText = getPublicationTitle(item);
           } catch (error) {
             ztoolkit.log("Failed to render publication title", error);
