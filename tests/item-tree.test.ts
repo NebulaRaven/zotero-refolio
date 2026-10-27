@@ -73,3 +73,37 @@ test('choosing a status changes the clicked item even when a section header prec
   assert.deepEqual(other.tags.map(tag => tag.tag), ['/Unread']);
   assert.equal(other.saved, 0);
 });
+
+async function annotationColumn(extra: Record<string, unknown> = {}, host: Record<string, unknown> = {}) {
+  const ctx = await loadItemTree(extra, { 'function.annotationColumn.enable': true });
+  const scheduled: Array<() => unknown> = [];
+  let column;
+  await ctx.ItemTree.prototype.annotation.call({ patchSetting() {}, scheduleTimeout: fn => scheduled.push(fn),
+    registerColumn: async (_key, provider, renderer) => { column = { provider, renderer }; }, ...host });
+  return { ...column, scheduled };
+}
+
+test('an item already known to have no pages does not look up its attachment again', async () => {
+  const { provider, scheduled } = await annotationColumn({}, { getCachedPageNum: () => 0 });
+  assert.equal(provider({ id: 1 }).data, false);
+  assert.equal(scheduled.length, 0);
+});
+
+test('the annotation strip reads each annotation position once and colours each page by its largest annotation', async () => {
+  let reads = 0;
+  const annotation = (pageIndex, width, color, sortIndex) => ({
+    annotationColor: color, annotationSortIndex: sortIndex,
+    get _annotationPosition() { reads++; return JSON.stringify({ pageIndex, rects: [[0, 0, width, 1]] }); }
+  });
+  const annotations = [annotation(0, 1, '#small', '1'), annotation(0, 5, '#large', '2'), annotation(2, 1, '#last', '3')];
+  const strip = [];
+  const item = { isRegularItem: () => true, getBestAttachment: async () => ({ getAnnotations: () => annotations }) };
+  const { renderer, scheduled } = await annotationColumn({
+    Zotero: { locale: 'en', Items: { get: () => item } },
+    ztoolkit: { log() {}, UI: { appendElement: (options, parent) => { if (parent === 'strip') strip.push(options.styles.backgroundColor); return 'strip'; } } }
+  });
+  renderer({ style: {} }, { pageNum: 3, id: 1 }, 0);
+  await scheduled[0]();
+  assert.deepEqual(strip, ['#large', 'transparent', '#last']);
+  assert.equal(reads, annotations.length);
+});

@@ -1736,21 +1736,19 @@ ${text}`);
       const key = "annotation";
       await this.registerColumn(key, item => {
         const pageNum = this.getCachedPageNum(item.id);
-        if (pageNum) {
-          if (pageNum == 0) {
-            return {
-              sortIndex: 0,
-              data: false
-            };
-          } else {
-            return {
-              sortIndex: pageNum,
-              data: {
-                pageNum,
-                id: item.id
-              }
-            };
-          }
+        if (pageNum === 0) {
+          return {
+            sortIndex: 0,
+            data: false
+          };
+        } else if (pageNum !== undefined) {
+          return {
+            sortIndex: pageNum,
+            data: {
+              pageNum,
+              id: item.id
+            }
+          };
         } else {
           this.scheduleTimeout(async () => {
             if (!item || !item.isRegularItem()) {
@@ -1797,21 +1795,34 @@ ${text}`);
           const pdfItem = await item.getBestAttachment();
           if (!pdfItem) return;
           const annoArr = pdfItem.getAnnotations().sort((a, b) => String(a.annotationSortIndex).localeCompare(String(b.annotationSortIndex)));
-          for (let pageIndex = 0; pageIndex < pageNum; pageIndex++) {
-            const getPos = anno2 => JSON.parse(anno2._annotationPosition);
-            const getArea = anno2 => {
-              try {
-                const rects = getPos(anno2).rects;
-                let s = 0;
-                for (const rect of rects) {
-                  s += (rect[2] - rect[0]) * (rect[3] - rect[1]);
-                }
-                return s;
-              } catch {
-                return 1;
+          // Each page shows its largest annotation; on a tie the earlier one in reading order.
+          const largestByPage = new Map();
+          for (const annotation of annoArr) {
+            let position;
+            try {
+              // The public getter throws until the reader has loaded deferred annotation data.
+              position = JSON.parse((annotation as unknown as { _annotationPosition: string })._annotationPosition);
+            } catch {
+              continue;
+            }
+            if (!position) {
+              continue;
+            }
+            let area = 0;
+            try {
+              for (const rect of position.rects) {
+                area += (rect[2] - rect[0]) * (rect[3] - rect[1]);
               }
-            };
-            const anno = annoArr.filter(anno2 => getPos(anno2).pageIndex == pageIndex).sort((a, b) => getArea(b) - getArea(a))?.[0];
+            } catch {
+              area = 1;
+            }
+            const largest = largestByPage.get(position.pageIndex);
+            if (!largest || area > largest.area) {
+              largestByPage.set(position.pageIndex, { annotation, area });
+            }
+          }
+          for (let pageIndex = 0; pageIndex < pageNum; pageIndex++) {
+            const anno = largestByPage.get(pageIndex)?.annotation;
             ztoolkit.UI.appendElement({
               tag: "span",
               styles: {
