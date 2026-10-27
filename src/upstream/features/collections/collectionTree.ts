@@ -9,7 +9,8 @@ import { createCollectionItemCountClassNames,reconcileCollectionItemCount,remove
 import { config } from "../../config.ts";
 import { invalidateCollectionsViewRow,refreshCollectionsViewRenderer,requireCollectionsView,waitForCollectionsViewReady } from "../../utils/zoteroPane.ts";
 import { installIdempotentRenderItemPatch } from "./collectionItemCountPatch.ts";
-import { getRecentlyReadItemCount } from "./collectionItemCountData.ts";
+import { createCountInvalidator,getCollectionRowItemCount } from "./collectionItemCountData.ts";
+import { registerNotify } from "../../platform/zotero/notifier.ts";
 import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
 import { getFirstSelectedCollectionOrSearch } from "../../utils/zoteroSelection.ts";
 import { buildMenuPopup } from "../../platform/zotero/menu.ts";
@@ -48,7 +49,13 @@ import { spRegisterMenu } from "../../../app/menus.ts";
     };
     let cacheOwner = addon.data.cache;
     const cacheKeys = /* @__PURE__ */new Set();
-    return installIdempotentRenderItemPatch({
+    // Restoring from the trash and moving an item under a parent only send "modify", so any change can alter a count.
+    const invalidator = createCountInvalidator(() => {
+      addon.data.cache = {};
+      collectionsView.tree?.invalidate?.();
+    }, 1000);
+    const unregisterNotify = registerNotify(["item", "collection-item", "trash"], () => invalidator.notify());
+    const releasePatch = installIdempotentRenderItemPatch({
       host: patchHost,
       patchKey: collectionItemCountPatchKey,
       legacyOriginalKey: config.addonRef,
@@ -89,31 +96,7 @@ import { spRegisterMenu } from "../../../app/menus.ts";
             cacheKeys.delete(cacheKey);
             cacheKeys.add(cacheKey);
           } else {
-            if (row.type == "library") {
-              totalNumber = (await Zotero.Items.getAll(row.ref.libraryID, true, false)).filter(i => i.isTopLevelItem()).length;
-            } else if (row.type == "collection") {
-              if (Zotero.Prefs.get("recursiveCollections")) {
-                totalNumber = new Set(row.ref.getDescendents(false, "item", false).map(i => i.id)).size;
-              } else {
-                totalNumber = row.ref.getChildItems(true, false).length;
-              }
-            } else if (row.type == "duplicates") {
-              if (row.ref._sets) {
-                totalNumber = Object.keys(row.ref._sets._objects).length;
-              }
-            } else if (row.type == "unfiled") {
-              totalNumber = (await Zotero.Items.getAll(row.ref.libraryID, true, false)).filter(i => i.isTopLevelItem() && i.getCollections().length == 0).length;
-            } else if (row.type == "recentlyRead") {
-              totalNumber = (await getRecentlyReadItemCount(Zotero.Items, row.ref.libraryID)) ?? -1;
-            } else if (row.type == "trash") {
-              totalNumber = (await Zotero.Items.getDeleted(1)).length;
-            } else if (row.type == "group") {
-              totalNumber = (await Zotero.Items.getAll(row.ref._libraryID, true, false)).filter(i => i.isTopLevelItem()).length;
-            } else if (row.type == "feed") {
-              totalNumber = (await Zotero.Items.getAll(row.ref._libraryID, true, false)).filter(i => i.isTopLevelItem()).length;
-            } else if (row.type == "search") {
-              totalNumber = (await row.ref.search()).length;
-            }
+            totalNumber = await getCollectionRowItemCount(row);
             if (currentCacheOwner !== cacheOwner || addon.data.cache !== currentCacheOwner) {
               if (isActive()) {
                 invalidateCollectionsViewRow(collectionsView, index);
@@ -180,6 +163,11 @@ import { spRegisterMenu } from "../../../app/menus.ts";
         refreshCollectionsViewRenderer(collectionsView);
       }
     });
+    return () => {
+      unregisterNotify();
+      invalidator.cancel();
+      releasePatch();
+    };
   }
   export var getString2 = s => s.toLowerCase();
   export var sortFunctions = {

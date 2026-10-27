@@ -639,6 +639,13 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
       await waitFor(() => !favourite(), 'Collection stayed in favourites');
     } finally { await collectionView().selectLibrary(libraryID); }
   });
+  await check('Collection counts match Zotero item lists', async () => {
+    const topLevel = (await Zotero.Items.getAll(libraryID, true, false)).filter(item => item.isTopLevelItem());
+    const count = type => api.getCollectionRowItemCount({ type, ref: { libraryID } });
+    assert(await count('library') === topLevel.length, 'Library count differs from its top-level items');
+    assert(await count('unfiled') === topLevel.filter(item => !item.getCollections().length).length, 'Unfiled count differs');
+    assert(await count('trash') === (await Zotero.Items.getDeleted(libraryID, true)).length, 'Trash count differs');
+  });
   await check('Reload releases graph DOM, storage and hooks without duplicates', async () => {
     const storage = addon.api.journalStorage;
     const frame = graphFrame();

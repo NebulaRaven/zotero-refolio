@@ -1,9 +1,6 @@
 import { getCurrentUTCTime,isEnabel } from "../utils/base.ts";
   // src/app/itemActivity.ts
   export async function handleItemActivity(event, type, ids, extraData) {
-    if (type === "item") {
-      addon.data.cache = {};
-    }
     if (type !== "tab" || !isEnabel("updateItemDateModified")) {
       return;
     }

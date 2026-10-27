@@ -86,7 +86,7 @@ import { FulltextTranslate } from "../features/reader/fulltextTranslate.ts";
       start: () => registerAllButtons()
     }, {
       id: "item-activity",
-      start: () => registerNotify(["tab", "item"], handleItemActivity)
+      start: () => registerNotify(["tab"], handleItemActivity)
     }, {
       id: "zotero-patches",
       start: () => patchAll()
