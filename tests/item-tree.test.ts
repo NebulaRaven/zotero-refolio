@@ -107,3 +107,21 @@ test('the annotation strip reads each annotation position once and colours each 
   assert.deepEqual(strip, ['#large', 'transparent', '#last']);
   assert.equal(reads, annotations.length);
 });
+
+test('status cells size themselves with the Zotero font-size variable instead of computing styles', async () => {
+  const styles: string[] = [];
+  const element = () => ({ setAttribute: (name, value) => { if (name === 'style') styles.push(value); },
+    querySelector: () => ({ setAttribute() {} }) });
+  const ctx = await loadItemTree({
+    getColoredTags: () => [], isStatusTagName: () => true,
+    ColorRNA_default: class { rgb() { return [1, 2, 3]; } HSL(value?) { return value ? { getHex: () => '#123' } : [0, 0, 0]; } },
+    window: { getComputedStyle: () => assert.fail('A status cell forced a style computation') },
+    document: { querySelector: () => ({}) },
+    ztoolkit: { log() {}, UI: { createElement: element } }
+  });
+  let renderer;
+  await ctx.ItemTree.prototype.status.call({ isSelectedRow: () => false,
+    registerColumn: async (_key, _provider, render) => { renderer = render; } });
+  renderer({ style: {}, appendChild() {}, addEventListener() {} }, { tag: '/Reading', color: '#f00', itemID: 1 }, 0);
+  assert.match(styles[0], /height: calc\(var\(--zotero-font-size, 1em\) \* 1\.4\)/);
+});

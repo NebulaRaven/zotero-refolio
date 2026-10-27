@@ -1235,14 +1235,13 @@ ${JSON.stringify(data.data)}`;
         span.style.height = "100%";
         span.style.alignItems = "center";
         const tag = data;
-        const createTagNode = (tag2, isSelected = false) => {
+        // Zotero sets --zotero-font-size on #zotero-pane; popups outside it pass the computed size instead.
+        const createTagNode = (tag2, isSelected = false, zoteroFontSize = "var(--zotero-font-size, 1em)") => {
           const c = new ColorRNA_default(tag2.color);
           const [red, green, blue] = c.rgb();
           const hsl = c.HSL();
           hsl[2] = 35;
           const deepColor = c.HSL(hsl).getHex();
-          const computedStyle = window.getComputedStyle(document.querySelector("#zotero-pane"));
-          const zoteroFontSize = computedStyle?.getPropertyValue("--zotero-font-size") || "1em";
           const statusNode = ztoolkit.UI.createElement(document, "div", {
             namespace: "html",
             tag: "div",
@@ -1346,13 +1345,14 @@ ${JSON.stringify(data.data)}`;
             y: rect.top + window.screenY + 6
           }, children);
           const menuitems = [...menupopup.querySelectorAll("menuitem")];
+          const menuFontSize = Zotero.isWin ? window.getComputedStyle(document.querySelector("#zotero-pane"))?.getPropertyValue("--zotero-font-size") || "1em" : undefined;
           for (let i = 0; i < menuitems.length; i++) {
             const menuitem = menuitems[i];
             try {
               if (Zotero.isWin) {
                 menuitem.innerHTML = "";
                 menuitem.style.padding = "5px";
-                const tagNode = createTagNode(coloredTags[i]);
+                const tagNode = createTagNode(coloredTags[i], false, menuFontSize);
                 tagNode.style.margin = "0";
                 menuitem.appendChild(tagNode);
                 tagNode.style.cursor = "pointer";
