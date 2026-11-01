@@ -308,9 +308,9 @@ export async function editAnnotationColors() {
           const gName = e.querySelector<HTMLElement>(".name").innerText;
           const groupIdx = e.getAttribute("index");
           const colors = [];
-          for (const e2 of getElements(colorsContainer.querySelectorAll(`.item.group-${groupIdx}`))) {
-            const name = e2.querySelector<HTMLInputElement>("input.name").value;
-            const color = e2.querySelector<HTMLInputElement>("input.color").value;
+          for (const colorItemNode of getElements(colorsContainer.querySelectorAll(`.item.group-${groupIdx}`))) {
+            const name = colorItemNode.querySelector<HTMLInputElement>("input.name").value;
+            const color = colorItemNode.querySelector<HTMLInputElement>("input.color").value;
             colors.push([name, color]);
           }
           groups.push([gName, colors]);

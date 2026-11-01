@@ -176,7 +176,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           }
           ztoolkit.log(ids.length);
           if (ids.length == 0) {
-            const s2 = new Zotero.Search();
+            const conditionSearch = new Zotero.Search();
             const operators = ["is", "isNot", "true", "false", "isInTheLast", "isBefore", "isAfter", "contains", "doesNotContain", "beginsWith"];
             let hasValidCondition = false;
             let joinMode: "all" | "any" = "all";
@@ -187,12 +187,12 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
               const conditions = conditinString.trim().match(/([^\s]+?)\s+([^\s]+?)\s+(.+)/);
               if (conditions && conditions.length == 4 && operators.indexOf(conditions[2]) != -1) {
                 hasValidCondition = true;
-                s2.addCondition("joinMode", joinMode);
-                s2.addCondition(conditions[1], conditions[2] as _ZoteroTypes.Search.Operator, conditions[3]);
+                conditionSearch.addCondition("joinMode", joinMode);
+                conditionSearch.addCondition(conditions[1], conditions[2] as _ZoteroTypes.Search.Operator, conditions[3]);
               }
             });
             if (hasValidCondition) {
-              ids = await s2.search();
+              ids = await conditionSearch.search();
               await waitForPromptTurn();
               if (!isCurrent()) {
                 return;
@@ -347,15 +347,15 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
             pageSpan.style.border = "";
           };
           const sec = values[index];
-          let t3;
+          let t;
           if (sec < 60) {
-            t3 = `${sec} s`;
+            t = `${sec} s`;
           } else if (sec / 60) {
-            t3 = `${(sec / 60).toFixed(1)} m`;
+            t = `${(sec / 60).toFixed(1)} m`;
           } else {
-            t3 = `${(sec / 60 / 60).toFixed(1)} h`;
+            t = `${(sec / 60 / 60).toFixed(1)} h`;
           }
-          pageSpan.setAttribute("title", getString("ui-reading-page", { args: { time: t3, page } }));
+          pageSpan.setAttribute("title", getString("ui-reading-page", { args: { time: t, page } }));
         });
         box.appendChild(span);
         container.appendChild(box);

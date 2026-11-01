@@ -32,13 +32,13 @@ import { getString } from "../../utils/locale.ts";
     };
   }
   export async function callAfterShowTabMenu(itemID, isActive = () => true) {
-    let t3 = 0;
+    let t = 0;
     const getMenuPopup = () => {
       return getElements<TabPopup>(document.querySelectorAll("popupset menupopup")).find(i => i.state == "open");
     };
-    while (isActive() && !getMenuPopup() && t3 < 10) {
+    while (isActive() && !getMenuPopup() && t < 10) {
       await Zotero.Promise.delay(10);
-      t3 += 10 / 1000;
+      t += 10 / 1000;
     }
     if (!isActive()) {
       return;

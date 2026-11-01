@@ -228,19 +228,19 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
         listeners: [{
           type: "click",
           listener: async event => {
-            const node2 = this.container;
-            if (!node2) {
+            const container = this.container;
+            if (!container) {
               return;
             }
-            if (node2.style.display == "none") {
-              node2.style.display = "flex";
+            if (container.style.display == "none") {
+              container.style.display = "flex";
               setPref(`graphView.enable`, true);
               const firstOpen = !this.rendererReady;
               await this.ensureRenderer();
               if (!firstOpen) await this.refreshGraphView();
               await this.promptForCitationRelations();
             } else {
-              node2.style.display = "none";
+              container.style.display = "none";
               setPref(`graphView.enable`, false);
             }
           }
@@ -464,8 +464,8 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
             return;
           }
           ztoolkit.log(id, graph.nodes);
-          const ids = Object.keys(graph.nodes[id].links).filter(id2 => {
-            return graph.nodes[id2].type == "item";
+          const ids = Object.keys(graph.nodes[id].links).filter(linkedId => {
+            return graph.nodes[linkedId].type == "item";
           });
           requireItemsView().selectItems(ids.map(Number));
         }
@@ -500,7 +500,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       if (!this.active || !this.renderer) {
         return;
       }
-      const node = this.renderer.nodes.find(node2 => Number(node2.id) == id);
+      const node = this.renderer.nodes.find(candidate => Number(candidate.id) == id);
       this.renderer.highlightNode = node;
       if (!node) {
         return;
@@ -513,7 +513,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       const panY = this.renderer.panY;
       const duration = 500;
       const startTime = window.performance.now();
-      const easeInOutQuad = t3 => t3 < 0.5 ? t3 * 2 * t3 : -1 + (4 - t3 * 2) * t3;
+      const easeInOutQuad = t => t < 0.5 ? t * 2 * t : -1 + (4 - t * 2) * t;
       const animate = currentTime => {
         const elapsed = currentTime - startTime;
         let progress = Math.min(elapsed / duration, 1);

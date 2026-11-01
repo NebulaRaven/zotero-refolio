@@ -29,8 +29,8 @@
       },
       classList: ["opacity-progress"]
     });
-    const sortedValues = [...values].sort((a, b2) => b2 - a);
-    const meanValue = [...values].reduce((a, b2) => a + b2) / values.length;
+    const sortedValues = [...values].sort((a, other) => other - a);
+    const meanValue = [...values].reduce((a, value) => a + value) / values.length;
     let maxValue = meanValue + (sortedValues[0] - meanValue) * 0.5;
     if (limit > 0) {
       maxValue = maxValue > limit ? maxValue : limit;

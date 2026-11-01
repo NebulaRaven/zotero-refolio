@@ -446,22 +446,22 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
       if (!["Shift", "Meta", "Ctrl", "Alt", "Control"].includes(e.key)) {
         shortcut.key = e.key.toUpperCase();
       }
-      const keys2 = [];
+      const keys = [];
       if (shortcut.control) {
-        keys2.push("Ctrl");
+        keys.push("Ctrl");
       }
       if (shortcut.meta) {
-        keys2.push("Meta");
+        keys.push("Meta");
       }
       if (shortcut.shift) {
-        keys2.push("Shift");
+        keys.push("Shift");
       }
       if (shortcut.alt) {
-        keys2.push("Alt");
+        keys.push("Alt");
       }
       window.setTimeout(() => {
-        inputNode.value = [...keys2, ...[shortcut.key]].filter(Boolean).join(" + ");
-        ztoolkit.log(keys2, shortcut, inputNode.value);
+        inputNode.value = [...keys, ...[shortcut.key]].filter(Boolean).join(" + ");
+        ztoolkit.log(keys, shortcut, inputNode.value);
         callback(inputNode.value);
       });
     });
