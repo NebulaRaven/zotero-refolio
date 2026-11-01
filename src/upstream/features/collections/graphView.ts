@@ -150,7 +150,8 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       } catch {}
       this.positions?.clear();
       this.graph = undefined;
-      this.rawGraph = undefined;
+      // Also keeps a build still running from caching its graph on the destroyed view.
+      this.invalidateRawGraph();
       if (addon.api.refreshGraphView === this.refreshGraphView) {
         delete addon.api.refreshGraphView;
       }
@@ -322,8 +323,9 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       return raw;
     }
     observeLibraryChanges() {
-      // The cached graph was built from the items, their tags and the collection contents.
-      this.cleanups.push(registerNotify(["item", "item-tag", "collection-item"], () => this.invalidateRawGraph()));
+      // The cached graph was built from the items, their tags and the collection contents. Zotero's item tree
+      // observes with priority 50 and reselects an edited item, which refreshes the graph, so drop it before that.
+      this.cleanups.push(registerNotify(["item", "item-tag", "collection-item"], () => this.invalidateRawGraph(), 40));
     }
     invalidateRawGraph() {
       this.rawGraph = undefined;

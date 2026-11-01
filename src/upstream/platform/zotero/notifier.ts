@@ -1,4 +1,6 @@
-  export function registerNotify(types, onNotify) {
+import { config } from "../../config.ts";
+  // Zotero calls observers in ascending priority order, 100 when none is given.
+  export function registerNotify(types, onNotify, priority?: number) {
     let active = true;
     const callback = {
       notify: async (...data) => {
@@ -10,7 +12,9 @@
         await onNotify(...data);
       }
     };
-    const notifyID = Zotero.Notifier.registerObserver(callback, types);
+    const notifyID = priority === undefined
+      ? Zotero.Notifier.registerObserver(callback, types)
+      : Zotero.Notifier.registerObserver(callback, types, config.addonRef, priority);
     const unregister = () => {
       if (!active) {
         return;

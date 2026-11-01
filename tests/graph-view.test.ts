@@ -75,12 +75,12 @@ test('the graph labels only papers that survive the filter and skips trash rows 
 
 async function liveGraph(rows: Paper[]) {
   const timers: Array<() => void> = [], rendered: Array<{ nodes: Record<string, unknown> }> = [];
-  let notify: ((...data: unknown[]) => void) | undefined, notifyTypes: string[] = [], unregistered = 0;
+  let notify: ((...data: unknown[]) => void) | undefined, notifyTypes: string[] = [], notifyPriority: number | undefined, unregistered = 0;
   const pane = { selected: [] as Paper[], getSortedItems: () => rows, getSelectedItems: () => pane.selected };
   const addon = { api: {} as { refreshGraphView?: () => Promise<void> } };
   const ctx = await loadGraphView({ ZoteroPane: pane, addon, getPref: key => key === 'graphView.mode' ? 'tag' : undefined,
     getFirstSelectedCollection: () => undefined, getFirstSelectedLibraryID: () => 1,
-    registerNotify: (types, callback) => { notifyTypes = [...types]; notify = callback; return () => { unregistered++; }; },
+    registerNotify: (types, callback, priority) => { notifyTypes = [...types]; notify = callback; notifyPriority = priority; return () => { unregistered++; }; },
     // The items tree never appears, so initialization waits and leaves the renderer to the test.
     document: { querySelectorAll: () => [], querySelector: () => null },
     window: { addEventListener() {}, removeEventListener() {}, setTimeout: fn => timers.push(fn), clearTimeout() {} },
@@ -97,7 +97,8 @@ async function liveGraph(rows: Paper[]) {
     while (timers.length) { timers.shift()!(); await flush(); }
   };
   return { view, addon, rendered, select, flush, notify: (...data: unknown[]) => notify!(...data),
-    get builds() { return builds; }, get notifyTypes() { return notifyTypes; }, get unregistered() { return unregistered; } };
+    get builds() { return builds; }, get notifyTypes() { return notifyTypes; }, get notifyPriority() { return notifyPriority; },
+    get unregistered() { return unregistered; } };
 }
 
 test('selection changes reuse the unfiltered graph while library changes and explicit refreshes rebuild it', async () => {
@@ -144,4 +145,32 @@ test('a graph built before a library change or an explicit refresh does not repl
   held.shift()!(); await f.flush();
   await f.select(papers[0]);
   assert.deepEqual(visible(), ['1', '2', 'tag:x']);
+});
+
+test('the cached graph is dropped before Zotero\'s item tree reacts to the same change', async () => {
+  const f = await liveGraph([new Paper(1, '2020', ['x'])]);
+  // Zotero's item tree observes with priority 50 and reselects an edited item, which refreshes the graph.
+  assert.ok(f.notifyPriority !== undefined && f.notifyPriority < 50);
+});
+
+test('a graph build that finishes after destroy leaves nothing cached', async () => {
+  const papers = [new Paper(1, '2020', ['x']), new Paper(2, '2021', ['x'])];
+  const f = await liveGraph(papers);
+  const build = f.view.modeFunction.tag, held: Array<() => void> = [];
+  f.view.modeFunction.tag = items => { const graph = build(items); return new Promise(resolve => held.push(() => resolve(graph))); };
+  const refresh = f.addon.api.refreshGraphView!();
+  f.view.destroy();
+  held.shift()!(); await refresh; await f.flush();
+  assert.equal(f.view.rawGraph, undefined);
+});
+
+test('registerNotify passes an observer priority on to Zotero', async () => {
+  const registered = [];
+  const ctx: vm.Context = { addon: { data: { alive: true } }, config: { addonRef: 'stylepersonal' },
+    window: { addEventListener() {}, removeEventListener() {} },
+    Zotero: { Notifier: { registerObserver: (...args) => { registered.push(args); return 'id'; }, unregisterObserver() {} } } };
+  vm.runInNewContext(await script(new URL('../src/upstream/platform/zotero/notifier.ts', import.meta.url)), ctx);
+  ctx.registerNotify(['item'], () => {});
+  ctx.registerNotify(['item'], () => {}, 40);
+  assert.deepEqual(registered.map(args => args.slice(1)), [[['item']], [['item'], 'stylepersonal', 40]]);
 });
