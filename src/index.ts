@@ -26,7 +26,6 @@ import "./upstream/utils/reader.ts";
 import "./upstream/utils/zoteroSelection.ts";
 import "./upstream/utils/zoteroPane.ts";
 import "./upstream/features/tags/tags.ts";
-import "./upstream/utils/wait.ts";
 import "./upstream/features/annotations/annotationColorNames.ts";
 import "./upstream/utils/rateLimitedRequestScheduler.ts";
 import "./upstream/utils/publicationTagUpdatePolicy.ts";
