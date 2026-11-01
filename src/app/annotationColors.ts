@@ -852,7 +852,7 @@ export async function editAnnotationColors() {
         }).show();
       });
       doc.querySelector("#import-colors")?.addEventListener("click", () => {
-        const copiedText = Zotero.Utilities.Internal.getClipboard("text/plain").replace(/【/g, "[").replace(/】/g, "]");
+        const copiedText = (Zotero.Utilities.Internal.getClipboard("text/plain") ?? "").replace(/【/g, "[").replace(/】/g, "]");
         let data: unknown = [];
         try {
           data = JSON.parse(copiedText);
