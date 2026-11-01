@@ -137,6 +137,30 @@ test('failed storage writes remain dirty and can be retried', async () => {
   await storage.flush(); assert.equal(storage.writeVersion, 0); assert.equal(attempts, 2);
 });
 
+test('local storage reads create no entries, so asking about an item never persists it', async () => {
+  const writes: string[] = [];
+  const { storage } = await storageFixture(async text => { writes.push(text); });
+  assert.equal(storage.get({ key: 'A' }, 'readingTime'), undefined);
+  assert.equal(storage.get({ key: 'A' }, 'readingTime'), undefined);
+  await storage.set({ key: 'B' }, 'value', 1); await storage.flush();
+  assert.deepEqual(Object.keys(JSON.parse(writes[0])), ['B']);
+});
+
+test('empty entries of a loaded storage file are dropped and stored values read back unchanged', async () => {
+  const writes: string[] = [];
+  const reading = { page: 2, data: { 0: 40 } };
+  const ctx = await load({ window: timers(), IOUtils: { exists: async () => false }, PathUtils: { joinRelative: (dir, name) => `${dir}/${name}` },
+    Zotero: { DataDirectory: { dir: 'data' }, Promise: { defer: deferred },
+      File: { getContentsAsync: async () => JSON.stringify({ A: {}, B: { readingTime: reading }, C: {} }), putContentsAsync: async (_file, text) => { writes.push(text); } } },
+    getPref: () => true, ztoolkit: { log() {} } }, 'upstream/platform/persistence/storage.ts');
+  const storage = new ctx.LocalStorage('fixture'); await storage.lock.promise;
+  assert.equal(storage.filename, 'data/fixture.json');
+  assert.equal(storage.get({ key: 'A' }, 'readingTime'), undefined);
+  assert.equal(JSON.stringify(storage.get({ key: 'B' }, 'readingTime')), JSON.stringify(reading));
+  await storage.set({ key: 'D' }, 'rank', 'Q1'); await storage.flush();
+  assert.deepEqual(JSON.parse(writes[0]), { B: { readingTime: reading }, D: { rank: 'Q1' } });
+});
+
 async function tagsFixture() {
   const clock = timers();
   const ctx = await load({ window: clock, addon: { api: {} }, getString: testGetString, ztoolkit: { log: assert.fail }, getElements: () => [] }, 'upstream/features/tags/tags.ts');

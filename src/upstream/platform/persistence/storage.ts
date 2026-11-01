@@ -36,6 +36,13 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
         this.filename = isExists ? filename : PathUtils.joinRelative(Zotero.DataDirectory.dir, `${filename}.json`);
         const rawString = await Zotero.File.getContentsAsync(this.filename);
         this.cache = JSON.parse(rawString as string);
+        // Earlier versions saved an empty entry for every item and journal they were only asked about.
+        for (const key in this.cache) {
+          const entry = this.cache[key];
+          if (entry && typeof entry === "object" && Object.keys(entry).length === 0) {
+            delete this.cache[key];
+          }
+        }
         ztoolkit.log(this.cache);
       } catch {
         this.cache = {};
@@ -48,7 +55,7 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
         window.console.log("cache is undefined");
         return;
       }
-      return (this.cache[item.key] ??= {})[key];
+      return this.cache[item.key]?.[key];
     }
     async set(item, key, value) {
       if (this.disposed || !shouldPersistStorageKey(key)) {
