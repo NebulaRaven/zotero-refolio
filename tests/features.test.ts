@@ -33,12 +33,52 @@ test('year bounds are inclusive, exclude unknown years, and isolation is evaluat
   assert.throws(() => spFilterGraph(graph, [], { minYear: 2023, maxYear: 2022 }), /year/);
   assert.throws(() => spFilterGraph(graph, [], { minYear: 'abc' }), /year/);
 });
-test('shared tags connect papers directly and do not equate different hierarchy paths', () => {
-  const papers = [{ id: 1, tags: ['Theory/a', 'same'] }, { id: 2, tags: ['Method/a'] }, { id: 3, tags: ['same', 'same'] }];
-  const result = spSharedGraph(papers, p => p.tags);
-  assert.deepEqual(Object.keys(result.nodes), ['1', '2', '3']);
-  assert.deepEqual(result.nodes[1].links, { 3: true });
-  assert.deepEqual(result.nodes[2].links, {});
+test('shared tags join papers through one hub per tag and do not equate different hierarchy paths', () => {
+  const papers = [{ id: 1, tags: ['Theory/a', 'same'] }, { id: 2, tags: ['Method/a'] }, { id: 3, tags: ['same', 'same'] }, { id: 4, tags: ['solo', 'solo'] }];
+  const result = spSharedGraph(papers, p => p.tags, 'tag');
+  assert.deepEqual(Object.keys(result.nodes), ['1', '2', '3', '4', 'tag:same']);
+  assert.deepEqual(result.nodes['tag:same'], { links: { 1: true, 3: true }, type: 'tag', hub: true, label: 'same' });
+  for (const id of [1, 2, 3, 4]) assert.deepEqual(result.nodes[id].links, {});
+});
+const sharedGraph = (papers: Array<{ id: number; year?: number | null; tags: string[] }>) => {
+  const result = spSharedGraph(papers, p => p.tags, 'tag');
+  for (const paper of papers) result.nodes[paper.id].year = paper.year ?? null;
+  return result;
+};
+const linkCount = (result: { nodes: Record<string, { links: Record<string, boolean> }> }) =>
+  Object.values(result.nodes).reduce((sum, node) => sum + Object.keys(node.links).length, 0);
+test('a shared tag hub does not spend a depth level, so papers sharing a tag are one step apart', () => {
+  const raw = sharedGraph([{ id: 1, tags: ['x'] }, { id: 2, tags: ['x', 'y'] }, { id: 3, tags: ['y'] },
+    { id: 4, tags: ['x', 'w'] }, { id: 5, tags: ['x', 'w'] }]);
+  const first = spFilterGraph(raw, [1]);
+  // tag:y reaches paper 3 only at depth 2, so with one visible paper it is dropped; tag:w joins two visible papers.
+  assert.deepEqual(Object.keys(first.nodes).sort(), ['1', '2', '4', '5', 'tag:w', 'tag:x']);
+  assert.deepEqual(first.nodes['tag:x'].links, { 1: true, 2: true, 4: true, 5: true });
+  assert.deepEqual(first.nodes['tag:w'].links, { 4: true, 5: true });
+  assert.deepEqual(Object.keys(spFilterGraph(raw, [1], { depth: 2 }).nodes).sort(), ['1', '2', '3', '4', '5', 'tag:w', 'tag:x', 'tag:y']);
+  assert.deepEqual(Object.keys(spFilterGraph(raw, [3]).nodes).sort(), ['2', '3', 'tag:y']);
+});
+test('year bounds keep shared hubs, which then need two visible papers before isolation is judged', () => {
+  const raw = sharedGraph([{ id: 1, year: 2020, tags: ['x'] }, { id: 2, year: 2010, tags: ['x'] },
+    { id: 3, year: 2020, tags: ['y'] }, { id: 4, year: 2021, tags: ['y'] }, { id: 5, year: null, tags: ['y'] }]);
+  // A note-mode tag node carries no hub flag and keeps the year rule of ordinary nodes.
+  raw.nodes.note = { type: 'tag', links: { 3: true } };
+  const filtered = spFilterGraph(raw, [], { scope: 'all', minYear: 2015 });
+  assert.deepEqual(Object.keys(filtered.nodes).sort(), ['1', '3', '4', 'tag:y']);
+  assert.deepEqual(filtered.nodes['tag:y'].links, { 3: true, 4: true });
+  const isolated = spFilterGraph(raw, [], { scope: 'all', minYear: 2015, hideIsolated: true });
+  assert.deepEqual(Object.keys(isolated.nodes).sort(), ['3', '4', 'tag:y']);
+  assert.deepEqual(Object.keys(spFilterGraph(raw, [1], { minYear: 2015, hideIsolated: true }).nodes), []);
+});
+test('3000 papers sharing one tag produce links linear in the papers', () => {
+  const papers = Array.from({ length: 3000 }, (_, index) => ({ id: index + 1, year: 2020, tags: ['shared'] }));
+  const raw = sharedGraph(papers);
+  assert.equal(Object.keys(raw.nodes).length, 3001);
+  assert.equal(linkCount(raw), 3000);
+  const selected = spFilterGraph(raw, [1], { hideIsolated: true });
+  assert.equal(Object.keys(selected.nodes).length, 3001);
+  assert.equal(linkCount(selected), 3000);
+  assert.equal(linkCount(spFilterGraph(raw, [], { scope: 'all', minYear: 2020 })), 3000);
 });
 
 const normalize = spNormalizeJournalName;

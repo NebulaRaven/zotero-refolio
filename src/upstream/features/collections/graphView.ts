@@ -333,10 +333,10 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
     }
     getGraphByAuthorLink(items: Zotero.Item[]) {
       return spSharedGraph(items.filter(item => item.isRegularItem?.()), item => item.getCreators().map(person =>
-        [person.firstName, person.lastName].filter(Boolean).join(" ").trim()));
+        [person.firstName, person.lastName].filter(Boolean).join(" ").trim()), "author");
     }
     getGraphByTagLink(items: Zotero.Item[]) {
-      return spSharedGraph(items.filter(item => item.isRegularItem?.()), item => item.getTags().map(tag => tag.tag).filter(tag => !tag.startsWith("/")));
+      return spSharedGraph(items.filter(item => item.isRegularItem?.()), item => item.getTags().map(tag => tag.tag).filter(tag => !tag.startsWith("/")), "tag");
     }
     async createContainer() {
       document.querySelectorAll("#graph").forEach(e => e.remove());

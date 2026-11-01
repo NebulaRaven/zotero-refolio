@@ -22,6 +22,8 @@ export interface GraphItem {
 export interface GraphNode {
   links: Record<string, boolean>;
   type?: string;
+  // Shared-value node that joins papers; filtering crosses it without spending a depth level.
+  hub?: boolean;
   label?: string;
   description?: string;
   title?: string;

@@ -60,20 +60,24 @@ export function spCitationGraph(items: GraphItem[], references: ReadonlyMap<stri
   return { nodes, citationEdges: edges, citationDataAvailable: edges.length > 0 || items.some(item => references.has(spNormalizeDOI(item.getField("DOI")))) };
 }
 
-export function spSharedGraph<T extends Pick<GraphItem, "id">>(items: T[], valuesFor: (item: T) => string[]): GraphData {
+// One hub per shared value keeps links linear; pairwise links grow with the square of the papers sharing it.
+// The prefix keeps hub ids apart from numeric item ids; the "tag" type gives hubs the renderer's tag colour
+// and makes clicking one select its papers, as for note tags.
+export function spSharedGraph<T extends Pick<GraphItem, "id">>(items: T[], valuesFor: (item: T) => string[], prefix: string): GraphData {
   const nodes: Record<string, GraphNode> = Object.fromEntries(items.map(item => [item.id, { links: {}, type: "item" }]));
   const groups = new Map<string, number[]>();
   for (const item of items) for (const value of new Set(valuesFor(item).filter(Boolean))) {
     if (!groups.has(value)) groups.set(value, []);
     groups.get(value)!.push(item.id);
   }
-  for (const ids of groups.values()) for (let i = 0; i < ids.length; i++) {
-    for (const target of ids.slice(i + 1)) nodes[ids[i]].links[target] = true;
+  for (const [value, ids] of groups) if (ids.length > 1) {
+    nodes[`${prefix}:${value}`] = { links: Object.fromEntries(ids.map(id => [id, true])), type: "tag", hub: true, label: value };
   }
   return { nodes };
 }
 
 // Neighbourhood distance ignores edge direction; the displayed edges retain it.
+// Hubs stand for a shared value, so crossing one costs no depth level: papers sharing a tag stay one step apart.
 export function spFilterGraph(graph: GraphData, seeds: NodeID[], { scope = "selected", depth = 1, minYear = "", maxYear = "", hideIsolated = false }: GraphFilter = {}): GraphData {
   const source = graph.nodes || {};
   const yearBound = (value: string | number | null | undefined) => value === "" || value == null ? null : Number(value);
@@ -83,7 +87,7 @@ export function spFilterGraph(graph: GraphData, seeds: NodeID[], { scope = "sele
   }
   const eligible = new Set(Object.keys(source).filter(id => {
     const year = source[id].year;
-    if (min === null && max === null) return true;
+    if (source[id].hub || (min === null && max === null)) return true;
     return typeof year === "number" && Number.isInteger(year) && (min === null || year >= min) && (max === null || year <= max);
   }));
   const adjacent = new Map([...eligible].map(id => [id, new Set<string>()]));
@@ -93,14 +97,26 @@ export function spFilterGraph(graph: GraphData, seeds: NodeID[], { scope = "sele
   const selected = new Set(seeds.map(String).filter(id => eligible.has(id)));
   const visible = scope === "all" ? new Set(eligible) : new Set(selected);
   if (scope !== "all") {
+    const levels = Math.max(1, Math.min(2, Number(depth) || 1));
     let frontier = [...selected];
-    for (let level = 0; level < Math.max(1, Math.min(2, Number(depth) || 1)); level++) {
+    for (let level = 0; ; level++) {
+      // Entering a hub is free, so hubs next to this level join it and their papers are one level further.
+      for (let i = 0; i < frontier.length; i++) for (const other of adjacent.get(frontier[i])!) {
+        if (source[other].hub && !visible.has(other)) { visible.add(other); frontier.push(other); }
+      }
+      if (level === levels) break;
       const next = [];
       for (const id of frontier) for (const other of adjacent.get(id) || []) {
         if (!visible.has(other)) { visible.add(other); next.push(other); }
       }
       frontier = next;
     }
+  }
+  // A hub joins nothing unless at least two of its papers remain.
+  for (const id of visible) if (source[id].hub) {
+    let papers = 0;
+    for (const other of adjacent.get(id)!) if (!source[other].hub && visible.has(other)) papers++;
+    if (papers < 2) visible.delete(id);
   }
   if (hideIsolated) for (const id of [...visible]) {
     if (![...adjacent.get(id)!].some(other => visible.has(other))) visible.delete(id);
