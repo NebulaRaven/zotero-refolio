@@ -11,6 +11,7 @@ import { spBuildGraphControls,spMakeGraphResizable } from "../../../app/graphCon
 import { spElement } from "../../../app/ui.ts";
 import { spGetCitationGraph } from "../../../app/citations.ts";
 import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
+import { registerNotify } from "../../platform/zotero/notifier.ts";
   // src/features/collections/graphView.ts
   export class GraphView {
     declare active: boolean;
@@ -29,7 +30,7 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
     declare _prefObserverID: any;
     declare _onSelectHandler: () => void;
     declare onUnload: () => void;
-    declare refreshGraphView: () => Promise<void>;
+    declare refreshGraphView: (selectionChanged?: boolean) => Promise<void>;
     declare refreshGeneration: number;
     declare positions: Map<any, any>;
     declare modeFunction: Record<string, (items: Zotero.Item[]) => GraphData | Promise<GraphData>>;
@@ -37,6 +38,8 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
     declare _themeMedia: MediaQueryList;
     declare renderer: any;
     declare graph: GraphData;
+    declare rawGraph: { key: string; graph: GraphData } | undefined;
+    declare rawGraphVersion: number;
     declare container: any;
     declare resizer: any;
     declare renderedContext: any;
@@ -52,17 +55,18 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
       this._prefObserverID = null;
       this._onSelectHandler = null;
       this.onUnload = () => this.destroy();
-      this.refreshGraphView = async () => {
+      this.refreshGraphView = async (selectionChanged = false) => {
         if (!this.active || this.container?.style.display === "none" || !this.renderer) {
           return;
         }
         const generation = this.refreshGeneration = (this.refreshGeneration || 0) + 1;
         this.syncControls?.();
-        const graph = await this.getGraph();
+        const graph = await this.getGraph(selectionChanged);
         if (this.active && generation === this.refreshGeneration) this.setData(graph);
       };
       this.positions = new Map();
       this.refreshGeneration = 0;
+      this.rawGraphVersion = 0;
       this.modeFunction = {
         citations: this.getGraphByCitationLink.bind(this),
         note: this.getGraphByNoteLink.bind(this),
@@ -84,6 +88,7 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
       addon.api.refreshGraphView = this.refreshGraphView;
     }
     async init() {
+      this.observeLibraryChanges();
       await this.createContainer();
       if (!this.active) {
         return;
@@ -145,6 +150,7 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
       } catch {}
       this.positions?.clear();
       this.graph = undefined;
+      this.rawGraph = undefined;
       if (addon.api.refreshGraphView === this.refreshGraphView) {
         delete addon.api.refreshGraphView;
       }
@@ -261,27 +267,19 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
       try { await spPromptEmptyCitationGraph(libraryID, current); }
       catch (error) { if (this.active) this.status.textContent = getErrorMessage(error); Zotero.logError(error); }
     }
-    async getGraph() {
+    async getGraph(selectionChanged = false) {
       const mode = this.mode;
       if (!mode) return { nodes: {} };
       // The trash also lists deleted collections and searches, which have none of the item methods.
       const items = ZoteroPane.getSortedItems().filter(item => item instanceof Zotero.Item);
       const collection = getFirstSelectedCollection();
       const context = `${mode}:${getFirstSelectedLibraryID()}:${collection?.key || "library"}`;
-      const raw: GraphData = await this.modeFunction[mode](items);
-      raw.context = context;
       if (mode === "genealogy") {
-        return raw;
+        const genealogy: GraphData = await this.modeFunction[mode](items);
+        genealogy.context = context;
+        return genealogy;
       }
-      for (const [id, node] of Object.entries(raw.nodes)) {
-        if (node.type !== "item") continue;
-        const item = Zotero.Items.get(Number(id));
-        if (!item) continue;
-        let date = "";
-        try { date = item.getField("date") || ""; } catch {}
-        const year = String(date).match(/\b(\d{4})\b/);
-        node.year = year ? Number(year[1]) : null;
-      }
+      const raw = await this.getRawGraph(mode, context, items, selectionChanged);
       const options = {
         scope: getPref("graphView.scope") || "selected", depth: Number(getPref("graphView.depth") || 1),
         minYear: getPref("graphView.minYear") || "", maxYear: getPref("graphView.maxYear") || "",
@@ -301,6 +299,35 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
       graph.noSelection = options.scope === "selected" && !seeds.length;
       graph.yearFiltered = Boolean(options.minYear || options.maxYear);
       return graph;
+    }
+    // A selection change only refilters, so it reuses the unfiltered graph; any other refresh rebuilds it.
+    async getRawGraph(mode: string, context: string, items: Zotero.Item[], selectionChanged: boolean) {
+      const key = `${context}:${items.map(item => item.id).join(",")}`;
+      if (!selectionChanged) this.invalidateRawGraph();
+      else if (this.rawGraph?.key === key) return this.rawGraph.graph;
+      const version = this.rawGraphVersion;
+      const raw: GraphData = await this.modeFunction[mode](items);
+      raw.context = context;
+      for (const [id, node] of Object.entries(raw.nodes)) {
+        if (node.type !== "item") continue;
+        const item = Zotero.Items.get(Number(id));
+        if (!item) continue;
+        let date = "";
+        try { date = item.getField("date") || ""; } catch {}
+        const year = String(date).match(/\b(\d{4})\b/);
+        node.year = year ? Number(year[1]) : null;
+      }
+      // A change or rebuild that came while this graph was built may be missing from it.
+      if (version === this.rawGraphVersion) this.rawGraph = { key, graph: raw };
+      return raw;
+    }
+    observeLibraryChanges() {
+      // The cached graph was built from the items, their tags and the collection contents.
+      this.cleanups.push(registerNotify(["item", "item-tag", "collection-item"], () => this.invalidateRawGraph()));
+    }
+    invalidateRawGraph() {
+      this.rawGraph = undefined;
+      this.rawGraphVersion = (this.rawGraphVersion || 0) + 1;
     }
     getGraphByNoteLink(items) {
       const noteItems = items.filter(item => item.itemType == "note");
@@ -401,7 +428,7 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
         this.selectionTimer = undefined;
         if (this.container.style.display === "none") return;
         this.syncGenealogyAuthors?.();
-        if (this.mode !== "genealogy") await this.refreshGraphView();
+        if (this.mode !== "genealogy") await this.refreshGraphView(true);
       }, 0);
     }
     async initIFrame(frame) {

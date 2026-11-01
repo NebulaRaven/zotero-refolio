@@ -72,3 +72,76 @@ test('the graph labels only papers that survive the filter and skips trash rows 
   f.view.mode = 'note';
   assert.deepEqual({ ...(await f.view.getGraph()).nodes }, {});
 });
+
+async function liveGraph(rows: Paper[]) {
+  const timers: Array<() => void> = [], rendered: Array<{ nodes: Record<string, unknown> }> = [];
+  let notify: ((...data: unknown[]) => void) | undefined, notifyTypes: string[] = [], unregistered = 0;
+  const pane = { selected: [] as Paper[], getSortedItems: () => rows, getSelectedItems: () => pane.selected };
+  const addon = { api: {} as { refreshGraphView?: () => Promise<void> } };
+  const ctx = await loadGraphView({ ZoteroPane: pane, addon, getPref: key => key === 'graphView.mode' ? 'tag' : undefined,
+    getFirstSelectedCollection: () => undefined, getFirstSelectedLibraryID: () => 1,
+    registerNotify: (types, callback) => { notifyTypes = [...types]; notify = callback; return () => { unregistered++; }; },
+    // The items tree never appears, so initialization waits and leaves the renderer to the test.
+    document: { querySelectorAll: () => [], querySelector: () => null },
+    window: { addEventListener() {}, removeEventListener() {}, setTimeout: fn => timers.push(fn), clearTimeout() {} },
+    Zotero: { Item: Paper, Items: { get: id => rows.find(paper => paper.id === id) }, Promise: { delay: () => new Promise(() => {}) } } });
+  const view = new ctx.GraphView();
+  let builds = 0;
+  const build = view.modeFunction.tag;
+  view.modeFunction.tag = items => { builds++; return build(items); };
+  Object.assign(view, { renderer: {}, container: { style: { display: '' }, remove() {} },
+    setData: graph => rendered.push(graph), getItemDisplayText: item => `Paper ${item.id}` });
+  const flush = () => new Promise(resolve => setImmediate(resolve));
+  const select = async (...papers: Paper[]) => {
+    pane.selected = papers; view.queueSelectionRefresh();
+    while (timers.length) { timers.shift()!(); await flush(); }
+  };
+  return { view, addon, rendered, select, flush, notify: (...data: unknown[]) => notify!(...data),
+    get builds() { return builds; }, get notifyTypes() { return notifyTypes; }, get unregistered() { return unregistered; } };
+}
+
+test('selection changes reuse the unfiltered graph while library changes and explicit refreshes rebuild it', async () => {
+  const papers = [new Paper(1, '2020', ['x']), new Paper(2, '2021', ['x', 'y']), new Paper(3, '2022', ['y'])];
+  const f = await liveGraph(papers);
+  await f.addon.api.refreshGraphView!();
+  await f.select(papers[0]); await f.select(papers[2]);
+  assert.equal(f.builds, 1);
+  assert.deepEqual(Object.keys(f.rendered.at(-1)!.nodes).sort(), ['2', '3', 'tag:y']);
+  assert.deepEqual(f.notifyTypes, ['item', 'item-tag', 'collection-item']);
+  papers[2].tags = ['x', 'y']; f.notify('add', 'item-tag', ['3-1'], {});
+  await f.select(papers[0]);
+  assert.equal(f.builds, 2);
+  assert.deepEqual(Object.keys(f.rendered.at(-1)!.nodes).sort(), ['1', '2', '3', 'tag:x', 'tag:y']);
+  // Related items and citation updates refresh explicitly and must see the change.
+  await f.addon.api.refreshGraphView!();
+  assert.equal(f.builds, 3);
+  // Another collection or search lists other items and needs its own graph.
+  papers.pop(); await f.select(papers[0]);
+  assert.equal(f.builds, 4);
+  f.view.destroy();
+  assert.equal(f.unregistered, 1);
+  assert.equal(f.view.rawGraph, undefined);
+  assert.equal(f.addon.api.refreshGraphView, undefined);
+});
+
+test('a graph built before a library change or an explicit refresh does not replace the cached graph', async () => {
+  const papers = [new Paper(1, '2020', ['x']), new Paper(2, '2021', ['x'])];
+  const f = await liveGraph(papers);
+  const build = f.view.modeFunction.tag, held: Array<() => void> = [];
+  // A held build reads the tags when it starts and finishes only when released.
+  const hold = () => { f.view.modeFunction.tag = items => { const graph = build(items); return new Promise(resolve => held.push(() => resolve(graph))); }; };
+  const visible = () => Object.keys(f.rendered.at(-1)!.nodes).sort();
+  hold(); await f.select(papers[0]);
+  papers[1].tags = ['z']; f.notify('modify', 'item-tag', ['2-1'], {});
+  held.shift()!(); await f.flush();
+  f.view.modeFunction.tag = build; await f.select(papers[0]);
+  assert.deepEqual(visible(), ['1']);
+  f.notify('modify', 'item', [1], {});
+  hold(); await f.select(papers[0]);
+  // Citation data changes reach the graph only through an explicit refresh.
+  f.view.modeFunction.tag = build; papers[1].tags = ['x'];
+  await f.addon.api.refreshGraphView!();
+  held.shift()!(); await f.flush();
+  await f.select(papers[0]);
+  assert.deepEqual(visible(), ['1', '2', 'tag:x']);
+});
