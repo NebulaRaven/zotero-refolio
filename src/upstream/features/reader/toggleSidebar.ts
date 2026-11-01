@@ -4,7 +4,6 @@ import { shouldIgnoreSidebarShortcut } from "./sidebarShortcut.ts";
 import { config } from "../../config.ts";
 import { getString } from "../../utils/locale.ts";
 import { getElements } from "../../utils/dom.ts";
-  // src/features/reader/toggleSidebar.ts
   export class ToggleSidebar {
     declare cleanups: Array<() => void | Promise<void>>;
     declare destroyed: boolean;

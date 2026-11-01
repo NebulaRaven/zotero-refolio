@@ -1,11 +1,10 @@
-  // src/utils/lruCache.ts
   export class LruCache {
     declare capacity: any;
     declare values: Map<any, any>;
 
     constructor(capacity) {
       this.capacity = capacity;
-      this.values = /* @__PURE__ */new Map();
+      this.values = new Map();
       if (!Number.isInteger(capacity) || capacity < 1) {
         throw new Error("LRU cache capacity must be a positive integer.");
       }

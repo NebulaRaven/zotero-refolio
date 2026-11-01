@@ -16,7 +16,6 @@ import { getFirstSelectedCollectionOrSearch } from "../../utils/zoteroSelection.
 import { buildMenuPopup } from "../../platform/zotero/menu.ts";
 import { isEnabel } from "../../utils/base.ts";
 import { spRegisterMenu } from "../../../app/menus.ts";
-  // src/features/collections/collectionTree.ts
   export var collectionItemCountClassNames = createCollectionItemCountClassNames(config.addonRef);
   export var collectionItemCountPatchKey = `${config.addonRef}CollectionItemCountPatch`;
   export var collectionItemCountRenderTokenKey = `${config.addonRef}CollectionItemCountRenderToken`;
@@ -48,7 +47,7 @@ import { spRegisterMenu } from "../../../app/menus.ts";
       animationFrames.add(frame);
     };
     let cacheOwner = addon.data.cache;
-    const cacheKeys = /* @__PURE__ */new Set();
+    const cacheKeys = new Set();
     // Restoring from the trash and moving an item under a parent only send "modify", so any change can alter a count.
     const invalidator = createCountInvalidator(() => {
       addon.data.cache = {};

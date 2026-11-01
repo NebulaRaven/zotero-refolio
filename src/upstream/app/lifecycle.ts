@@ -1,5 +1,4 @@
 import type { Cleanup,FeatureFailure } from '../../types/addon.ts';
-  // src/app/lifecycle.ts
   export class FeatureRuntime {
     declare context: any;
     declare onFailure: (failure: FeatureFailure) => void;
@@ -12,9 +11,9 @@ import type { Cleanup,FeatureFailure } from '../../types/addon.ts';
     constructor(context, onFailure: (failure: FeatureFailure) => void = () => {}) {
       this.context = context;
       this.onFailure = onFailure;
-      this.startedFeatures = /* @__PURE__ */new Map();
-      this.startingFeatureIDs = /* @__PURE__ */new Set();
-      this.inFlightStarts = /* @__PURE__ */new Set();
+      this.startedFeatures = new Map();
+      this.startingFeatureIDs = new Set();
+      this.inFlightStarts = new Set();
       this.shutdownController = new AbortController();
       this.stopped = false;
     }

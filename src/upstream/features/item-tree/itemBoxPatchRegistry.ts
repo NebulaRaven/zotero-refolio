@@ -1,11 +1,10 @@
-  // src/features/item-tree/itemBoxPatchRegistry.ts
   export class ItemBoxPatchRegistry {
     declare onCleanupError: (error: unknown) => void;
     declare cleanups: Map<any, any>;
 
     constructor(onCleanupError: (error: unknown) => void = () => {}) {
       this.onCleanupError = onCleanupError;
-      this.cleanups = /* @__PURE__ */new Map();
+      this.cleanups = new Map();
     }
     has(itemBox) {
       return this.cleanups.has(itemBox);

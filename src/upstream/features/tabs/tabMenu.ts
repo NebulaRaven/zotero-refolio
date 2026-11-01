@@ -1,7 +1,6 @@
 import type { TabPopup } from '../../../types/ui.ts';
 import { getElements } from "../../utils/dom.ts";
 import { getString } from "../../utils/locale.ts";
-  // src/features/tabs/tabMenu.ts
   export var STYLE_TAB_MENU_ATTR = "data-stylepersonal-tab-menu";
   export function patchTabMenu() {
     const container = document.querySelector<TabPopup>("#tab-bar-container");

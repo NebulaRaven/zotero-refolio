@@ -1,5 +1,4 @@
 interface ViewColumn { dataKey: string; hidden?: boolean; ordinal?: number; width?: number; [key: string]: unknown; }
-  // src/features/item-tree/viewGroupLogic.ts
   export function asRecord(value: unknown): Record<string, Partial<ViewColumn>> {
     if (value && typeof value === "object" && !Array.isArray(value)) {
       return value as Record<string, Partial<ViewColumn>>;

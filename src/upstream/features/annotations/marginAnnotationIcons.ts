@@ -1,4 +1,3 @@
-  // src/features/annotations/marginAnnotationIcons.ts
   export var MARGIN_ANNOTATION_PREFERENCE_ICON = [["path", {
     fill: "currentColor",
     "fill-rule": "evenodd",

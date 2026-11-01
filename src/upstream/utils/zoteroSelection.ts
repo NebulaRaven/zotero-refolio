@@ -1,4 +1,3 @@
-  // src/utils/zoteroSelection.ts
   export var LEGACY_SELECTION_METHODS = {
     getSelectedLibraryIDs: "getSelectedLibraryID",
     getSelectedCollections: "getSelectedCollection",

@@ -1,4 +1,3 @@
-  // src/utils/zoteroPane.ts
   export function isItemsViewTreeReady(view) {
     const host = view;
     return Boolean(host?.tree && !host._uninitialized);
@@ -13,7 +12,7 @@
     }
     return false;
   }
-  export var columnResetGuards = /* @__PURE__ */new WeakMap();
+  export var columnResetGuards = new WeakMap();
   export function installItemTreeColumnResetGuard(target) {
     const existing = columnResetGuards.get(target);
     if (existing) {

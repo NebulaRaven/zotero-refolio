@@ -1,6 +1,5 @@
-  // src/features/preferences/defaultPreferences.ts
   export function readDefaultPreferences() {
-    const preferences = /* @__PURE__ */new Map();
+    const preferences = new Map();
     const registerPreference = (key, value) => {
       if (preferences.has(key)) {
         throw new Error(`Duplicate default preference: ${key}`);

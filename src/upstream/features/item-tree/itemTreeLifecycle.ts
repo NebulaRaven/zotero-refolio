@@ -1,4 +1,3 @@
-  // src/features/item-tree/itemTreeLifecycle.ts
   export async function awaitItemTreeReady(itemTree) {
     try {
       await itemTree.ready;

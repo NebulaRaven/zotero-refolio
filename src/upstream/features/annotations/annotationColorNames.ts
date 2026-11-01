@@ -1,4 +1,3 @@
-  // src/features/annotations/annotationColorNames.ts
   export var BUILT_IN_COLOR_NAME_PATTERN = /^general[.-](yellow|red|green|blue|purple|magenta|orange|gray)$/;
   export function isAnnotationColorLocalizationID(value) {
     return typeof value === "string" && BUILT_IN_COLOR_NAME_PATTERN.test(value.trim());

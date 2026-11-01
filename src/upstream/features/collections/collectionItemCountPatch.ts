@@ -1,4 +1,3 @@
-  // src/features/collections/collectionItemCountPatch.ts
   export function installIdempotentRenderItemPatch({
     createPatchedRenderItem,
     host,

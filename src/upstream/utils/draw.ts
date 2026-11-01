@@ -1,4 +1,3 @@
-  // src/utils/draw.ts
   export function getRGB2(color) {
     let sColor = color.toLowerCase();
     const reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;

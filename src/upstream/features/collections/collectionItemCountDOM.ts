@@ -1,5 +1,4 @@
 import { getElements } from "../../utils/dom.ts";
-  // src/features/collections/collectionItemCountDOM.ts
   export function createCollectionItemCountClassNames(addonRef) {
     return {
       count: `${addonRef}-collection-item-count`,

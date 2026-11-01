@@ -1,5 +1,4 @@
 import { getElements } from "../../utils/dom.ts";
-  // src/features/item-tree/columnFieldPicker.ts
   export function createFieldIcon(document2, kind) {
     const namespace = "http://www.w3.org/2000/svg";
     const icon = document2.createElementNS(namespace, "svg");

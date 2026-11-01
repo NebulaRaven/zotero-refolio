@@ -6,7 +6,6 @@ import { getColoredTags } from "../../utils/base.ts";
 import { getString } from "../../utils/locale.ts";
 import { drawOpacityProgress } from "../../utils/draw.ts";
 import { editAnnotationColors } from "../../../app/annotationColors.ts";
-  // src/features/workspace/prompt.ts
   /** Search-result summary: field values stay plain text and the publication is italicized. */
   export function appendItemDescription(parent, item) {
     const parts: Array<string | { italic: string }> = [];
@@ -67,7 +66,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
   export async function registerAllCommands() {
     let active = true;
     let searchGeneration = 0;
-    const commandIDs = /* @__PURE__ */new Set([`${config.addonRef}-prompt-search`, `${config.addonRef}-prompt-read-progress`, `${config.addonRef}-prompt-migration`, `${config.addonRef}-prompt-tags`, `${config.addonRef}-prompt-annotations`, `${config.addonRef}-prompt-addon-item`, `${config.addonRef}-prompt-prefs-export`, `${config.addonRef}-prompt-annual-summary`]);
+    const commandIDs = new Set([`${config.addonRef}-prompt-search`, `${config.addonRef}-prompt-read-progress`, `${config.addonRef}-prompt-migration`, `${config.addonRef}-prompt-tags`, `${config.addonRef}-prompt-annotations`, `${config.addonRef}-prompt-addon-item`, `${config.addonRef}-prompt-prefs-export`, `${config.addonRef}-prompt-annual-summary`]);
     const pendingTimeouts = new Set<number>();
     const pendingAnimationFrames = new Set<number>();
     const pendingTurnResolvers = new Set<() => void>();
@@ -732,7 +731,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           const regularItems = allItems.filter(item => item.isRegularItem() && item.libraryID == 1);
           const noteItems = allItems.filter(item => item.isNote() && item.libraryID == 1);
           const getTopKeywords = (textArray, count = 4) => {
-            const stopWords = /* @__PURE__ */new Set(["the", "and", "that", "are", "with", "from", "this", "which", "was", "were", "been", "have", "has", "had", "will", "would", "should", "their", "there", "they", "them", "some", "any", "not", "but", "also", "than", "into", "about", "such", "these", "those", "using", "through", "based", "study", "research", "analysis", "基于", "研究", "分析", "探讨", "一种", "关于", "可以", "通过", "进行", "结果", "意义", "内容", "笔记", "nbsp"]);
+            const stopWords = new Set(["the", "and", "that", "are", "with", "from", "this", "which", "was", "were", "been", "have", "has", "had", "will", "would", "should", "their", "there", "they", "them", "some", "any", "not", "but", "also", "than", "into", "about", "such", "these", "those", "using", "through", "based", "study", "research", "analysis", "基于", "研究", "分析", "探讨", "一种", "关于", "可以", "通过", "进行", "结果", "意义", "内容", "笔记", "nbsp"]);
             const text = textArray.join(" ").toLowerCase().replace(/<[^>]+>/g, " ").replace(/[^\u4e00-\u9fa5a-zA-Z\s]/g, " ").replace(/\b\w{1,3}\b/g, " ");
             const words = text.split(/\s+/).filter(w => w.length > 3 && !stopWords.has(w));
             const freq = {};

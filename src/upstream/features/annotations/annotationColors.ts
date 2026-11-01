@@ -3,7 +3,6 @@ import { findAnnotationColorName,isAnnotationColorLocalizationID,parseAnnotation
 import { executeReaderOuterScript,getReaderInstances,getReaderOuterDocument,setReaderToolColors } from "../../utils/reader.ts";
 import { buildAnnotationColorBridgeCleanupSource,buildAnnotationColorBridgeSource } from "./annotationColorBridge.ts";
 import { getElements } from "../../utils/dom.ts";
-  // src/features/annotations/annotationColors.ts
   export var COLORS_PREF = `${config.addonRef}.annotationColors`;
   export var COLORS_ENABLE_PREF = `${config.addonRef}.function.annotationColors.enable`;
   export var SHOW_NAMES_PREF = `${config.addonRef}.function.showAnnotationColorName.enable`;

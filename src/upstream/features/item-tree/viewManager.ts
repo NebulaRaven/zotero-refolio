@@ -5,7 +5,6 @@ import { buildViewGroupPrefs,parseViewGroups,resolveViewGroupDataKeys,selectView
 import { appendOwnedEntry,replaceOwnedProperty } from "../../utils/ownedResource.ts";
 import { getString } from "../../utils/locale.ts";
 import { getElements } from "../../utils/dom.ts";
-  // src/features/item-tree/viewManager.ts
   export class ViewManager {
     declare active: boolean;
     declare cleanups: Array<() => void | Promise<void>>;
@@ -18,7 +17,7 @@ import { getElements } from "../../utils/dom.ts";
     constructor() {
       this.active = true;
       this.cleanups = [];
-      this.timers = /* @__PURE__ */new Set();
+      this.timers = new Set();
       this.prefKey = `${config.addonRef}.viewGroups`;
       this.init().catch(error => {
         if (this.active) {

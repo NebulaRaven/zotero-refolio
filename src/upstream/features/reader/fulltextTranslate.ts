@@ -5,7 +5,6 @@ import { LocalStorage } from "../../platform/persistence/storage.ts";
 import { config } from "../../config.ts";
 import { getString } from "../../utils/locale.ts";
 import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } from "./microsoftTranslation.ts";
-  // src/features/reader/fulltextTranslate.ts
   export class FulltextTranslate {
     declare disposed: boolean;
     declare activeAbortControllers: Set<AbortController>;
@@ -19,8 +18,8 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
 
     constructor() {
       this.disposed = false;
-      this.activeAbortControllers = /* @__PURE__ */new Set();
-      this.exitTimers = /* @__PURE__ */new Set();
+      this.activeAbortControllers = new Set();
+      this.exitTimers = new Set();
       this.MINERU_BASE_URL = "https://mineru.net/api/v1/agent";
       this.CONCURRENCY_LIMIT = 8;
       this.mathCache = [];

@@ -1,4 +1,3 @@
-  // src/features/annotations/annotationColorBridge.ts
   export var BRIDGE_KEY = "__zoteroStyleAnnotationColorBridge";
   export function encodeBridgePayload(colors) {
     return encodeURIComponent(JSON.stringify(colors));

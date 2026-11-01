@@ -1,5 +1,4 @@
 import type { AddonData,PreferenceRegistration } from '../../../types/addon.ts';
-  // src/features/preferences/preferenceWindow.ts
   export function trackPreferenceWindow(owner: AddonData, preferenceWindow: Window) {
     owner.prefs?.release?.();
     let active = true;

@@ -6,7 +6,6 @@ import { reconcileReaderToolbarAfterInitialization } from "./readerToolbarLifecy
 import { getReaderInstances,getReaderOuterDocument,unregisterReaderEventListenersByPluginID } from "../../utils/reader.ts";
 import { takeStaleOwnedEntries } from "./readerResourceLifecycle.ts";
 import { registerNotify } from "../../platform/zotero/notifier.ts";
-  // src/features/reader/reader.ts
   export function mergeAnnotations() {
     let active = true;
     const handler = event => {
@@ -47,9 +46,9 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
     };
   }
   export function registerAttachmentVersionSwitch() {
-    const buttons = /* @__PURE__ */new Map();
-    const pendingReaders = /* @__PURE__ */new WeakSet();
-    const reconcileTimers = /* @__PURE__ */new Map();
+    const buttons = new Map();
+    const pendingReaders = new WeakSet();
+    const reconcileTimers = new Map();
     let active = true;
     const removeButtons = doc => {
       removeElementsExcept(doc.querySelectorAll("#pdf-version-button"));

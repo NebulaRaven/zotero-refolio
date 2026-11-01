@@ -1,4 +1,3 @@
-  // src/utils/dom.ts
   export function getNodes<T extends Node>(nodes: Iterable<T | null> | ArrayLike<T | null>): T[] {
     return Array.from(nodes).filter(node => node !== null);
   }

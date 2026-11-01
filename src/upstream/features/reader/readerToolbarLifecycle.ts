@@ -1,4 +1,3 @@
-  // src/features/reader/readerToolbarLifecycle.ts
   export async function reconcileReaderToolbarAfterInitialization(reader, isActive, getDocument, render) {
     try {
       await reader._initPromise;

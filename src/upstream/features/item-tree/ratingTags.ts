@@ -1,4 +1,3 @@
-  // src/features/item-tree/ratingTags.ts
   export var LEGACY_RATING_STAR = "⭐";
   export var MAX_RATING = 5;
   export var DEFAULT_RATING_STORAGE_LOCATION = "extra";

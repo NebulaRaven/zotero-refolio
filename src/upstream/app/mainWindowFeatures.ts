@@ -22,7 +22,6 @@ import { ViewManager } from "../features/item-tree/viewManager.ts";
 import { initCollectionTree } from "../features/collections/collectionTree.ts";
 import { registerAllCommands } from "../features/workspace/prompt.ts";
 import { FulltextTranslate } from "../features/reader/fulltextTranslate.ts";
-  // src/app/mainWindowFeatures.ts
   export var enabled = key => () => Boolean(isEnabel(key));
   export function createImmediateFeatures() {
     return [{

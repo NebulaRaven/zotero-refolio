@@ -1,4 +1,3 @@
-  // src/utils/rateLimitedRequestScheduler.ts
   export class RateLimitedRequestScheduler {
     declare intervalMs: any;
     declare clock: any;
@@ -10,7 +9,7 @@
       this.intervalMs = intervalMs;
       this.clock = clock;
       this.schedule = Promise.resolve();
-      this.inFlight = /* @__PURE__ */new Map();
+      this.inFlight = new Map();
     }
     run(key, requestFactory) {
       const existing = this.inFlight.get(key);

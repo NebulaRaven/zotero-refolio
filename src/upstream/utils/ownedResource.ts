@@ -1,4 +1,3 @@
-  // src/utils/ownedResource.ts
   export function replaceOwnedProperty(target, key, replacement) {
     const previous = target[key];
     target[key] = replacement;

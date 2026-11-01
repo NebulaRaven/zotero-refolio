@@ -1,4 +1,3 @@
-  // src/features/item-tree/itemTreeColumnLifecycle.ts
   export function hasOwn(record, key) {
     return Boolean(record && Object.prototype.hasOwnProperty.call(record, key));
   }

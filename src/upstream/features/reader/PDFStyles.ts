@@ -5,7 +5,6 @@ import { getReaderInstances,getReaderViewWindow } from "../../utils/reader.ts";
 import { takeStaleOwnedEntries } from "./readerResourceLifecycle.ts";
 import { getString } from "../../utils/locale.ts";
 import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
-  // src/features/reader/PDFStyles.ts
   export class PDFStyles {
     declare active: boolean;
     declare readerResources: Map<any, any>;
@@ -15,7 +14,7 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
 
     constructor() {
       this.active = true;
-      this.readerResources = /* @__PURE__ */new Map();
+      this.readerResources = new Map();
       this.toolbarHandler = async ({
         reader
       }) => {
@@ -66,13 +65,13 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
       let resources = this.readerResources.get(reader);
       if (!resources) {
         resources = {
-          buttons: /* @__PURE__ */new Set(),
-          menuPopupCleanups: /* @__PURE__ */new Set(),
-          patchedWindows: /* @__PURE__ */new Set(),
+          buttons: new Set(),
+          menuPopupCleanups: new Set(),
+          patchedWindows: new Set(),
           previousStyle: undefined,
           previousStyleCaptured: false,
-          styleElements: /* @__PURE__ */new Set(),
-          timers: /* @__PURE__ */new Set()
+          styleElements: new Set(),
+          timers: new Set()
         };
         this.readerResources.set(reader, resources);
       }

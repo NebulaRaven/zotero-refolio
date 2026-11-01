@@ -1,6 +1,5 @@
 import { config } from "../../config.ts";
 import { isEnabel } from "../../utils/base.ts";
-  // src/features/workspace/buttons.ts
   export function registerDayNightButton() {
     const prefKey = "browser.theme.toolbar-theme";
     const isDark = () => Zotero.Prefs.get(prefKey, true) == 0;

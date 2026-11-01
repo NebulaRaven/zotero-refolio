@@ -1,5 +1,4 @@
 import { config } from "../../config.ts";
-  // src/platform/zotero/menu.ts
   export function ownTemporaryMenuPopup(menupopup, onRelease = () => {}) {
     let active = true;
     const removeWhenHidden = event => {

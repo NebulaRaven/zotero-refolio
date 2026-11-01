@@ -1,5 +1,4 @@
 import { isElement } from "../../utils/dom.ts";
-  // src/features/reader/sidebarShortcut.ts
   export function isEditor(target) {
     if (!isElement(target)) {
       return false;

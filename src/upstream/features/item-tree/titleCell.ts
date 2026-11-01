@@ -1,4 +1,3 @@
-  // src/features/item-tree/titleCell.ts
   export var MANAGED_RATING_CLASS = "stylepersonal-title-rating";
   export function removeAll(elements) {
     elements.forEach(element => element.remove());

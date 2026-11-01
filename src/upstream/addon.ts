@@ -2,7 +2,6 @@ import { createZToolkit } from "./utils/ztoolkit.ts";
 import { hooks_default } from "../app/hooks.ts";
 import { Requests } from "./utils/requests.ts";
 import type { AddonAPI,AddonData } from '../types/addon.ts';
-  // src/addon.ts
   export class Addon {
     declare data: AddonData;
     declare hooks: { onStartup: () => Promise<void>; onShutdown: () => Promise<void>; onMainWindowLoad: (win: any) => Promise<void>; onMainWindowUnload: (win: any) => Promise<void>; onPrefsEvent: (type: any, data: any) => Promise<void>; onCollectionSelect: () => Promise<void>; };

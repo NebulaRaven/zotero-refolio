@@ -3,7 +3,6 @@ import { getPref } from "../../utils/prefs.ts";
 import { config } from "../../config.ts";
 import { getString } from "../../utils/locale.ts";
 import { getSuccessfulTldrTranslation,getTldrTextFromResponse,prepareTldrText } from "./tldrLogic.ts";
-  // src/features/reader/TLDR.ts
   export function registerTLDRPane(win) {
     let active = true;
     const states = new WeakMap<Element, { item: Zotero.Item; dirty: boolean }>();

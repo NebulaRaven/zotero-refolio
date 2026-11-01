@@ -1,4 +1,3 @@
-  // src/features/workspace/styleElement.ts
   export var HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
   export function syncStyleElement(doc, id, css) {
     const existing = doc.getElementById(id);

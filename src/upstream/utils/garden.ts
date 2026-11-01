@@ -1,4 +1,3 @@
-  // src/utils/garden.ts
   export function ifRank(n) {
     if (n >= 20) {
       return 1;

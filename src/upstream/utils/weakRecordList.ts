@@ -1,4 +1,3 @@
-  // src/utils/weakRecordList.ts
   export var WeakRecordList = class _WeakRecordList extends Array {
     declare nextCompactLength: number;
     declare static MIN_COMPACT_LENGTH: number;

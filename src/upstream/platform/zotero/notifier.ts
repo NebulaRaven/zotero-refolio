@@ -1,4 +1,3 @@
-  // src/platform/zotero/notifier.ts
   export function registerNotify(types, onNotify) {
     let active = true;
     const callback = {

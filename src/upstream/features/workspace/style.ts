@@ -2,7 +2,6 @@ import { config } from "../../config.ts";
 import { isEnabel } from "../../utils/base.ts";
 import { syncStyleElement } from "./styleElement.ts";
 import { getReaderInstances,getReaderOuterDocument } from "../../utils/reader.ts";
-  // src/features/workspace/style.ts
   export var CUSTOM_STYLE_ID = `${config.addonRef}-custom-style`;
   export var PACKAGED_STYLE_ID = `${config.addonRef}-packaged-style`;
   export var TAG_COLOR_STYLE_ID = `${config.addonRef}-tag-color-style`;

@@ -1,4 +1,3 @@
-  // src/features/reader/tldrLogic.ts
   export function getTldrTextFromResponse(response) {
     if (!response || typeof response !== "object") {
       return "";

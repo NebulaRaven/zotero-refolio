@@ -1,4 +1,3 @@
-  // src/features/reader/readerResourceLifecycle.ts
   export function takeStaleOwnedEntries(entries, liveOwners, getOwner) {
     const live = new Set(liveOwners);
     const stale = [];

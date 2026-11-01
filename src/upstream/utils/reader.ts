@@ -1,4 +1,3 @@
-  // src/utils/reader.ts
   export function getReaderViewWindow(view) {
     return view?._iframeWindow;
   }

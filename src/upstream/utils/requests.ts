@@ -1,5 +1,4 @@
 import { spRedactURL } from "../../core/journals.ts";
-  // src/utils/requests.ts
   export class Requests {
     declare maxCacheEntries: number;
     declare cache: Record<string, any>;

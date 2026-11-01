@@ -1,7 +1,6 @@
 import { ZoteroToolkit } from "zotero-plugin-toolkit/ztoolkit";
 import { config } from "../config.ts";
 import { installBoundedElementRecord } from "./weakRecordList.ts";
-  // src/utils/ztoolkit.ts
   export function createZToolkit() {
     const _ztoolkit = new ZoteroToolkit();
     initZToolkit(_ztoolkit);
