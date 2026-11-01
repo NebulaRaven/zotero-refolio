@@ -162,14 +162,18 @@ test('empty entries of a loaded storage file are dropped and stored values read 
 });
 
 /** Note storage on a fake add-on item whose getNotes(), like Zotero's, lists the untrashed child notes. */
-async function noteStorageFixture() {
-  let nextID = 10, lookups = 0, created = 0;
-  const notes = new Map<number, Note>();
-  const parent = { id: 1, key: 'ADDONKEY', childIDs: [] as number[], getNotes() { return this.childIDs.filter(id => !notes.get(id)!.deleted); } };
+async function noteStorageFixture({ holdSaves = false } = {}) {
+  let nextID = 10, lookups = 0, created = 0, noteLists = 0;
+  const notes = new Map<number, Note>(), heldSaves: Array<() => void> = [];
+  const parent = { id: 1, key: 'ADDONKEY', childIDs: [] as number[], getNotes() { noteLists++; return this.childIDs.filter(id => !notes.get(id)!.deleted); } };
   class Note {
     id = nextID++; parentID: number | false = false; deleted = false; note = ''; _displayTitle = '';
     setNote(text: string) { this.note = text; this._displayTitle = text.split('\n')[0]; }
-    async saveTx() { if (!notes.has(this.id)) { notes.set(this.id, this); parent.childIDs.push(this.id); } }
+    async saveTx() {
+      if (holdSaves) await new Promise<void>(resolve => heldSaves.push(resolve));
+      if (!notes.has(this.id)) { notes.set(this.id, this); parent.childIDs.push(this.id); }
+    }
+    async eraseTx() { erase(this); }
   }
   const resolve = (id: number) => { lookups++; return notes.get(id) || false; };
   const ctx = await load({ window: timers(), getPref: () => true, ztoolkit: { log: assert.fail },
@@ -180,8 +184,47 @@ async function noteStorageFixture() {
   // Notes arriving or leaving through sync, outside the storage.
   const sync = (key: string, data: object) => { const note = new Note(); note.parentID = parent.id; note.setNote(`${key}\n${JSON.stringify(data)}`); notes.set(note.id, note); parent.childIDs.push(note.id); return note; };
   const erase = (note: Note) => { notes.delete(note.id); parent.childIDs.splice(parent.childIDs.indexOf(note.id), 1); };
-  return { storage, sync, erase, lookups: () => lookups, created: () => created };
+  return { storage, sync, erase, notes, lookups: () => lookups, created: () => created, noteLists: () => noteLists,
+    releaseSaves: () => { for (const release of heldSaves.splice(0)) release(); } };
 }
+
+// Sync and other library changes reach the storage in later event-loop turns, never inside a render pass.
+const nextTurn = () => new Promise(resolve => setImmediate(resolve));
+
+test('note storage completes a write it accepted before being disposed', async () => {
+  const f = await noteStorageFixture({ holdSaves: true });
+  const writing = f.storage.set({ key: 'NEWKEY00' }, 'readingTime', 5);
+  await nextTurn();
+  const disposing = f.storage.dispose();
+  f.releaseSaves(); await writing; await disposing;
+  const saved = [...f.notes.values()].map(note => note.note);
+  assert.equal(saved.length, 1);
+  assert.match(saved[0], /^NEWKEY00\n.*"readingTime":5/);
+});
+
+test('note storage rechecks an indexed note that sync rewrote for another key', async () => {
+  const f = await noteStorageFixture();
+  const note = f.sync('AAAAAAAA', { readingTime: 1 });
+  assert.equal(f.storage.get({ key: 'AAAAAAAA' }, 'readingTime'), 1);
+  note.setNote(`BBBBBBBB\n${JSON.stringify({ readingTime: 99 })}`);
+  assert.equal(f.storage.get({ key: 'AAAAAAAA' }, 'readingTime'), undefined);
+  assert.equal(f.storage.get({ key: 'BBBBBBBB' }, 'readingTime'), 99);
+  await f.storage.set({ key: 'AAAAAAAA' }, 'readingTime', 5);
+  assert.match(note.note, /"readingTime":99/);
+  assert.equal(f.created(), 1);
+});
+
+test('note storage lists the add-on notes once per render pass, not once per row', async () => {
+  const f = await noteStorageFixture();
+  f.sync('AAAAAAAA', { readingTime: 1 });
+  await nextTurn();
+  const before = f.noteLists();
+  for (let row = 0; row < 100; row++) f.storage.get({ key: `ROW${row}` }, 'readingTime');
+  assert.equal(f.noteLists() - before, 1);
+  f.sync('LATER000', { readingTime: 2 });
+  await nextTurn();
+  assert.equal(f.storage.get({ key: 'LATER000' }, 'readingTime'), 2);
+});
 
 test('note storage finds keys in an index built from one scan, including notes it created or sync added later', async () => {
   const { storage, sync, lookups, created } = await noteStorageFixture();
@@ -197,6 +240,7 @@ test('note storage finds keys in an index built from one scan, including notes i
   assert.equal(storage.get({ key: 'DDDDDDDD' }, 'readingTime'), 4); assert.equal(storage.get(missing, 'readingTime'), undefined);
   assert.equal(lookups(), afterCreate, 'the created note was not added to the index');
   sync('CCCCCCCC', { readingTime: 3 });
+  await nextTurn();
   assert.equal(storage.get(missing, 'readingTime'), 3);
 });
 
@@ -207,6 +251,7 @@ test('note storage does not serve notes that sync replaced, trashed or erased fr
   assert.equal(storage.get(item, 'readingTime'), 1);
   // Same note count: one note erased and its replacement synced in.
   erase(first); const second = sync('AAAAAAAA', { readingTime: 5 });
+  await nextTurn();
   assert.equal(storage.get(item, 'readingTime'), 5);
   await storage.set(item, 'readingTime', 6);
   assert.match(second.note, /"readingTime":6/); assert.match(first.note, /"readingTime":1/);
@@ -340,6 +385,7 @@ test('reading timers do not overlap and ignore a reader replaced while lookup is
   let selected = original;
   const ctx = await load({ window: { setInterval(fn) { callback = fn; return 1; }, clearInterval() {}, addEventListener() {}, removeEventListener() {} },
     getPref: () => 20, isReadingProgressRecordingEnabled: () => true, LruCache: class extends Map { constructor() { super(); } }, Zotero_Tabs: { selectedID: 'reader' },
+    registerNotify: () => () => {},
     Zotero: { Reader: { getByTabID: () => selected } }, addon: { api: { storage: { set: () => writes++ } } },
     ztoolkit: { Reader: { getReader() { calls++; return pending.promise; } }, log: assert.fail } }, 'upstream/features/reader/record.ts');
   const recorder = new ctx.Record(); const first = callback(); await callback(); assert.equal(calls, 1);
@@ -358,7 +404,7 @@ function readingTimeStorage() {
 
 /** A recorder reading PDFs in tabs A and B; read() lets 20-second recording ticks pass on the selected tab. */
 async function recorderFixture(storage: object, log: (...args: unknown[]) => void = assert.fail) {
-  let now = 0, position = 0, tick: (() => Promise<void>) | undefined;
+  let now = 0, position = 0, tick: (() => Promise<void>) | undefined, tabNotify: ((...data: unknown[]) => unknown) | undefined, unregistered = 0;
   const listeners = new Map<string, () => unknown>();
   const reader = (key: string) => ({ _item: { parentItem: { key } }, _internalReader: { _lastView: { _iframeWindow: { PDFViewerApplication: { pagesCount: 3,
     pdfViewer: { _location: { pageNumber: 1, left: 0, top: 0, scale: 1 } } } } } } });
@@ -366,6 +412,7 @@ async function recorderFixture(storage: object, log: (...args: unknown[]) => voi
   const ctx = await load({ window: { setInterval(fn) { tick = fn; return 1; }, clearInterval() { tick = undefined; },
     addEventListener(type, fn) { listeners.set(type, fn); }, removeEventListener(type) { listeners.delete(type); } },
   Date: { now: () => now }, getPref: () => 20, isReadingProgressRecordingEnabled: () => true, Zotero_Tabs: tabs,
+  registerNotify: (types, callback) => { assert.deepEqual([...types], ['tab']); tabNotify = callback; return () => { unregistered++; }; },
   Zotero: { Reader: { getByTabID: id => readers[id] } }, addon: { api: { storage } },
   ztoolkit: { Reader: { getReader: async () => readers[tabs.selectedID] }, log } }, 'upstream/utils/lruCache.ts', 'upstream/features/reader/record.ts');
   const recorder = new ctx.Record();
@@ -377,7 +424,8 @@ async function recorderFixture(storage: object, log: (...args: unknown[]) => voi
       await tick?.();
     }
   };
-  return { recorder, read, select: (key: 'A' | 'B') => { tabs.selectedID = key; }, fire: (type: string) => listeners.get(type)!() };
+  return { recorder, read, select: (key: 'A' | 'B') => { tabs.selectedID = key; }, fire: (type: string) => listeners.get(type)!(),
+    selectTab: (key: 'A' | 'B') => { tabs.selectedID = key; return tabNotify!('select', 'tab', [key], {}); }, unregistered: () => unregistered };
 }
 
 test('reading time is saved once per save interval rather than on every recording tick', async () => {
@@ -408,6 +456,16 @@ test('reading time is saved at once when the reader switches item, the window de
   assert.deepEqual(storage.writes, [['A', 40], ['B', 20], ['B', 40]]);
   await recorder.destroy();
   assert.deepEqual(storage.writes, [['A', 40], ['B', 20], ['B', 40], ['A', 60]]);
+});
+
+test('reading time of the item left behind is saved as soon as another tab is selected', async () => {
+  const storage = readingTimeStorage();
+  const { recorder, read, selectTab, unregistered } = await recorderFixture(storage);
+  await read(40);
+  await selectTab('B');
+  assert.deepEqual(storage.writes, [['A', 40]]);
+  await recorder.destroy();
+  assert.equal(unregistered(), 1);
 });
 
 test('reading time that failed to save is kept and saved with the next write', async () => {

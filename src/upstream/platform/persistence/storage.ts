@@ -108,6 +108,7 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
     declare title: string;
     declare prefKey: string;
     declare noteIndex: { parent: any; count: number; idSum: number; titles: Map<string, any>; titlesByLength: [string, any][]; } | undefined;
+    declare noteIndexChecked: boolean;
     declare pendingWrites: Map<any, any>;
     declare hiddenNotesUsers: number;
     declare disposed: boolean;
@@ -202,42 +203,27 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
         }
       }
     }
+    // set() accepts writes only before dispose, and dispose waits for them, so an accepted write always completes:
+    // the reading time saved when the recorder stops may be the only copy of the last minutes read.
     async setNow(item, key, data) {
-      if (this.disposed || !shouldPersistStorageKey(key)) {
+      if (!shouldPersistStorageKey(key)) {
         return;
       }
       // Scanning once more before creating a note keeps a missed change from giving a key a second note.
       let noteItem = this.getNoteItem(item) ?? this.getNoteItem(item, true);
       if (!noteItem) {
-        if (this.disposed || !shouldPersistStorageKey(key)) {
-          return;
-        }
         const noteData2 = {
           [key]: data
         };
         noteItem = await this.createNoteItem(`${item.key}
 ${JSON.stringify(noteData2)}`);
-        if (this.disposed) {
-          try {
-            await noteItem.eraseTx();
-          } catch (error) {
-            ztoolkit.log("Failed to remove a late metadata note", error);
-          }
-          return;
-        }
         this.indexCreatedNote(item.key, noteItem);
-        return;
-      }
-      if (this.disposed || !shouldPersistStorageKey(key)) {
         return;
       }
       const noteData = this.getNoteData(noteItem);
       noteData[key] = data;
       noteItem.setNote(`${item.key}
 ${JSON.stringify(noteData)}`);
-      if (this.disposed) {
-        return;
-      }
       await noteItem.saveTx({
         skipSelect: true
       });
@@ -275,9 +261,6 @@ ${JSON.stringify(noteData)}`);
      * @returns
      */
     async createNoteItem(note) {
-      if (this.disposed) {
-        throw new Error("Addon storage is disposed");
-      }
       const noteItem = new Zotero.Item("note");
       noteItem.parentID = this.item.id;
       if (note !== undefined) {
@@ -298,8 +281,15 @@ ${JSON.stringify(noteData)}`);
       if (!item) {
         return;
       }
-      const index = rescan ? this.indexNotes(this.item.getNotes()) : this.getNoteIndex();
       const key = item.key;
+      const noteItem = this.findIndexedNote(rescan ? this.indexNotes(this.item.getNotes()) : this.getNoteIndex(), key);
+      // Editing a note in place, or trashing it, changes neither the note count nor the IDs, so check the find.
+      if (noteItem && !(noteItem.deleted || noteItem.parentID !== this.item.id || !(noteItem._displayTitle ?? "").includes(key))) {
+        return noteItem;
+      }
+      return noteItem && this.findIndexedNote(this.indexNotes(this.item.getNotes()), key);
+    }
+    findIndexedNote(index, key) {
       const noteItem = index.titles.get(key);
       if (noteItem) {
         return noteItem;
@@ -316,6 +306,14 @@ ${JSON.stringify(noteData)}`);
       }
     }
     getNoteIndex() {
+      // Sorting a column asks for every row in one go; check the note list once per pass rather than once per row.
+      if (this.noteIndexChecked && this.noteIndex?.parent === this.item) {
+        return this.noteIndex;
+      }
+      this.noteIndexChecked = true;
+      Promise.resolve().then(() => {
+        this.noteIndexChecked = false;
+      });
       const ids = this.item.getNotes();
       const idSum = ids.reduce((sum, id) => sum + id, 0);
       const index = this.noteIndex;

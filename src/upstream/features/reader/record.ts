@@ -1,6 +1,7 @@
 import { LruCache } from "../../utils/lruCache.ts";
 import { getPref } from "../../utils/prefs.ts";
 import { isReadingProgressRecordingEnabled } from "../../platform/persistence/storage.ts";
+import { registerNotify } from "../../platform/zotero/notifier.ts";
   // Reading time is kept in memory and saved at most this often, in seconds, while one item stays open.
   // With note storage every save is a database transaction, a notifier event and a sync upload, with
   // file storage a rewrite of the whole file; a crash loses at most this much reading time.
@@ -16,6 +17,7 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
     declare boundActivate: any;
     declare boundDeactivate: any;
     declare intervalID: number;
+    declare unregisterTabs: (() => void) | undefined;
     private recording = false;
     private generation = 0;
     // Reading time not saved yet, by item key. A tick replaces the entry and a save removes it only if
@@ -51,6 +53,8 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
       window.addEventListener("activate", this.boundActivate, true);
       window.addEventListener("deactivate", this.boundDeactivate, true);
       window.addEventListener("close", this.boundDeactivate, true);
+      // The item a reader tab showed is saved as soon as the user moves to another tab, not at the next tick.
+      this.unregisterTabs = registerNotify(["tab"], event => event === "select" ? this.saveReadingTime(this.getItem()?.key) : undefined);
     }
     /**
      * 销毁方法：在插件卸载或重载时必须调用
@@ -64,6 +68,7 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
       window.removeEventListener("activate", this.boundActivate, true);
       window.removeEventListener("deactivate", this.boundDeactivate, true);
       window.removeEventListener("close", this.boundDeactivate, true);
+      this.unregisterTabs?.();
       this.cache.clear();
       return saved;
     }
