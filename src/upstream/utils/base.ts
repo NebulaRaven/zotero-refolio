@@ -183,24 +183,27 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
     // Manual updates ignore the backoff. Automatic requests check it again when they leave the
     // request queue: a provider that throttled meanwhile must not receive the rest of the queue.
     const automatic = trigger === "automatic";
-    const backedOff = () => automatic && !publicationTagUpdateBackoff.allows(query);
+    const account = `${query.provider}:${apiKey}`;
+    const backedOff = () => automatic && !publicationTagUpdateBackoff.allows(query, account);
     if (backedOff()) return;
-    const skipped = Symbol("skipped");
+    const skipped = PublicationTagUpdateBackoff.skipped;
+    // Zotero retries a 429 for up to an hour unless told not to; the backoff below handles throttling instead.
+    const requestOptions = { noRetryOnThrottle: true };
     const responses = [], failedNames = [];
-    let lastError;
+    let lastError, refused = false;
     for (const name of query.names) {
       if (localStorage.disposed || query.identity !== spGetJournalQuery(publicationTitle).identity) return;
       try {
         // Manual requests get their own queue entries so they never share a dropped automatic one.
         const response = await publicationRequestScheduler.run(`${query.provider}:${automatic ? "" : "manual:"}${name}`, () => backedOff() ? skipped : garden
-          ? getGardenJournalRank(name, apiKey)
-          : requests.get(`https://www.easyscholar.cc/open/getPublicationRank?secretKey=${encodeURIComponent(apiKey)}&publicationName=${encodeURIComponent(name)}`, "json", {}, true));
+          ? getGardenJournalRank(name, apiKey, requestOptions)
+          : requests.get(`https://www.easyscholar.cc/open/getPublicationRank?secretKey=${encodeURIComponent(apiKey)}&publicationName=${encodeURIComponent(name)}`, "json", {}, true, requestOptions));
         if (response === skipped) return;
         if (!response?.data?.officialRank) throw new Error("Journal service returned an invalid response.");
         responses.push({ name, response });
       } catch (error) {
         lastError = error; failedNames.push(name);
-        publicationTagUpdateBackoff.recordProviderStatus(query.provider, getHTTPStatus(error));
+        if (publicationTagUpdateBackoff.recordProviderStatus(account, getHTTPStatus(error))) refused = true;
       }
     }
     const result = spMergeRanks(responses);
@@ -210,6 +213,8 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
       return;
     }
     publicationTagUpdateBackoff.recordSuccess(query);
+    // An answer from the provider without a refusal shows that the account works again.
+    if (!refused) publicationTagUpdateBackoff.resumeProvider(account);
     if (lastError) {
       const previous = spGetAutomaticJournalRanks(localStorage, publicationTitle);
       if (previous && typeof previous === "object") result.rank = { ...previous, ...result.rank };
@@ -224,8 +229,9 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
     }
     return Object.keys(result.rank).length ? 1 : 0;
   }
-  export async function getGardenJournalRank(name, apiKey) {
+  export async function getGardenJournalRank(name, apiKey, options = {}) {
     const res = await Zotero.HTTP.request("POST", "https://soil.magiczotero.top/v1/journal-labels/query", {
+      ...options,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ items: [{ query: name }], include_paid: true }),
       responseType: "json"

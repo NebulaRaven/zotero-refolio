@@ -43,7 +43,7 @@ import { spRedactURL } from "../../core/journals.ts";
       }
       this.cache[key] = value;
     }
-    async get(url, responseType = "json", headers = {}, throwOnError = false) {
+    async get(url, responseType = "json", headers = {}, throwOnError = false, options = {}) {
       const k = JSON.stringify([url, responseType, headers]);
       const cached = this.readCache(k);
       if (cached.hit) {
@@ -51,6 +51,7 @@ import { spRedactURL } from "../../core/journals.ts";
       }
       try {
         const res = await Zotero.HTTP.request("GET", url, {
+          ...options,
           responseType,
           headers
         });

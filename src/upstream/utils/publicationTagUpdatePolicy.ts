@@ -14,6 +14,8 @@
     declare clock: { now(): number };
     declare retryAt: Map<string, number>;
     declare pausedUntil: Map<string, number>;
+    // What a queued request the backoff dropped resolves to; every caller sharing that request must recognise it.
+    static skipped = Symbol("publication lookup skipped");
 
     constructor(retryDelayMs, providerPauseMs, clock) {
       this.retryDelayMs = retryDelayMs;
@@ -22,9 +24,10 @@
       this.retryAt = new Map();
       this.pausedUntil = new Map();
     }
-    allows(query) {
+    // A provider pause belongs to an account, provider plus API key, so a new key starts unpaused.
+    allows(query, account = query.provider) {
       const now = this.clock.now();
-      return !this.waiting(this.pausedUntil, query.provider, now) && !this.waiting(this.retryAt, query.identity, now);
+      return !this.waiting(this.pausedUntil, account, now) && !this.waiting(this.retryAt, query.identity, now);
     }
     waiting(until, key, now) {
       const time = until.get(key);
@@ -43,11 +46,16 @@
     recordSuccess(query) {
       this.retryAt.delete(query.identity);
     }
-    recordProviderStatus(provider, status) {
+    recordProviderStatus(account, status) {
       // A rejected key, a block (shown to users as a rate limit) or throttling affects every journal.
       if (status === 401 || status === 403 || status === 429) {
-        this.pausedUntil.set(provider, this.clock.now() + this.providerPauseMs);
+        this.pausedUntil.set(account, this.clock.now() + this.providerPauseMs);
+        return true;
       }
+      return false;
+    }
+    resumeProvider(account) {
+      this.pausedUntil.delete(account);
     }
   };
 

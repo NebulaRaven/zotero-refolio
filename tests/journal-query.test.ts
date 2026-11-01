@@ -225,6 +225,56 @@ test('a throttled provider drops queued automatic requests, but a queued manual 
   assert.equal(f.cache.get('B').rank['sciif'], '1');
 });
 
+test('journal requests let throttling reach the backoff instead of being retried inside Zotero', async () => {
+  const f = await fixture(); const options = [];
+  f.ctx.requests.get = async (_url, _type, _headers, _throw, requestOptions) => { options.push(requestOptions); return response({ sciif: 1 }); };
+  await f.run('A');
+  f.values['publicationTagsColumn.source'] = 'garden';
+  f.ctx.Zotero.HTTP.request = async (_method, _url, requestOptions) => { options.push(requestOptions); return { status: 200, response: { results: [{ matched: true, labels: [] }] } }; };
+  await f.run('B');
+  assert.deepEqual(options.map(o => o?.noRetryOnThrottle), [true, true]);
+});
+
+test('Requests.get passes request options on to Zotero.HTTP.request', async () => {
+  const seen = [];
+  const ctx: vm.Context = { spRedactURL: String, ztoolkit: { log() {} }, Zotero: { debug() {}, HTTP: { request: async (_method, _url, options) => { seen.push(options); return { status: 200, response: {} }; } } } };
+  vm.runInNewContext(await script(new URL('upstream/utils/requests.ts', root)), ctx);
+  await new ctx.Requests().get('https://example.org/', 'json', { A: '1' }, true, { noRetryOnThrottle: true });
+  assert.deepEqual({ ...seen[0], headers: { ...seen[0].headers } }, { responseType: 'json', headers: { A: '1' }, noRetryOnThrottle: true });
+});
+
+test('a lookup sharing a queued request that the backoff skipped stores nothing', async () => {
+  const f = await fixture({ 'publicationTagsColumn.aliases': JSON.stringify({ B: ['B2'] }) });
+  vm.runInNewContext(await script(new URL('upstream/utils/rateLimitedRequestScheduler.ts', root)), f.ctx);
+  f.ctx.publicationRequestScheduler = new f.ctx.RateLimitedRequestScheduler(600, { now: f.now,
+    delay: (ms: number) => new Promise(resolve => setTimeout(() => resolve(f.advance(ms)))) });
+  f.handlers.set('B', () => response({ sciif: 1 })); f.handlers.set('A', refused(403)); f.handlers.set('B2', () => response({ sciif: 1 }));
+  // B's second name joins the request B2 queued for its first name; A's refusal then pauses the provider before it starts.
+  await Promise.all([f.run('B'), f.run('A'), f.run('B2')]);
+  assert.deepEqual(f.calls, ['B', 'A']);
+  assert.equal(f.cache.get('B'), undefined);
+  assert.equal(f.cache.get('B2'), undefined);
+});
+
+test('a successful lookup or a new API key ends a provider pause', async () => {
+  const f = await fixture();
+  f.handlers.set('A', refused(403)); f.handlers.set('B', () => response({ sciif: 1 })); f.handlers.set('C', () => response({ sciif: 2 }));
+  await f.run('A'); await f.run('B'); assert.deepEqual(f.calls, ['A']);
+  await f.run('B', 'column-click'); await f.run('C');
+  assert.deepEqual(f.calls, ['A', 'B', 'C']);
+  // A refuses again once its retry delay is over, pausing the old key; a new key is not paused.
+  f.advance(retryDelay); await f.run('A'); await f.run('C2');
+  f.values['easyscholar.secretKey'] = 'NEW'; f.handlers.set('D', () => response({ sciif: 3 }));
+  await f.run('D'); assert.deepEqual(f.calls, ['A', 'B', 'C', 'A', 'D']);
+});
+
+test('a failed manual lookup does not delay automatic lookups of the journal', async () => {
+  const f = await fixture();
+  f.handlers.set('A', () => { throw new Error('network'); });
+  await f.run('A', 'column-click'); await f.run('A');
+  assert.deepEqual(f.calls, ['A', 'A']);
+});
+
 async function panel(f: Awaited<ReturnType<typeof fixture>>) {
   const dom = domFixture(); const parent = new dom.Element(), status = new dom.Element();
   const win: any = new dom.Element('window'); win.document = dom.document; dom.document.defaultView = win;
