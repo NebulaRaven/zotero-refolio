@@ -260,6 +260,19 @@ test('the nested tag search compiles its pattern once and filters tag segments a
   await assert.rejects(search('c++'), SyntaxError);
 });
 
+test('a global or sticky search pattern tests each tag from its start', async () => {
+  const db = database();
+  const ctx = await load({
+    getPref: () => '/^#(?:.+/)*(.+)/', getFirstSelectedLibraryID: () => 1, getFirstSelectedCollectionID: () => undefined,
+    Zotero: { DB: zoteroDB(db), Prefs: { get: () => false }, Libraries: { userLibraryID: 1 } }
+  });
+  const tags = new ctx.Tags();
+  const search = async (text: string) => { tags.searchText = text; return plain(await tags.getPlainTags()).map(([tag]) => tag); };
+  // Without resetting, the match in "#Highlight" leaves lastIndex past the start of the next tag.
+  assert.deepEqual(await search('/h/gi'), await search('/h/i'));
+  assert.deepEqual(await search('/^#/y'), await search('/^#/'));
+});
+
 test('renaming and removing a nested tag act on the library selected in the collection tree', async () => {
   const calls = [];
   let menu = [];

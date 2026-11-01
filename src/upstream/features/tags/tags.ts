@@ -19,10 +19,10 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
   // The items for which item.topLevelItem.inCollection() holds: top-level items filed directly in the
   // collection, their child notes and attachments, and the annotations and embedded images below those.
   const COLLECTION_TREE = `WITH RECURSIVE collectionTree(itemID) AS (
-      SELECT itemID FROM collectionItems WHERE collectionID=?
-        AND itemID NOT IN (SELECT itemID FROM itemNotes WHERE parentItemID IS NOT NULL)
-        AND itemID NOT IN (SELECT itemID FROM itemAttachments WHERE parentItemID IS NOT NULL)
-        AND itemID NOT IN (SELECT itemID FROM itemAnnotations)
+      SELECT CI.itemID FROM collectionItems CI WHERE CI.collectionID=?
+        AND NOT EXISTS (SELECT 1 FROM itemNotes N WHERE N.itemID=CI.itemID AND N.parentItemID IS NOT NULL)
+        AND NOT EXISTS (SELECT 1 FROM itemAttachments A WHERE A.itemID=CI.itemID AND A.parentItemID IS NOT NULL)
+        AND NOT EXISTS (SELECT 1 FROM itemAnnotations X WHERE X.itemID=CI.itemID)
       UNION SELECT C.itemID FROM itemNotes C JOIN collectionTree P ON (C.parentItemID=P.itemID)
       UNION SELECT C.itemID FROM itemAttachments C JOIN collectionTree P ON (C.parentItemID=P.itemID)
       UNION SELECT C.itemID FROM itemAnnotations C JOIN collectionTree P ON (C.parentItemID=P.itemID)
@@ -340,7 +340,11 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
         const res = this.searchText.match(/\/(.+)\/(\w*)/);
         if (res) {
           regex = new RegExp(res[1], res[2]);
-          func = s => regex.test(s);
+          // One pattern serves every tag; a global or sticky one must not resume where the last tag left off.
+          func = s => {
+            regex.lastIndex = 0;
+            return regex.test(s);
+          };
         } else {
           regex = new RegExp(this.searchText, "i");
           func = s => s.match(regex);
