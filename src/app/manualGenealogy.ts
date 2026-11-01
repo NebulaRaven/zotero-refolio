@@ -77,7 +77,7 @@ export function spBuildManualGenealogyControls(view: GraphView, parent: HTMLElem
     create("strong", list, `${getString("ui-saved-relationships")} · ${Object.keys(data.relations).length}`);
     for (const [id, record] of Object.entries(data.relations)) {
       const row = create("div", list); row.className = "sp-genealogy-row";
-      create("span", row, `${data.people[record.mentor].label} → ${data.people[record.student].label} · ${spGenealogyOptions().find(([key]) => key === record.kind)[1]}`);
+      create("span", row, `${data.people[record.mentor].label} → ${data.people[record.student].label} · ${spGenealogyOptions().find(([key]) => key === record.kind)![1]}`);
       const editButton = create("button", row, getString("ui-edit")); editButton.type = "button"; editButton.addEventListener("click", () => edit(id));
       const removeButton = create("button", row, getString("ui-delete")); removeButton.type = "button";
       removeButton.addEventListener("click", () => run(async () => {
@@ -93,7 +93,7 @@ export function spBuildManualGenealogyControls(view: GraphView, parent: HTMLElem
   save.addEventListener("click", () => run(async () => {
     // kind offers only spGenealogyOptions() values, and spSaveManualGenealogy rejects any other kind.
     const result = spSaveManualGenealogy(getPref("genealogy.manualData"), { id: editing || undefined,
-      mentor: mentor.value(), student: student.value(), kind: kind.value as GenealogyKind, sourceURL: source.value, note: note.value }, () => doc.defaultView.crypto.randomUUID());
+      mentor: mentor.value(), student: student.value(), kind: kind.value as GenealogyKind, sourceURL: source.value, note: note.value }, () => doc.defaultView!.crypto.randomUUID());
     setPref("genealogy.manualData", JSON.stringify(result.data));
     const savedKind = kind.value; await showManual(savedKind); reset(); renderList();
     message.textContent = getString("ui-relationship-saved-locally");

@@ -42,7 +42,7 @@ export function spJournalPreferences(): JournalPreferences {
 }
 
 export function spRememberJournal<T>(results: Map<string, T>, title: string, compute: () => T): T {
-  if (results.has(title)) return results.get(title);
+  if (results.has(title)) return results.get(title) as T;
   const value = compute();
   if (results.size >= journalCacheLimit) results.delete(results.keys().next().value);
   results.set(title, value);

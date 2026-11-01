@@ -83,9 +83,9 @@ export function spRenderManualRanks(doc, parent, status) {
   const head = create("tr", create("thead", table));
   for (const label of [getString("ui-field"), getString("ui-mode"), getString("ui-value")]) create("th", head, label);
   const body = create("tbody", table);
-  const rows = new Map(); let loadedTitle = ""; let loadedNames = [];
+  const rows = new Map(); let loadedTitle = ""; let loadedNames: string[] = [];
   let active = true, generation = 0;
-  const addRow = (field, label = field, value = undefined) => {
+  const addRow = (field, label = field, value: string | null | undefined = undefined) => {
     if (rows.has(field)) return;
     const row = create("tr", body); create("td", row, label);
     const mode = spSelect(doc, create("td", row)); mode.setAttribute("aria-label", getString("ui-field-mode", { args: { field: label } }));

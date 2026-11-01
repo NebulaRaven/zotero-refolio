@@ -17,7 +17,7 @@ export function spGenealogyRelations(entity: WikidataEntity, kind: GenealogyKind
       if (preferred && claim.rank !== "preferred") continue;
       const target = claim.mainsnak?.datavalue?.value?.id;
       if (!target || !/^Q[1-9]\d*$/.test(target) || target === entity.id) continue;
-      const references = [];
+      const references: string[] = [];
       for (const ref of claim.references || []) {
         for (const snak of ref.snaks?.P854 || []) {
           const url = snak.datavalue?.value;
@@ -36,7 +36,7 @@ export function spGenealogyRelations(entity: WikidataEntity, kind: GenealogyKind
   return result;
 }
 
-export function spGenealogyGraph(entities: Record<string, WikidataEntity>, center: string, kind: GenealogyKind = "doctoral", language = "en"): GraphData {
+export function spGenealogyGraph(entities: Record<string, WikidataEntity>, center: string, kind: GenealogyKind = "doctoral", language = "en"): GraphData & { genealogyEdges: GenealogyEdge[] } {
   const relations = new Map<string, GenealogyEdge>();
   for (const entity of Object.values(entities)) for (const edge of spGenealogyRelations(entity, kind)) {
     if (edge.source !== center && edge.target !== center) continue;

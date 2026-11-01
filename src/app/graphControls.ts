@@ -43,7 +43,7 @@ export function spBuildGraphControls(view, container) {
       finally { if (view.active) fetchCitations.disabled = false; }
     }));
     addCitation = create("button", actions, getString("ui-add-citation")); addCitation.type = "button";
-    addCitation.addEventListener("click", () => run(() => manualCitations.open()));
+    addCitation.addEventListener("click", () => run(() => manualCitations!.open()));
   }
   const fit = create("button", actions, getString("ui-fit")); fit.type = "button";
   fit.addEventListener("click", () => view.fitGraph());

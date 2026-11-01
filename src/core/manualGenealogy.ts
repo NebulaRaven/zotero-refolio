@@ -79,7 +79,7 @@ export function spRestoreManualGenealogy(raw: unknown, removed: DeletedRelation)
   return spReadManualGenealogy(data);
 }
 
-export function spMergeManualGenealogy(base: GraphData | undefined, raw: unknown, kind: GenealogyKind = "doctoral"): GraphData {
+export function spMergeManualGenealogy(base: GraphData | null | undefined, raw: unknown, kind: GenealogyKind = "doctoral"): GraphData & { genealogyEdges: Array<GenealogyEdge & { manualRecords: ManualSource[] }> } {
   const data = spReadManualGenealogy(raw), nodes: Record<string, GraphNode> = {}, edges = new Map<string, GenealogyEdge & { manualRecords: ManualSource[] }>();
   if (!spGenealogyKinds.has(kind)) throw new Error("ui-error-relationship-type");
   for (const [id, node] of Object.entries(base?.nodes || {})) nodes[id] = { ...node, links: {} };

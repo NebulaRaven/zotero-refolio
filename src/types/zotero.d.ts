@@ -45,4 +45,8 @@ declare global {
       _columnManager: { _optionsCache: Record<string, { label?: string; dataProvider(item: Zotero.Item, key: string): string; renderCell(index: number, data: string, column: { className: string }, first?: boolean, doc?: Document): HTMLElement }> };
     }
   }
+  interface nsIPromptService {
+    // nsIPromptService.idl takes wstring titles, and a null title leaves that button or checkbox out; the generated types only accept strings.
+    confirmEx(aParent: mozIDOMWindowProxy, aDialogTitle: string, aText: string, aButtonFlags: u32, aButton0Title: string | null, aButton1Title: string | null, aButton2Title: string | null, aCheckMsg: string | null, aCheckState: InOutParam<boolean>): i32;
+  }
 }

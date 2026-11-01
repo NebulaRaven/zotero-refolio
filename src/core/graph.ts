@@ -30,7 +30,7 @@ export function spNormalizeDOI(value: unknown): string {
   return /^10\.\d{4,9}\/\S+$/i.test(text) ? text.toLowerCase() : "";
 }
 
-export function spCitationGraph(items: GraphItem[], references: ReadonlyMap<string, string[]>, manual: ReadonlyMap<string, string[]> = new Map()): GraphData {
+export function spCitationGraph(items: GraphItem[], references: ReadonlyMap<string, string[]>, manual: ReadonlyMap<string, string[]> = new Map()): GraphData & { citationEdges: GraphEdge[] } {
   const nodes: Record<string, GraphNode> = {};
   const byDOI = new Map<string, GraphItem[]>();
   const byKey = new Map<string, GraphItem>();
@@ -105,7 +105,7 @@ export function spFilterGraph(graph: GraphData, seeds: NodeID[], { scope = "sele
         if (source[other].hub && !visible.has(other)) { visible.add(other); frontier.push(other); }
       }
       if (level === levels) break;
-      const next = [];
+      const next: string[] = [];
       for (const id of frontier) for (const other of adjacent.get(id) || []) {
         if (!visible.has(other)) { visible.add(other); next.push(other); }
       }

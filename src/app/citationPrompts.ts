@@ -53,7 +53,7 @@ export function spRegisterCitationUpdates() {
         if (!spNormalizeDOI(item.getField("DOI"))) { awaitingDOI.add(id); continue; }
         awaitingDOI.delete(id);
         if (!pending.has(item.libraryID)) pending.set(item.libraryID, new Set());
-        pending.get(item.libraryID).add(id);
+        pending.get(item.libraryID)!.add(id);
       }
       if (pending.size) {
         if (timer !== undefined) win.clearTimeout(timer);

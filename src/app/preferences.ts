@@ -35,7 +35,7 @@ export async function registerPrefsScripts(prefWindow) {
   if (!container || container.dataset.loaded) return;
   trackPreferenceWindow(addon.data, prefWindow);
   container.dataset.loaded = "true";
-  const mounted: Element[] = [], prefObservers = [], cleanups: Array<() => void> = [];
+  const mounted: Element[] = [], prefObservers: symbol[] = [], cleanups: Array<() => void> = [];
   const registration = addon.data.prefs;
   const originalRelease = registration?.release;
   let released = false;
@@ -190,7 +190,7 @@ export async function registerPrefsScripts(prefWindow) {
         before = moreSections.map(details => Boolean(details.open));
         for (const details of moreSections) details.open = true;
       } else if (!searching && before) {
-        moreSections.forEach((details, index) => { details.open = before[index]; });
+        moreSections.forEach((details, index) => { details.open = before![index]; });
         before = null;
       }
     };

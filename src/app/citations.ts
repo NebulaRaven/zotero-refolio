@@ -61,7 +61,7 @@ export function spConfirmCitationUpdate(reason: "added" | "empty", count: number
   const prompt = Services.prompt;
   const result = prompt.confirmEx(Zotero.getMainWindow() as unknown as mozIDOMWindowProxy, "Refolio",
     getString(`ui-citations-${reason}-confirm`, { args: { count, library } }),
-    prompt.BUTTON_POS_0 * prompt.BUTTON_TITLE_IS_STRING + prompt.BUTTON_POS_1 * prompt.BUTTON_TITLE_IS_STRING,
+    prompt.BUTTON_POS_0! * prompt.BUTTON_TITLE_IS_STRING! + prompt.BUTTON_POS_1! * prompt.BUTTON_TITLE_IS_STRING!,
     getString("ui-update-relations"), getString("ui-skip"), null, getString("ui-remember-choice"), remember);
   if (remember.value) setPref(key, result === 0 ? "update" : "skip");
   return result === 0;
@@ -129,7 +129,7 @@ export function spFetchCitationRelations(options: CitationRequest = {}) {
         try {
           const refs = await client.get(doi, controller.signal);
           references.set(doi, refs);
-          fetched.set(doi, client.cache.get(doi));
+          fetched.set(doi, client.cache.get(doi)!);
         } catch (error) { failures.push({ doi, message: getErrorMessage(error) }); }
         progress.changeLine({ text: `${i + 1}/${dois.length}`, progress: (i + 1) / dois.length * 100 });
       }

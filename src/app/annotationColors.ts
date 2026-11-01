@@ -303,14 +303,14 @@ export async function editAnnotationColors() {
       const previewColorsContainer = doc.querySelector("#preview-colors-container");
       const colorNameSettingContainer = doc.querySelector("#color-name-setting");
       const updatePrefs = () => {
-        const groups = [];
+        const groups: Array<[string, Array<[string, string]>]> = [];
         getElements(groupsContainer.querySelectorAll(".item")).forEach(e => {
-          const gName = e.querySelector<HTMLElement>(".name").innerText;
+          const gName = e.querySelector<HTMLElement>(".name")!.innerText;
           const groupIdx = e.getAttribute("index");
-          const colors = [];
+          const colors: Array<[string, string]> = [];
           for (const colorItemNode of getElements(colorsContainer.querySelectorAll(`.item.group-${groupIdx}`))) {
-            const name = colorItemNode.querySelector<HTMLInputElement>("input.name").value;
-            const color = colorItemNode.querySelector<HTMLInputElement>("input.color").value;
+            const name = colorItemNode.querySelector<HTMLInputElement>("input.name")!.value;
+            const color = colorItemNode.querySelector<HTMLInputElement>("input.color")!.value;
             colors.push([name, color]);
           }
           groups.push([gName, colors]);
@@ -321,10 +321,10 @@ export async function editAnnotationColors() {
         const colorNameDirection = getPref(`annotationColorNameDirection`);
         const isShowColorName = getPref(`function.showAnnotationColorName.enable`);
         const items = getElements(colorsContainer.querySelectorAll(".item")).filter(e => e.style.display == "flex");
-        const colors = [];
+        const colors: Array<[string, string]> = [];
         for (const item of items) {
-          const color = item.querySelector<HTMLInputElement>("input.color").value;
-          const name = item.querySelector<HTMLInputElement>("input.name").value;
+          const color = item.querySelector<HTMLInputElement>("input.color")!.value;
+          const name = item.querySelector<HTMLInputElement>("input.name")!.value;
           colors.push([name, color]);
         }
         let width = items.length * 50;
@@ -835,10 +835,10 @@ export async function editAnnotationColors() {
       });
       doc.querySelector("#export-colors")?.addEventListener("click", () => {
         const items = getElements(colorsContainer.querySelectorAll(".item")).filter(e => e.style.display == "flex");
-        const colors = [];
+        const colors: Array<[string, string]> = [];
         for (const item of items) {
-          const color = item.querySelector<HTMLInputElement>("input.color").value;
-          const name = item.querySelector<HTMLInputElement>("input.name").value;
+          const color = item.querySelector<HTMLInputElement>("input.color")!.value;
+          const name = item.querySelector<HTMLInputElement>("input.name")!.value;
           colors.push([name, color]);
         }
         new ztoolkit.Clipboard().addText(JSON.stringify(colors), "text/plain").copy();
@@ -853,7 +853,7 @@ export async function editAnnotationColors() {
       });
       doc.querySelector("#import-colors")?.addEventListener("click", () => {
         const copiedText = Zotero.Utilities.Internal.getClipboard("text/plain").replace(/【/g, "[").replace(/】/g, "]");
-        let data = [];
+        let data: unknown = [];
         try {
           data = JSON.parse(copiedText);
         } catch {
@@ -864,7 +864,7 @@ export async function editAnnotationColors() {
           }));
           return;
         }
-        const colors = [];
+        const colors: Array<[string, string]> = [];
         ztoolkit.log("data", data);
         if (data instanceof Array) {
           for (const i of data) {

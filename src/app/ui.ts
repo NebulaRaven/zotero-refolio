@@ -23,8 +23,8 @@ export function spSelect(doc: Document, parent: Element): XULMenuListElement {
   select.append(doc.createXULElement("menupopup"));
   select.addEventListener("command", event => {
     const option = event.target as Element;
-    if (option.localName === "menuitem") select.value = option.getAttribute("value");
-    select.dispatchEvent(new doc.defaultView.Event("change", { bubbles: true }));
+    if (option.localName === "menuitem") select.value = option.getAttribute("value")!;
+    select.dispatchEvent(new doc.defaultView!.Event("change", { bubbles: true }));
   });
   parent.append(select);
   return select;
@@ -37,7 +37,7 @@ export function spSelectOptions(select: XULMenuListElement, choices: ReadonlyArr
     option.setAttribute("value", key);
     return option;
   });
-  select.querySelector("menupopup").replaceChildren(...options);
+  select.querySelector("menupopup")!.replaceChildren(...options);
   select.value = String(value ?? choices[0]?.[0] ?? "");
 }
 

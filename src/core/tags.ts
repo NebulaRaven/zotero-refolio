@@ -25,14 +25,14 @@ export async function spRenameTags(zotero: { Libraries: TagHost["Libraries"]; Ta
   // Zotero.Tags.rename owns its transaction. An outer executeTransaction deadlocks.
   const tags = (await zotero.Tags.getAll(libraryID)).map(tag => tag.tag);
   const plan = spRenamePlan(tags, oldName, newName, separator);
-  const completed = [];
+  const completed: typeof plan = [];
   try {
     for (const step of plan) {
       await zotero.Tags.rename(libraryID, step.from, step.to);
       completed.push(step);
     }
   } catch (error) {
-    const rollbackErrors = [];
+    const rollbackErrors: unknown[] = [];
     for (const step of completed.reverse()) {
       try { await zotero.Tags.rename(libraryID, step.to, step.from); }
       catch (rollbackError) { rollbackErrors.push(rollbackError); }
