@@ -16,7 +16,8 @@
     "strictFunctionTypes": true,
     "useUnknownInCatchVariables": true,
     "noImplicitThis": true,
-    "strictBindCallApply": true
+    "strictBindCallApply": true,
+    "strictNullChecks": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
