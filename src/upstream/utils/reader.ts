@@ -51,7 +51,7 @@
     if (!readers) {
       return [];
     }
-    const instances = [];
+    const instances: _ZoteroTypes.ReaderInstance[] = [];
     for (let index = 0; index < readers.length; index += 1) {
       const reader = readers[index];
       if (reader && typeof reader === "object") {

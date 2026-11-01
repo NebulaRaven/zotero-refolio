@@ -10,7 +10,7 @@ import { getElements } from "../../utils/dom.ts";
     declare cleanups: Array<() => void | Promise<void>>;
     declare timers: Set<number>;
     declare prefKey: string;
-    declare opacityTimer: number;
+    declare opacityTimer: number | undefined;
     declare switchContainer: any;
     declare spacer: any;
 
@@ -199,7 +199,7 @@ import { getElements } from "../../utils/dom.ts";
       }
     }
     buildToolbarUI() {
-      const toolbar = document.querySelector("#zotero-items-toolbar");
+      const toolbar = document.querySelector("#zotero-items-toolbar")!;
       const handleMouseEnter = () => {
         if (!this.active || !addon?.data?.alive) {
           return;
@@ -468,7 +468,7 @@ import { getElements } from "../../utils/dom.ts";
           menupopup.appendChild(colViewPrimaryMenu);
         }, 2);
       };
-      this.cleanups.push(appendOwnedEntry(addon.data.patch._displayColumnPickerMenu.data, buildMenu));
+      this.cleanups.push(appendOwnedEntry(addon.data.patch._displayColumnPickerMenu!.data, buildMenu));
     }
     schedule(callback, delay) {
       if (!this.active) {

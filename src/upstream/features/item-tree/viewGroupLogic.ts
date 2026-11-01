@@ -127,7 +127,7 @@ interface ViewColumn { dataKey: string; hidden?: boolean; ordinal?: number; widt
     return captureViewGroupPrefs(currentPrefs, dataKeys);
   }
   export function resolveViewGroupDataKeys(storedKeys, currentKeys) {
-    const resolved = [];
+    const resolved: string[] = [];
     for (const key of asDataKeys(storedKeys)) {
       const currentKey = resolveViewGroupColumnKey(key, currentKeys);
       if (currentKey && !resolved.includes(currentKey)) {

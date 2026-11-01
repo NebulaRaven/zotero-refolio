@@ -33,7 +33,7 @@
     };
   }
   export async function startItemTreeContributions(contributions, onFailure: (failure: { id: string; error: unknown }) => void = () => {}, shouldContinue = () => true) {
-    const cleanups = [];
+    const cleanups: Array<() => void> = [];
     for (const contribution of contributions) {
       if (!shouldContinue()) {
         break;

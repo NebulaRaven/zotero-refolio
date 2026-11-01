@@ -14,7 +14,7 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
     declare lock: any;
     declare filename: any;
     declare cache: Record<string, any>;
-    declare writeTimer: number;
+    declare writeTimer: number | undefined;
     declare writePromise: Promise<void> | undefined;
 
     constructor(filename) {
@@ -112,9 +112,9 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
     declare pendingWrites: Map<any, any>;
     declare hiddenNotesUsers: number;
     declare disposed: boolean;
-    declare item: any;
-    declare restoreSearch: () => void;
-    declare searchPatchState: { active: boolean; };
+    declare item: Zotero.Item;
+    declare restoreSearch: (() => void) | undefined;
+    declare searchPatchState: { active: boolean; } | undefined;
 
     constructor() {
       this.title = "Addon Item";
@@ -453,7 +453,8 @@ ${JSON.stringify(noteData)}`);
         }
         Zotero._AddonItemGlobal = replacement;
       }
-      const addonItem = Zotero._AddonItemGlobal;
+      // Either the existing add-on item is still usable or the block above stored a replacement.
+      const addonItem = Zotero._AddonItemGlobal!;
       if (!addonItem.item) {
         await addonItem.init();
       }

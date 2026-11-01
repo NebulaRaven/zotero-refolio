@@ -24,7 +24,7 @@ import { getElements } from "../../utils/dom.ts";
     });
   }
   export function removeOwnedCollectionItemCount(primary, classNames) {
-    const removed = [];
+    const removed: HTMLElement[] = [];
     for (const element of getDirectChildren(primary)) {
       if (!isOwnedCollectionItemCountElement(element, classNames)) {
         continue;
@@ -58,7 +58,7 @@ import { getElements } from "../../utils/dom.ts";
       }
       element.remove();
     }
-    const doc = primary.ownerDocument;
+    const doc: Document = primary.ownerDocument;
     if (!spacerNode) {
       spacerNode = doc.createElement("span");
     }

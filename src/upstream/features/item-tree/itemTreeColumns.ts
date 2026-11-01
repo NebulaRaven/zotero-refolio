@@ -1,3 +1,4 @@
+import type { TagElementProps } from "zotero-plugin-toolkit";
 import type { EditableText } from '../../../types/ui.ts';
 import { requireItemsView } from "../../utils/zoteroPane.ts";
 import { clearPref } from "../../utils/prefs.ts";
@@ -43,7 +44,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
     declare publicationUpdateGate: KeyedTaskGate;
     declare patchRenderCell: undefined[];
     declare ready: Promise<void>;
-    declare stopRenderCellPatch: () => void;
+    declare stopRenderCellPatch: (() => void) | undefined;
     declare localStorage: LocalStorage;
 
     constructor() {
@@ -76,7 +77,8 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
           if (!columnObj[dataKey]) {
             return ztoolkit.UI.createElement(document, "span");
           }
-          return columnObj[dataKey].renderCell(-1, columnObj[dataKey].dataProvider(item, dataKey), {
+          // A column registered without these callbacks throws into the catch below.
+          return columnObj[dataKey].renderCell!(-1, columnObj[dataKey].dataProvider!(item, dataKey), {
             ...columnObj[dataKey], dataKey, label: columnObj[dataKey].label || dataKey,
             className: ""
           }, false, document);
@@ -512,11 +514,11 @@ ${JSON.stringify(data.data)}`;
           if (Number(opacity) == 0) {
             return cellSpan;
           }
-          const record = addon.api.storage.get(item, "readingTime");
+          const record = addon.api.storage!.get(item, "readingTime");
           if (!record) {
             return cellSpan;
           }
-          const values = [];
+          const values: number[] = [];
           for (let i = 0; i < record.page; i++) {
             values.push(parseFloat(record.data[i]) || 0);
           }
@@ -566,7 +568,7 @@ ${JSON.stringify(data.data)}`;
       const key = "readTime";
       await this.registerColumn(key, item => {
         try {
-          const record = addon.api.storage.get(item, "readingTime");
+          const record = addon.api.storage!.get(item, "readingTime");
           const totalTime = Object.values(record.data).reduce((x, y) => Number(x) + Number(y));
           if (!totalTime) {
             return {
@@ -789,7 +791,7 @@ ${JSON.stringify(data.data)}`;
         tags.forEach(tagObj => {
           const tag = tagObj.tag;
           let color = tagObj.color;
-          const userColor = addon.api.storage.get({
+          const userColor = addon.api.storage!.get({
             key: "Coloring"
           }, tag)?.color;
           const matchTag = Tags.getTagMatch(tag);
@@ -1324,10 +1326,10 @@ ${JSON.stringify(data.data)}`;
         span.addEventListener("click", async () => {
           const rect = span.getBoundingClientRect();
           const rowNode = document.querySelector(`#item-tree-main-row-${index}`) || document.querySelector(`#item-tree-main-default-row-${index}`);
-          const _rect = rowNode.getBoundingClientRect();
+          const _rect = rowNode!.getBoundingClientRect();
           rect.y = _rect.y;
           const libraryID = getFirstSelectedLibraryID() ?? Zotero.Libraries.userLibraryID;
-          let coloredTags = [];
+          let coloredTags: Array<{ tag: string; color?: string; position?: number }> = [];
           const colors = await Zotero.Tags.getColors(libraryID);
           for (const tagName of colors.keys()) {
             const coloredTag = { ...colors.get(tagName), tag: tagName };
@@ -1337,7 +1339,7 @@ ${JSON.stringify(data.data)}`;
           if (tag.tag) {
             coloredTags = [...[tag], ...coloredTags.filter(i => i.tag != tag.tag)];
           }
-          const children = [];
+          const children: TagElementProps[] = [];
           for (const _ of coloredTags) {
             children.push({
               tag: "menuitem"
@@ -1348,7 +1350,7 @@ ${JSON.stringify(data.data)}`;
             y: rect.top + window.screenY + 6
           }, children);
           const menuitems = [...menupopup.querySelectorAll("menuitem")];
-          const menuFontSize = Zotero.isWin ? window.getComputedStyle(document.querySelector("#zotero-pane"))?.getPropertyValue("--zotero-font-size") || "1em" : undefined;
+          const menuFontSize = Zotero.isWin ? window.getComputedStyle(document.querySelector("#zotero-pane")!)?.getPropertyValue("--zotero-font-size") || "1em" : undefined;
           for (let i = 0; i < menuitems.length; i++) {
             const menuitem = menuitems[i];
             try {
@@ -1555,7 +1557,7 @@ ${JSON.stringify(data.data)}`;
           fieldName: "extra",
           libraryID: Zotero.Libraries.userLibraryID
         };
-        const allValues = [];
+        const allValues: string[] = [];
         const id = "remark-autocomplete";
         editableText.addEventListener("input", async () => {
           ztoolkit.log(1);
@@ -1578,7 +1580,7 @@ ${JSON.stringify(data.data)}`;
               }
             }
           }
-          let matchedValues = [];
+          let matchedValues: string[] = [];
           if (editableText.value.trim()) {
             matchedValues = allValues.filter(i => i?.toLowerCase().indexOf(editableText.value.toLowerCase()) >= 0);
           }
@@ -1607,7 +1609,7 @@ ${JSON.stringify(data.data)}`;
                 }
               }, document.documentElement);
             }
-            container.querySelectorAll(".item").forEach(i => i.remove());
+            container!.querySelectorAll(".item").forEach(i => i.remove());
             for (const value of matchedValues) {
               ztoolkit.UI.appendElement({
                 tag: "span",
@@ -1625,7 +1627,7 @@ ${JSON.stringify(data.data)}`;
                   type: "click",
                   listener: () => {
                     editableText.value = value;
-                    container.remove();
+                    container!.remove();
                   }
                 }]
               }, container);
@@ -1672,7 +1674,7 @@ ${text}`);
             const format = getPref(`creatorColumn.format`);
             const join = getPref(`creatorColumn.join`);
             const slices = getPref(`creatorColumn.slices`);
-            let newCreators = [];
+            let newCreators: typeof creators = [];
             try {
               slices.split(/,\s*/).forEach(slice => {
                 newCreators = newCreators.concat(slice.indexOf(":") >= 0 ? creators.slice(...slice.split(":").filter(i => i.trim().length).map(i => Number(i))) : [creators.slice(Number(slice))[0]]);
@@ -1680,7 +1682,7 @@ ${text}`);
             } catch {
               return cellSpan;
             }
-            const textArray = [];
+            const textArray: string[] = [];
             for (let i = 0; i < newCreators.length; i++) {
               textArray.push(format.replace(/\$\{firstName\}/g, newCreators?.[i]?.firstName || "").replace(/\$\{lastName\}/g, newCreators?.[i]?.lastName || "").replace(/\$\{firstCreator\}/g, firstCreator));
             }
@@ -1894,7 +1896,7 @@ ${text}`);
                 const dialogStyle = dialog.window.document.createElement("style");
                 dialogStyle.textContent = "html, body, body > vbox { background: var(--material-mix-quinary) !important; } body { margin: 0 !important; padding: 8px !important; }";
                 dialog.window.document.head.append(dialogStyle);
-                const cleanups = [];
+                const cleanups: Array<() => void> = [];
                 disposePickers = () => {
                   for (const cleanup of cleanups.splice(0).reverse()) {
                     cleanup();
@@ -2057,7 +2059,7 @@ ${text}`);
           });
         }, 1);
       };
-      addon.data.patch._displayColumnPickerMenu.data.push(buildColumnSettings);
+      addon.data.patch._displayColumnPickerMenu!.data.push(buildColumnSettings);
       return this.trackCleanup(() => {
         active = false;
         for (const cleanup of dialogCleanups) {
@@ -2065,7 +2067,7 @@ ${text}`);
         }
         document.removeEventListener("mousedown", captureColumn);
         menuitem?.remove();
-        const callbacks = addon.data.patch._displayColumnPickerMenu.data;
+        const callbacks = addon.data.patch._displayColumnPickerMenu!.data;
         const index = callbacks.indexOf(buildColumnSettings);
         if (index >= 0) {
           callbacks.splice(index, 1);
@@ -2238,7 +2240,7 @@ ${text}`);
         let width = column.fixedWidth ? column.width : requestedWidth;
         if (storePrefs && !column.fixedWidth) {
           column.width = requestedWidth;
-          prefs[dataKey] = this._getColumnPrefsToPersist(column);
+          prefs![dataKey] = this._getColumnPrefsToPersist(column);
         }
         const fixedWidth = column.fixedWidth && column.width || column.staticWidth;
         if (fixedWidth) {

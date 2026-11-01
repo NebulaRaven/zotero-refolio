@@ -32,7 +32,7 @@ export function patchAll(): Cleanup {
     const restore = replaceOwnedProperty(prototype, 'getItems', async function (this: Zotero.CollectionTreeRow, options: { unfiltered?: boolean } = {}) {
       let items = await original.call(this, options);
       if (active && addon.data.alive && !options.unfiltered) {
-        for (const filter of [...addon.data.patch.getItems.data]) {
+        for (const filter of [...addon.data.patch.getItems!.data]) {
           if (!active || !addon.data.alive) break;
           items = await filter(items, this);
         }
@@ -52,7 +52,7 @@ export function patchAll(): Cleanup {
         timer = ownerWindow.setTimeout(() => {
           timer = undefined;
           if (active && addon.data.alive) {
-            for (const callback of addon.data.patch._displayColumnPickerMenu.data) callback();
+            for (const callback of addon.data.patch._displayColumnPickerMenu!.data) callback();
           }
         }, 2);
       }

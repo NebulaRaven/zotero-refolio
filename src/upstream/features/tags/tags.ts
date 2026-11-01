@@ -1,3 +1,4 @@
+import type { ElementProps, TagElementProps } from "zotero-plugin-toolkit";
 import type { NestedTagsControlIcon, TagElement } from '../../../types/ui.ts';
 import { requireItemsView } from "../../utils/zoteroPane.ts";
 import { getPref,setPref } from "../../utils/prefs.ts";
@@ -54,8 +55,8 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
     declare state: Record<string, any>;
     declare tagsIn: { items: string[]; collection: string[]; };
     declare tagsIns: Map<string, { collection: string[]; items: string[] }>;
-    declare _nestedTagsCache: { key: any; result: {}; };
-    declare _cachedSortMode: number;
+    declare _nestedTagsCache: { key: any; result: {}; } | null;
+    declare _cachedSortMode: number | null;
     declare getTagPrefixes: () => any[];
     declare containerID: string;
     declare onSelect: any;
@@ -91,7 +92,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
       this.timers.clear();
     }
 
-    constructor(containerID = "zotero-tag-selector", onSelect = undefined) {
+    constructor(containerID = "zotero-tag-selector", onSelect: ((textTag: string) => void) | undefined = undefined) {
       this.active = true;
       this.cleanups = [];
       this.linkSymbol = "/";
@@ -251,7 +252,8 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
         if (!this.active) return items;
         return items.filter(item => ids.has(item.id));
       };
-      this.cleanups.push(appendOwnedEntry(addon.data.patch.getItems.data, filterItems));
+      // The zotero-patches feature installs the getItems patch before the nested-tags feature starts.
+      this.cleanups.push(appendOwnedEntry(addon.data.patch.getItems!.data, filterItems));
       const collectionsView = requireCollectionsView();
       collectionsView.onSelect.addListener(addon.hooks.onCollectionSelect);
       this.cleanups.push(() => {
@@ -305,7 +307,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
         return;
       }
       const generation = ++this.initGeneration;
-      this.container ??= document.querySelector("#" + this.containerID);
+      this.container ??= document.querySelector<HTMLElement>("#" + this.containerID)!;
       const plainTags = await this.getPlainTags();
       if (!this.active || generation !== this.initGeneration) {
         return;
@@ -602,7 +604,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           }]
         }]
       }, this.nestedTagsContainer);
-      const tagSelector = this.container.querySelector<HTMLElement>(".tag-selector");
+      const tagSelector = this.container.querySelector<HTMLElement>(".tag-selector")!;
       this.updateTagsIn();
       this._cachedSortMode = Number(getPref(`nestedTags.sorted`));
       this.render(box, this.nestedTags, 0);
@@ -642,7 +644,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
             listener: event => {
               const x = event.screenX;
               const y = event.screenY;
-              const children = [];
+              const children: TagElementProps[] = [];
               const selectedIndex = Number(getPref(`nestedTags.sorted`));
               for (let i = 0; i < this.props.sorted.length; i++) {
                 children.push({
@@ -764,7 +766,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
      * 从给定的items找出包含标签的
      */
     filterItemsByTagStart(items, tagStart) {
-      const filterItems = [];
+      const filterItems: Zotero.Item[] = [];
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (item.getTags && item.getTags().find(tag => tag.tag.startsWith(tagStart))) {
@@ -868,10 +870,10 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
                   type: "mouseup",
                   listener: async event => {
                     if (event.button == 2) {
-                      const menuItems = [];
+                      const menuItems: ElementProps[] = [];
                       const selectedIndex = Number(getPref(`nestedTags.sorted`));
                       for (let i = 0; i < this.props.sorted.length; i++) {
-                        const menuItem = {
+                        const menuItem: { styles: { marginLeft: string; borderLeft: string }; listeners: Array<{ type: string; listener: () => Promise<void> }>; properties: { innerText: string } } = {
                           styles: {
                             marginLeft: "", borderLeft: ""
                           },
@@ -923,7 +925,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
                                 height: "20px"
                               }
                             }).addButton(getString("ui-rename"), "tag-rename").addButton(getString("ui-cancel"), "tag-cancel").setDialogData(io).open(getString("ui-tag"));
-                            await io.unloadLock.promise;
+                            await io.unloadLock!.promise;
                             const newTagName = io.tagName;
                             if (io._lastButtonId === "tag-rename" && orignalTagName !== newTagName) {
                               try {
@@ -1101,7 +1103,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
                   treeEl._collapseTimers.push(id);
                 };
                 if (this.state[key].collapse) {
-                  tree.style.maxHeight = window.getComputedStyle(tree).height;
+                  tree.style.maxHeight = window.getComputedStyle(tree)!.height;
                   tree.style.transition = transition;
                   track(this.schedule(() => {
                     tree.style.maxHeight = "0px";
@@ -1113,7 +1115,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
                   tree.style.maxHeight = "";
                   this.render(...args);
                   track(this.schedule(() => {
-                    const height = window.getComputedStyle(tree).height;
+                    const height = window.getComputedStyle(tree)!.height;
                     tree.style.transition = transition;
                     tree.style.maxHeight = "0px";
                     this.schedule(() => {
@@ -1208,7 +1210,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
       }, 0);
       return items;
     };
-    const removeUpdateTags = appendOwnedEntry(addon.data.patch.getItems.data, updateTags);
+    const removeUpdateTags = appendOwnedEntry(addon.data.patch.getItems!.data, updateTags);
     return () => {
       active = false;
       pendingItems = [];
@@ -1225,7 +1227,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
     declare popupGeneration: number;
     declare unregisterShortcut: () => void;
     declare popupTagSelector: any;
-    declare popupTagsUI: InstanceType<typeof Tags>;
+    declare popupTagsUI: InstanceType<typeof Tags> | undefined;
 
     constructor() {
       this.active = true;
@@ -1482,7 +1484,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
         ZoteroPane.tagSelector.contextTag = tagSelector.contextTag;
       });
       let addTo = "Item";
-      let targetItems = [];
+      let targetItems: Zotero.Item[] = [];
       if (Zotero_Tabs.selectedID == "zotero-pane") {
         const selectedItems = ZoteroPane.getSelectedItems();
         if (selectedItems?.length > 0) {
@@ -1492,7 +1494,8 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           }
         }
       } else {
-        const reader = Zotero.Reader.getByTabID(Zotero_Tabs.selectedID);
+        // A tab other than the library is taken to be a reader here; the branches below use it without checking.
+        const reader = Zotero.Reader.getByTabID(Zotero_Tabs.selectedID)!;
         const src = (document.activeElement as HTMLIFrameElement)?.src || "";
         if (src.includes("reader")) {
           const annoArr = await getSelectedReaderAnnotations(reader._internalReader._primaryView);
@@ -1500,7 +1503,8 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
             addTo = "Annotation";
             for (const anno of annoArr) {
               ztoolkit.log(anno);
-              targetItems.push(Zotero.Items.getByLibraryAndKey(anno.libraryID || 1, anno.id));
+              // The annotation is selected in the open reader, so its item exists.
+              targetItems.push(Zotero.Items.getByLibraryAndKey(anno.libraryID || 1, anno.id) as Zotero.Item);
             }
           } else {
             addTo = "Attachment";
@@ -1520,7 +1524,8 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           }
         } else {
           addTo = "Item";
-          targetItems = [reader._item.parentItem];
+          // parentItem is undefined for a standalone attachment; adding tags then throws.
+          targetItems = [reader._item.parentItem!];
         }
       }
       if (!this.active || generation !== this.popupGeneration) {

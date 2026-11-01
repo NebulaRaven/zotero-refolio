@@ -9,7 +9,7 @@
         }
         sColor = sColorNew;
       }
-      const sColorChange = [];
+      const sColorChange: number[] = [];
       for (let i = 1; i < 7; i += 2) {
         sColorChange.push(parseInt("0x" + sColor.slice(i, i + 2)));
       }

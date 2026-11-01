@@ -34,7 +34,7 @@
     if (!definitions) {
       return () => {};
     }
-    const removed = [];
+    const removed: Array<{ definition: Record<string, unknown>; value: unknown }> = [];
     for (const key of DEPRECATED_COLUMN_OPTIONS) {
       const definition = definitions[key];
       if (!definition || typeof definition !== "object") {

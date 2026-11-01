@@ -134,7 +134,7 @@ export interface PreferenceValues {
 export type PreferenceValue = string | number | boolean;
 export function getPref<K extends keyof PreferenceValues>(key: K): PreferenceValues[K];
 export function getPref(key: string): PreferenceValue;
-export function getPref(key: string): PreferenceValue {
+export function getPref(key: string): PreferenceValue | undefined {
   return Zotero.Prefs.get(`${config.prefsPrefix}.${key}`, true);
 }
 export function setPref<K extends keyof PreferenceValues>(key: K, value: PreferenceValues[K]): void;

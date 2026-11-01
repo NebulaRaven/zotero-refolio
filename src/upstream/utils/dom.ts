@@ -8,7 +8,7 @@
     return getNodes(nodes).filter(isElement) as T[];
   }
   export function removeElementsExcept(nodes, keep?) {
-    const removed = [];
+    const removed: HTMLElement[] = [];
     for (const element of getElements(nodes)) {
       if (element === keep) {
         continue;

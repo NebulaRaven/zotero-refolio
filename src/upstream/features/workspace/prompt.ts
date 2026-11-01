@@ -291,7 +291,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
         if (!item) {
           return false;
         }
-        const record = addon.api.storage.get(item, "readingTime");
+        const record = addon.api.storage!.get(item, "readingTime");
         ztoolkit.log(record);
         return getPref(`function.titleColumn.enable`) && record?.data && Object.keys(record.data).length > 0;
       },
@@ -302,7 +302,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
         const container = prompt.createCommandsContainer();
         const item = getItem();
         prompt.inputNode.placeholder = item.getField("title");
-        const record = addon.api.storage.get(item, "readingTime");
+        const record = addon.api.storage!.get(item, "readingTime");
         if (!record || !record.data || Object.keys(record.data).length == 0) {
           prompt.showTip(getString("prompt-empty"));
           return;
@@ -320,7 +320,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
             height: "2em"
           }
         });
-        const values = [];
+        const values: number[] = [];
         for (let i = 0; i < record.page; i++) {
           values.push(parseFloat(record.data[i]) || 0);
         }
@@ -411,7 +411,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
               data: data.pageTime
             };
             if (data.itemKey) {
-              addon.api.storage.set(Zotero.Items.getByLibraryAndKey(1, data.itemKey), "readingTime", record);
+              addon.api.storage!.set(Zotero.Items.getByLibraryAndKey(1, data.itemKey), "readingTime", record);
             }
           } catch {}
           progress.style.width = `${i / ids.length * 100}%`;
@@ -574,7 +574,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
       callback: prompt => {
         const item = getItem();
         Zotero.Prefs.set("Zotero.AddonItem.key", item.key);
-        if ("item" in addon.api.storage) {
+        if ("item" in addon.api.storage!) {
           addon.api.storage.item = item;
         }
         prompt.showTip(getString("prompt-addon-item-set", {
@@ -750,7 +750,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
           const bibKeywords = getTopKeywords(regularItems.map(i => i.getDisplayTitle()), 3);
           const noteTexts = noteItems.map(n => n.getNote());
           const noteKeywords = getTopKeywords(noteTexts, 3);
-          const annoCounts = [];
+          const annoCounts: number[] = [];
           for (const i of regularItems) {
             const attItem = await i.getBestAttachment();
             if (!isPromptActive()) {
@@ -765,7 +765,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
           }
           const annoAverageCount = annoCounts.length > 0 ? Math.round(sum(annoCounts) / annoCounts.length) : 0;
           const readDetails = regularItems.map(i => {
-            const record = addon.api.storage.get(i, "readingTime");
+            const record = addon.api.storage!.get(i, "readingTime");
             if (!record) {
               return null;
             }
@@ -774,7 +774,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
               item: i,
               seconds
             };
-          }).filter(detail => detail !== null && detail.seconds > 0);
+          }).filter((detail): detail is NonNullable<typeof detail> => detail !== null && detail.seconds > 0);
           const s2 = new Zotero.Search();
           s2.addCondition("dateAdded", "isAfter", "2024-12-31");
           s2.addCondition("dateAdded", "isBefore", "2026-01-01");
@@ -835,7 +835,8 @@ import type { Prompt } from "zotero-plugin-toolkit";
             fontFamily: "system-ui, sans-serif",
             color: "#333"
           });
-          const lines: Array<{type: string; content?: string; sub?: string; size?: string; color?: string; margin?: string; marginTop?: string; weight?: string; italic?: boolean; prefix?: string; value?: number; suffix?: string}> = [{
+          type SummaryLine = {sub?: string; size?: string; color?: string; margin?: string; marginTop?: string; weight?: string; italic?: boolean} & ({type: "split"} | {type: "text"; content: string} | {type: "number"; prefix: string; value: number; suffix: string});
+          const lines: SummaryLine[] = [{
             type: "text",
             content: "2025 年度总结",
             size: "1.5em",
@@ -970,7 +971,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
             size: "0.9em",
             color: "#999",
             margin: "25px 0 10px 0"
-          }, ...top3Read.map((d, index) => ({
+          }, ...top3Read.map((d, index): SummaryLine => ({
             type: "text",
             content: `${["🥇", "🥈", "🥉"][index]} ${d.item.getDisplayTitle().substring(0, 28)}...`,
             sub: `\u9605\u8BFB\u65F6\u957F\uFF1A${Math.round(d.seconds / 60)} \u5206\u949F`,
@@ -1051,7 +1052,7 @@ import type { Prompt } from "zotero-plugin-toolkit";
             const drawingContext = context;
             canvas.width = container.offsetWidth;
             canvas.height = container.offsetHeight;
-            const particles = [];
+            const particles: Particle[] = [];
             const colors = ["#FF3B30", "#007AFF", "#FFCC00", "#4CD964", "#5856D6", "#FF9500"];
             class Particle {
     declare x: any;

@@ -188,7 +188,7 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
     const skipped = PublicationTagUpdateBackoff.skipped;
     // Zotero retries a 429 for up to an hour unless told not to; the backoff below handles throttling instead.
     const requestOptions = { noRetryOnThrottle: true };
-    const responses = [], failedNames = [];
+    const responses: Parameters<typeof spMergeRanks>[0] = [], failedNames: string[] = [];
     let lastError, refused = false;
     for (const name of query.names) {
       if (localStorage.disposed || query.identity !== spGetJournalQuery(publicationTitle).identity) return;
@@ -394,7 +394,7 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
         }
         sColor = sColorNew;
       }
-      const sColorChange = [];
+      const sColorChange: number[] = [];
       for (let i = 1; i < 7; i += 2) {
         sColorChange.push(parseInt("0x" + sColor.slice(i, i + 2)));
       }
@@ -446,7 +446,7 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
       if (!["Shift", "Meta", "Ctrl", "Alt", "Control"].includes(e.key)) {
         shortcut.key = e.key.toUpperCase();
       }
-      const keys = [];
+      const keys: string[] = [];
       if (shortcut.control) {
         keys.push("Ctrl");
       }
@@ -483,7 +483,7 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
   }
   export function getDefaultPaperMatrixCoreFields() {
     const nameColors = JSON.parse(getPref(`annotationColors`));
-    const coreFields = [];
+    const coreFields: Array<{ name: string; condition: { attribute: string; operator: string; value: string } }> = [];
     for (const nc of nameColors) {
       coreFields.push({
         name: nc[0],

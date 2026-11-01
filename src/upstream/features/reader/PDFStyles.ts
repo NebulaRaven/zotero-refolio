@@ -10,7 +10,7 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
     declare readerResources: Map<any, any>;
     declare toolbarHandler: ({ reader }: { reader: any; }) => Promise<void>;
     declare unregisterTabNotifier: () => void;
-    declare pruneTimer: number;
+    declare pruneTimer: number | undefined;
 
     constructor() {
       this.active = true;
@@ -206,8 +206,9 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
     refresh() {
       try {
         const reader = Zotero.Reader.getByTabID(Zotero_Tabs.selectedID) as _ZoteroTypes.ReaderInstance<'pdf'>;
-        reader._internalReader._primaryView._iframeWindow.PDFViewerApplication.pdfViewer.refresh();
-        reader._internalReader._secondaryView._iframeWindow.PDFViewerApplication.pdfViewer.refresh();
+        // Without a split view the second line throws into the catch below.
+        reader._internalReader._primaryView._iframeWindow!.PDFViewerApplication.pdfViewer!.refresh();
+        reader._internalReader._secondaryView!._iframeWindow!.PDFViewerApplication.pdfViewer!.refresh();
       } catch {}
     }
     addPDFStyle(cssObj, color) {

@@ -63,7 +63,7 @@ import type { Cleanup,FeatureFailure } from '../../types/addon.ts';
       }
     }
     async startAll(features) {
-      const results = [];
+      const results: string[] = [];
       for (const feature of features) {
         results.push(await this.start(feature));
       }

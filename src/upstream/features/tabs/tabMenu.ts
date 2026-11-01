@@ -117,7 +117,7 @@ import { getString } from "../../utils/locale.ts";
               } else {
                 tg.itemIDs.push(itemID);
               }
-              await addon.api.tabManager.setTabGroups(tabGroups);
+              await addon.api.tabManager!.setTabGroups(tabGroups);
             }
           }]
         }, menu.querySelector("menupopup"));

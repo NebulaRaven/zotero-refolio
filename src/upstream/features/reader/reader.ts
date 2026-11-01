@@ -1,3 +1,4 @@
+import type { TagElementProps } from "zotero-plugin-toolkit";
 import { getString } from "../../utils/locale.ts";
 import { config } from "../../config.ts";
 import { removeElementsExcept } from "../../utils/dom.ts";
@@ -69,7 +70,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
         return true;
       }
       removeButtons(doc);
-      let attItems = [];
+      let attItems: Zotero.Item[] = [];
       const button = ztoolkit.UI.appendElement({
         enableElementRecord: false,
         namespace: "html",
@@ -100,7 +101,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
             if (!active) {
               return;
             }
-            const children = [];
+            const children: TagElementProps[] = [];
             for (const attItem of attItems) {
               children.push({
                 tag: "menuitem",

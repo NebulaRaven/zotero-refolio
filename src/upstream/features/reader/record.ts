@@ -16,7 +16,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
     declare recordInterval: any;
     declare boundActivate: any;
     declare boundDeactivate: any;
-    declare intervalID: number;
+    declare intervalID: number | undefined;
     declare unregisterTabs: (() => void) | undefined;
     private recording = false;
     private generation = 0;

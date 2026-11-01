@@ -159,7 +159,7 @@ import { getElements } from "../../utils/dom.ts";
     }
     toogleLeft() {
       if (Zotero_Tabs.selectedType === "library") {
-        const splitter = document.querySelector("#zotero-collections-splitter");
+        const splitter = document.querySelector("#zotero-collections-splitter")!;
         if (splitter.getAttribute("state") == "collapsed") {
           splitter.setAttribute("state", "");
         } else {
@@ -171,13 +171,13 @@ import { getElements } from "../../utils/dom.ts";
         const sidebarToggle = readerWindow?.document.querySelector<HTMLElement>("#sidebarToggle");
         sidebarToggle?.click();
       } else if (Zotero_Tabs.selectedType == "note") {
-        const frame = document.querySelector<HTMLIFrameElement>(`vbox#${Zotero_Tabs.selectedID} #editor-view`);
+        const frame = document.querySelector<HTMLIFrameElement>(`vbox#${Zotero_Tabs.selectedID} #editor-view`)!;
         getElements(frame.contentDocument?.querySelectorAll(".toolbar-button") || []).find(i => i.title == "Toggle left pane")?.click();
       }
     }
     toogleRight() {
       if (Zotero_Tabs.selectedType === "library") {
-        const splitter = document.querySelector("#zotero-items-splitter");
+        const splitter = document.querySelector("#zotero-items-splitter")!;
         if (splitter.getAttribute("state") == "collapsed") {
           splitter.setAttribute("state", "");
           return;
@@ -191,7 +191,7 @@ import { getElements } from "../../utils/dom.ts";
         const node = readerWindow?.document.querySelector<HTMLElement>(".context-pane-toggle") || document.querySelector<HTMLElement>("#zotero-context-pane [data-action=\"toggle-pane\"]");
         node?.click();
       } else if (Zotero_Tabs.selectedType == "note") {
-        const frame = document.querySelector<HTMLIFrameElement>(`vbox#${Zotero_Tabs.selectedID} #editor-view`);
+        const frame = document.querySelector<HTMLIFrameElement>(`vbox#${Zotero_Tabs.selectedID} #editor-view`)!;
         getElements(frame.contentDocument?.querySelectorAll(".toolbar-button") || []).find(i => i.title == "Toggle right pane")?.click();
       }
     }

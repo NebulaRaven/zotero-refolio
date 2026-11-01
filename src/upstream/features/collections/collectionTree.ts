@@ -214,7 +214,8 @@ import { spRegisterMenu } from "../../../app/menus.ts";
       if (!sortFunc) {
         return children;
       }
-      return [...children].sort(sortFunc);
+      // collectionTree.jsx asks only libraries, collections and the feeds row for their children, and those return arrays.
+      return [...children!].sort(sortFunc);
     };
     return replaceOwnedProperty(prototype, "getChildren", patchedGetChildren);
   }
@@ -289,7 +290,7 @@ import { spRegisterMenu } from "../../../app/menus.ts";
       const library = Zotero.Libraries.get(libraryID);
       if (!library) throw new Error(`Library not found: ${libraryID}`);
       const groupName = library.name;
-      const names = [];
+      const names: string[] = [];
       const getCollectionState = collectionKey => {
         const col = Zotero.Collections.getByLibraryAndKey(libraryID, collectionKey) || Zotero.Searches.getByLibraryAndKey(libraryID, collectionKey);
         if (!col) {
@@ -619,10 +620,10 @@ import { spRegisterMenu } from "../../../app/menus.ts";
   export async function initCollectionTree() {
     const collectionsView = requireCollectionsView();
     await waitForCollectionsViewReady(collectionsView);
-    const cleanups = [];
+    const cleanups: Array<() => void> = [];
     const collectionItemCountEnabled = Boolean(isEnabel("collectionItemCount"));
     const sortCollectionItemEnabled = Boolean(isEnabel("sortCollectionItem"));
-    const treeCleanups = [];
+    const treeCleanups: Array<() => void> = [];
     if (sortCollectionItemEnabled) {
       treeCleanups.push(sortCollectionItem());
     }

@@ -13,7 +13,7 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
     declare CONCURRENCY_LIMIT: number;
     declare mathCache: MathFragment[];
     declare cache: LocalStorage;
-    declare progressElement: HTMLSpanElement;
+    declare progressElement: HTMLSpanElement | null | undefined;
     declare infoContainer: any;
 
     constructor() {
@@ -47,7 +47,8 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
               const selectedItem = ZoteroPane.getSelectedItems()?.[0];
               attItem = await selectedItem?.getBestAttachment();
             } else {
-              attItem = Zotero.Reader.getByTabID(Zotero_Tabs.selectedID)._item;
+              // Another tab is taken to be a reader; anything else fails into the catch below.
+              attItem = Zotero.Reader.getByTabID(Zotero_Tabs.selectedID)!._item;
             }
             this.ensureActive(signal);
             if (!attItem) {
@@ -95,7 +96,7 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
         name: getString("fulltext-translate-toggle-original"),
         label: "Refolio",
         when: () => {
-          return Zotero_Tabs.selectedType == "reader" && Zotero.Reader.getByTabID(Zotero_Tabs.selectedID)._item.getTags().some(i => i.tag == "全文翻译");
+          return Zotero_Tabs.selectedType == "reader" && Zotero.Reader.getByTabID(Zotero_Tabs.selectedID)!._item.getTags().some(i => i.tag == "全文翻译");
         },
         callback: async () => {
           if (this.disposed) {
@@ -269,7 +270,7 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
           count: totalPages
         }
       }));
-      const ranges = [];
+      const ranges: string[] = [];
       for (let i = 1; i <= totalPages; i += 20) {
         const end = Math.min(i + 19, totalPages);
         if (i === end) {
@@ -281,7 +282,7 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
       let combinedMdString = "";
       for (const range of ranges) {
         this.ensureActive(signal);
-        let mdResult = null;
+        let mdResult: string | null = null;
         const retries = 5;
         for (let attempt = 1; attempt <= retries; attempt++) {
           this.ensureActive(signal);
@@ -871,7 +872,7 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
       }
       try {
         // PDF Translate keeps its target language (langto) in a string preference.
-        const res = await translate.call(Zotero.PDFTranslate.api, text, {
+        const res = await translate.call(Zotero.PDFTranslate!.api, text, {
           pluginID: config.addonID,
           langto: tl as string
         });

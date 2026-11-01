@@ -27,16 +27,16 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
     declare timers: Set<number>;
     declare animationFrames: Set<number>;
     declare _prefObserverID: any;
-    declare _onSelectHandler: () => void;
+    declare _onSelectHandler: (() => void) | null;
     declare onUnload: () => void;
     declare refreshGraphView: (selectionChanged?: boolean) => Promise<void>;
     declare refreshGeneration: number;
     declare positions: Map<any, any>;
     declare modeFunction: Record<string, (items: Zotero.Item[]) => GraphData | Promise<GraphData>>;
     declare mode: string;
-    declare _themeMedia: MediaQueryList;
+    declare _themeMedia: MediaQueryList | null;
     declare renderer: any;
-    declare graph: GraphData;
+    declare graph: GraphData | undefined;
     declare rawGraph: { key: string; graph: GraphData } | undefined;
     declare rawGraphVersion: number;
     declare container: any;
@@ -96,7 +96,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       this.observeTheme();
     }
     observeTheme() {
-      const media = this._themeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+      const media = this._themeMedia = window.matchMedia("(prefers-color-scheme: dark)")!;
       const update = () => {
         if (this.active) this.setTheme();
       };
@@ -157,7 +157,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
     }
     getTheme() {
       const preference = Zotero.Prefs.get("browser.theme.toolbar-theme", true);
-      const media = this._themeMedia || window.matchMedia("(prefers-color-scheme: dark)");
+      const media = this._themeMedia || window.matchMedia("(prefers-color-scheme: dark)")!;
       return preference === 0 ? "dark" : preference === 1 ? "light" : media.matches ? "dark" : "light";
     }
     setTheme() {
@@ -194,7 +194,8 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       }
       const originalID = Zotero_Tabs.selectedID;
       Zotero_Tabs.select("zotero-pane");
-      await this.selectNode(Zotero.BetterNotes.data.workspace.mainId);
+      // Nothing calls blink(); it is the Better Notes workspace hook and needs that plugin.
+      await this.selectNode(Zotero.BetterNotes!.data.workspace.mainId);
       this.schedule(async () => {
         this.setData(await this.getGraph());
         this.schedule(() => {
@@ -382,7 +383,8 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       if (!this.active) {
         return;
       }
-      const mainNode = getTreeNode();
+      // The loop above returns unless the item tree node exists.
+      const mainNode = getTreeNode()!;
       const minHeight = 200;
       const container = ztoolkit.UI.createElement(document, "div", {
         id: "graph",

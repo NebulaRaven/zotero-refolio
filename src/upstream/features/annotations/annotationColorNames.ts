@@ -29,7 +29,7 @@
     if (!Array.isArray(parsed)) {
       return [];
     }
-    const colors = [];
+    const colors: Array<[string, string]> = [];
     for (const entry of parsed) {
       if (!Array.isArray(entry) || entry.length < 2) {
         continue;
