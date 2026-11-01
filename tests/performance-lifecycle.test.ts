@@ -295,12 +295,12 @@ test('tag refresh and teardown cancel all owned timers, including callbacks alre
 });
 
 test('late tag initialization cannot overwrite a newer selection and cached tag sets reuse counts', async () => {
-  const { tags } = await tagsFixture(); const a = deferred<string[]>(), b = deferred<string[]>(); let calls = 0;
+  const { tags } = await tagsFixture(); const a = deferred<Array<[string, number]>>(), b = deferred<Array<[string, number]>>(); let calls = 0;
   tags.container = { children: [] }; tags.getPlainTags = () => (++calls === 1 ? a.promise : b.promise);
   const rendered = []; tags.refresh = async () => rendered.push([...tags.plainTags]);
   const older = tags.init(true), newer = tags.init(true);
-  b.resolve(['#new']); await newer; a.resolve(['#old']); await older;
-  assert.deepEqual(rendered, [['#new']]);
+  b.resolve([['#new', 1]]); await newer; a.resolve([['#old', 1]]); await older;
+  assert.deepEqual(rendered, [[['#new', 1]]]);
   let reads = 0;
   const items = [1, 2].map(id => ({ id, getTags: () => { reads++; return [{ tag: '#tag' }]; }, isPDFAttachment: () => false }));
   tags.collectionItems = items;

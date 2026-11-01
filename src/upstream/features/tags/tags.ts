@@ -12,12 +12,43 @@ import { spRemoveTags,spRenameTags,spTagWithin } from "../../../core/tags.ts";
 import { isEnabel,registerShortcut } from "../../utils/base.ts";
 import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
   // src/features/tags/tags.ts
+  // Tags of the items Zotero.Items.getAll() returns: every item of the library, child notes, attachments
+  // and annotations included, except those in the trash.
+  const TAG_COUNTS = `SELECT T.name, COUNT(*) FROM items I
+    JOIN itemTags IT ON (IT.itemID=I.itemID) JOIN tags T ON (T.tagID=IT.tagID)
+    WHERE I.libraryID=? AND I.itemID NOT IN (SELECT itemID FROM deletedItems)`;
+  // The items for which item.topLevelItem.inCollection() holds: top-level items filed directly in the
+  // collection, their child notes and attachments, and the annotations and embedded images below those.
+  const COLLECTION_TREE = `WITH RECURSIVE collectionTree(itemID) AS (
+      SELECT itemID FROM collectionItems WHERE collectionID=?
+        AND itemID NOT IN (SELECT itemID FROM itemNotes WHERE parentItemID IS NOT NULL)
+        AND itemID NOT IN (SELECT itemID FROM itemAttachments WHERE parentItemID IS NOT NULL)
+        AND itemID NOT IN (SELECT itemID FROM itemAnnotations)
+      UNION SELECT C.itemID FROM itemNotes C JOIN collectionTree P ON (C.parentItemID=P.itemID)
+      UNION SELECT C.itemID FROM itemAttachments C JOIN collectionTree P ON (C.parentItemID=P.itemID)
+      UNION SELECT C.itemID FROM itemAnnotations C JOIN collectionTree P ON (C.parentItemID=P.itemID)
+    )`;
+  const GROUP_BY_TAG = "GROUP BY T.name ORDER BY T.name";
+  /** Each tag with the number of items carrying it, in the library or under a collection's top-level items. */
+  export async function getTagCounts(libraryID: number, collectionID?: number, zotero = Zotero) {
+    const counts: Array<[tag: string, count: number]> = [];
+    const sql = collectionID
+      ? `${COLLECTION_TREE} ${TAG_COUNTS} AND I.itemID IN (SELECT itemID FROM collectionTree) ${GROUP_BY_TAG}`
+      : `${TAG_COUNTS} ${GROUP_BY_TAG}`;
+    // Zotero.DB.queryAsync() returns rows only for statements that start with SELECT, not WITH, so read them here.
+    await zotero.DB.queryAsync(sql, collectionID ? [collectionID, libraryID] : [libraryID], {
+      onRow: (row: mozIStorageRow) => {
+        counts.push([row.getUTF8String(0), row.getInt64(1)]);
+      }
+    });
+    return counts;
+  }
   export var Tags = class _Tags {
     declare active: boolean;
     declare cleanups: Array<() => void | Promise<void>>;
     declare linkSymbol: string;
     declare props: { icon: { size: number; right: number; svg: string; }; item: { padding: number; }; tree: { size: number; }; color: { hover: string; select: string; }; sorted: string[]; };
-    declare plainTags: string[];
+    declare plainTags: Array<[tag: string, count: number]>;
     declare searchJoinMode: "all" | "any";
     declare annotationsID: string;
     declare nestedTagsID: string;
@@ -284,7 +315,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
       if (!force) {
         if (
         // 与上次状态相同
-        plainTags.length === this.plainTags.length && plainTags.join("\0") === this.plainTags.join("\0") ||
+        plainTags.length === this.plainTags.length && JSON.stringify(plainTags) === JSON.stringify(this.plainTags) ||
         // this._state == JSON.stringify(this.state)
         // 未处于当前视图
         this.nestedTagsContainer?.style.display == "none") {
@@ -312,25 +343,19 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           regex = new RegExp(res[1], res[2]);
           func = s => regex.test(s);
         } else {
-          func = s => s.match(new RegExp(this.searchText, "i"));
+          regex = new RegExp(this.searchText, "i");
+          func = s => s.match(regex);
         }
       }
-      let plainTags = [];
       const collectionID = getFirstSelectedCollectionID();
       const displayAllTags = Zotero.Prefs.get("tagSelector.displayAllTags");
       const libraryID = getFirstSelectedLibraryID() ?? Zotero.Libraries.userLibraryID;
-      let allItems = await Zotero.Items.getAll(libraryID);
-      if (collectionID && !displayAllTags) {
-        allItems = allItems.filter(i => i.topLevelItem.inCollection(collectionID));
-      }
-      allItems.forEach(item => {
-        item.getTags().map(i => plainTags.push(i.tag));
-      });
-      plainTags = plainTags.filter(tag => {
+      let plainTags = await getTagCounts(libraryID, collectionID && !displayAllTags ? collectionID : undefined);
+      plainTags = plainTags.filter(([tag]) => {
         return _Tags.getTagMatch(tag);
       });
       if (func) {
-        plainTags = plainTags.filter(tag => {
+        plainTags = plainTags.filter(([tag]) => {
           return tag.split(this.linkSymbol).find(s => func(s));
         });
       }
@@ -341,13 +366,13 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
       return plainTag.split(this.linkSymbol).slice(0, index + 1).join(this.linkSymbol);
     }
     getNestedTags() {
-      const cacheKey = this.plainTags.join("\0");
+      const cacheKey = JSON.stringify(this.plainTags);
       if (this._nestedTagsCache && this._nestedTagsCache.key === cacheKey) {
         return this._nestedTagsCache.result;
       }
       const nestedTags = {};
       for (let i = 0; i < this.plainTags.length; i++) {
-        const plainTag = this.plainTags[i];
+        const [plainTag, count] = this.plainTags[i];
         const splitTags = plainTag.replace(/^#\s*/, "").split(this.linkSymbol);
         let _nestedTags = nestedTags;
         for (let j = 0; j < splitTags.length; j++) {
@@ -357,7 +382,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
             // 用于区分当前分级标签，也用于和filter通信
             id: JSON.stringify([plainTag, j])
           };
-          temp.number += 1;
+          temp.number += count;
           _nestedTags = temp.children;
         }
       }
@@ -374,9 +399,27 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
      */
     static getTagMatch(tag) {
       try {
-        const rawString = getPref(`textTagsColumn.match`);
+        const regex = _Tags.getTagMatchRegex(getPref(`textTagsColumn.match`));
+        if (!regex) {
+          return tag;
+        }
+        // The pattern is reused, so a sticky one must not resume where the previous tag's match ended.
+        regex.lastIndex = 0;
+        const arr = tag.match(regex);
+        return arr && (arr.slice(1).join("") || arr[0]) || "";
+      } catch {
+        return tag;
+      }
+    }
+    private static tagMatchCache: { rawString: string; regex: RegExp | null } | undefined;
+    /** Compile the pattern once per preference value: the item tree matches every tag of every row it draws. */
+    static getTagMatchRegex(rawString: string) {
+      if (_Tags.tagMatchCache && _Tags.tagMatchCache.rawString === rawString) {
+        return _Tags.tagMatchCache.regex;
+      }
+      let regex: RegExp | null;
+      try {
         const res = rawString.match(/\/(.+)\/(\w*)/);
-        let regex;
         if (res) {
           regex = new RegExp(res[1], res[2]);
         } else if (rawString.startsWith("~~")) {
@@ -384,11 +427,12 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
         } else {
           regex = new RegExp(`^${rawString}(.+)`);
         }
-        const arr = tag.match(regex);
-        return arr && (arr.slice(1).join("") || arr[0]) || "";
       } catch {
-        return tag;
+        // An invalid pattern leaves every tag as it is.
+        regex = null;
       }
+      _Tags.tagMatchCache = { rawString, regex };
+      return regex;
     }
     updateTagsIn(sortedItems?) {
       if (!this.collectionItems) {
