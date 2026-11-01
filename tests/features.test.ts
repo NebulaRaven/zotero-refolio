@@ -184,7 +184,7 @@ test('actual journal columns render manual values while still fetching missing a
   const ctx: vm.Context = { getPref: key => prefs[key], getString: testGetString, spPublicationNames, spNormalizeJournalName, spJournalQuery, spManualRankRecord, spReadManualRanks, spEffectiveRanks,
     getPublicationTitle: () => 'Sleep', import_dayjs: { default: { extend() {}, locale() {} } }, import_relativeTime: {}, import_utc: {}, getDayjsLocale: () => 'en',
     Zotero: { locale: 'en', Prefs: { get: key => prefs[key.replace('stylepersonal.', '')] } }, config: { addonRef: 'stylepersonal' } };
-  for (const file of ['src/app/journalLookup.ts', 'src/app/manualRanks.ts', 'src/upstream/utils/easyscholar.ts', 'src/upstream/features/item-tree/itemTree-57.ts']) {
+  for (const file of ['src/app/journalLookup.ts', 'src/app/manualRanks.ts', 'src/upstream/utils/easyscholar.ts', 'src/upstream/features/item-tree/itemTreeColumns.ts']) {
     vm.runInNewContext(await script(new URL('../'+file, import.meta.url)), ctx);
   }
   const columns = new Map(); let queued = 0, cache;
@@ -206,7 +206,7 @@ test('the IF column shares the publication tag update gate, so each title has on
     getPublicationTitle: () => title, updatePublicationTags: async (_storage, journal, trigger) => { updates.push([journal, trigger]); },
     import_dayjs: { default: { extend() {}, locale() {} } }, import_relativeTime: {}, import_utc: {}, getDayjsLocale: () => 'en',
     Zotero: { locale: 'en', Prefs: { get: key => prefs[key.replace('stylepersonal.', '')] } }, config: { addonRef: 'stylepersonal' } };
-  for (const file of ['src/app/journalLookup.ts', 'src/app/manualRanks.ts', 'src/upstream/utils/easyscholar.ts', 'src/upstream/utils/keyedTaskGate.ts', 'src/upstream/features/item-tree/itemTree-57.ts']) {
+  for (const file of ['src/app/journalLookup.ts', 'src/app/manualRanks.ts', 'src/upstream/utils/easyscholar.ts', 'src/upstream/utils/keyedTaskGate.ts', 'src/upstream/features/item-tree/itemTreeColumns.ts']) {
     vm.runInNewContext(await script(new URL('../'+file, import.meta.url)), ctx);
   }
   const columns = new Map(), timers: Array<() => Promise<void>> = [];

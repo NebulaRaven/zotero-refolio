@@ -129,9 +129,9 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       this.timers.add(timer);
       return timer;
     }
-    addRenderCellPatch(patch2) {
+    addRenderCellPatch(patch) {
       if (this.active) {
-        this.patchRenderCell.push(patch2);
+        this.patchRenderCell.push(patch);
       }
     }
     async init() {
@@ -692,8 +692,8 @@ ${JSON.stringify(data.data)}`;
             return;
           }
           if (isOnlyEmoji(tag)) {
-            (0, import_runes.default)(tag).forEach(tag2 => {
-              const tagSpan = getTagSpan(tag2, color);
+            (0, import_runes.default)(tag).forEach(emoji => {
+              const tagSpan = getTagSpan(emoji, color);
               tagSpan.style[align] = `${offset + margin}em`;
               span.appendChild(tagSpan);
               offset += margin * 2 + 1;
@@ -747,7 +747,7 @@ ${JSON.stringify(data.data)}`;
       const key = "textTags";
       await this.registerColumn(key, item => {
         const coloredTags = getColoredTags(item);
-        let tags = item.getTags().filter(tag => coloredTags.map(tag2 => tag2.tag).indexOf(tag.tag) == -1);
+        let tags = item.getTags().filter(tag => coloredTags.map(colored => colored.tag).indexOf(tag.tag) == -1);
         tags = [...coloredTags, ...tags.sort((a, b) => a.tag > b.tag ? 1 : -1)].filter(i => i.tag);
         return {
           sortIndex: tags.map(i => i.tag).join(" "),
@@ -875,9 +875,9 @@ ${JSON.stringify(data.data)}`;
             return `${minRank}.000000`;
           }
           const _src = getPref(`${key}Column.source`) || "easyscholar";
-          const _fi2 = _src === "garden" ? garden_default : easyscholar_default;
-          if (_fi2[field]) {
-            info = _fi2[field](typeof fieldValue === "number" ? String(fieldValue) : fieldValue);
+          const _fi = _src === "garden" ? garden_default : easyscholar_default;
+          if (_fi[field]) {
+            info = _fi[field](typeof fieldValue === "number" ? String(fieldValue) : fieldValue);
           } else if (_src !== "garden") {
             try {
               info = easyscholar_default.custom(field, fieldValue);
@@ -997,7 +997,7 @@ ${JSON.stringify(data.data)}`;
           if (!Number.isFinite(info.rank)) info.rank = 1;
           const rankIndex = info.rank - 1;
           const color = rankIndex >= rankColors.length ? rankColors.slice(-1)[0] : rankColors[rankIndex];
-          const text = [... new Set([getMapString(info.key), getMapString(info.value)])].filter(i2 => i2.length > 0).join(" ");
+          const text = [... new Set([getMapString(info.key), getMapString(info.value)])].filter(part => part.length > 0).join(" ");
           const c = new ColorRNA_default(color);
           const [red, green, blue] = c.rgb();
           const hsl = c.HSL();
@@ -1217,7 +1217,7 @@ ${JSON.stringify(data.data)}`;
     async status() {
       const key = "status";
       await this.registerColumn(key, item => {
-        const tag = getColoredTags(item).find(tag2 => isStatusTagName(tag2.tag));
+        const tag = getColoredTags(item).find(candidate => isStatusTagName(candidate.tag));
         if (tag) {
           return {
             sortIndex: tag.tag,
@@ -1239,8 +1239,8 @@ ${JSON.stringify(data.data)}`;
         span.style.alignItems = "center";
         const tag = data;
         // Zotero sets --zotero-font-size on #zotero-pane; popups outside it pass the computed size instead.
-        const createTagNode = (tag2, isSelected = false, zoteroFontSize = "var(--zotero-font-size, 1em)") => {
-          const c = new ColorRNA_default(tag2.color);
+        const createTagNode = (statusTag, isSelected = false, zoteroFontSize = "var(--zotero-font-size, 1em)") => {
+          const c = new ColorRNA_default(statusTag.color);
           const [red, green, blue] = c.rgb();
           const hsl = c.HSL();
           hsl[2] = 35;
@@ -1265,7 +1265,7 @@ ${JSON.stringify(data.data)}`;
                     borderRadius: "99px",
                     height: `calc(${zoteroFontSize} * .6)`,
                     width: `calc(${zoteroFontSize} * .6)`,
-                    backgroundColor: isSelected ? "#fff" : tag2.color,
+                    backgroundColor: isSelected ? "#fff" : statusTag.color,
                     display: "inline-flex",
                     flexShrink: "0"
                   }
@@ -1278,7 +1278,7 @@ ${JSON.stringify(data.data)}`;
                   textOverflow: "ellipsis"
                 },
                 properties: {
-                  innerText: tag2.tag.slice(1)
+                  innerText: statusTag.tag.slice(1)
                 }
               }]
             }]
@@ -1330,10 +1330,10 @@ ${JSON.stringify(data.data)}`;
           let coloredTags = [];
           const colors = await Zotero.Tags.getColors(libraryID);
           for (const tagName of colors.keys()) {
-            const tag2 = { ...colors.get(tagName), tag: tagName };
-            coloredTags.push(tag2);
+            const coloredTag = { ...colors.get(tagName), tag: tagName };
+            coloredTags.push(coloredTag);
           }
-          coloredTags = coloredTags.filter(tag2 => isStatusTagName(tag2.tag));
+          coloredTags = coloredTags.filter(candidate => isStatusTagName(candidate.tag));
           if (tag.tag) {
             coloredTags = [...[tag], ...coloredTags.filter(i => i.tag != tag.tag)];
           }
@@ -1374,9 +1374,9 @@ ${JSON.stringify(data.data)}`;
               if (!item) {
                 return;
               }
-              item.getTags().forEach(tag2 => {
-                if (isStatusTagName(tag2.tag)) {
-                  item.removeTag(tag2.tag);
+              item.getTags().forEach(itemTag => {
+                if (isStatusTagName(itemTag.tag)) {
+                  item.removeTag(itemTag.tag);
                 }
               });
               item.addTag(coloredTags[i].tag);
@@ -1396,14 +1396,14 @@ ${JSON.stringify(data.data)}`;
             listeners: [{
               type: "command",
               listener: () => {
-                const tag2 = window.prompt(getString("ui-enter-status-name"));
+                const statusName = window.prompt(getString("ui-enter-status-name"));
                 const color = window.prompt(getString("ui-enter-status-color"), "#6196bc");
                 const item = Zotero.Items.get(tag.itemID);
                 if (!item) {
                   return;
                 }
-                if (tag2 && color && color?.startsWith("#")) {
-                  const tagName = "/" + tag2.trim();
+                if (statusName && color && color?.startsWith("#")) {
+                  const tagName = "/" + statusName.trim();
                   item.addTag(tagName);
                   Zotero.Tags.setColor(item.libraryID, tagName, color, 12);
                   item.saveTx();
@@ -1479,16 +1479,16 @@ ${JSON.stringify(data.data)}`;
               type: "mouseenter",
               listener: () => {
                 const stars = span.querySelectorAll(".star");
-                stars.forEach((s, index2) => {
-                  s.innerHTML = index2 <= i ? selectedStar : unselectedStar;
+                stars.forEach((s, starIndex) => {
+                  s.innerHTML = starIndex <= i ? selectedStar : unselectedStar;
                 });
               }
             }, {
               type: "mouseleave",
               listener: () => {
                 const stars = span.querySelectorAll(".star");
-                stars.forEach((s, index2) => {
-                  s.innerHTML = index2 < data.rate ? selectedStar : unselectedStar;
+                stars.forEach((s, starIndex) => {
+                  s.innerHTML = starIndex < data.rate ? selectedStar : unselectedStar;
                 });
               }
             }]
@@ -1517,7 +1517,7 @@ ${JSON.stringify(data.data)}`;
       await this.registerColumn(key, item => {
         let s = item && ztoolkit.ExtraField.getExtraField(item, "remark") || "";
         if (!s && item && item.isRegularItem()) {
-          const noteItem = item.getNotes().map(id => Zotero.Items.get(id)).find(noteItem2 => noteItem2.getTags().find(i => i.tag == "remark"));
+          const noteItem = item.getNotes().map(id => Zotero.Items.get(id)).find(note => note.getTags().find(i => i.tag == "remark"));
           if (noteItem) {
             s = noteItem.getNote().match(/<p>(.+?)<\/p>/)?.[1] || "";
           }
@@ -1563,12 +1563,12 @@ ${JSON.stringify(data.data)}`;
             const s = new Zotero.Search();
             s.addCondition("extra", "contains", "remark:");
             const ids = await s.search();
-            for (const id2 of ids) {
-              const i = Zotero.Items.get(id2);
+            for (const itemID of ids) {
+              const i = Zotero.Items.get(itemID);
               if (!i) {
                 continue;
               }
-              const text = i.getField("extra").split("\n").find(i2 => i2.startsWith("remark:"));
+              const text = i.getField("extra").split("\n").find(line => line.startsWith("remark:"));
               let value = text?.slice(8);
               if (value?.trim()) {
                 value = text?.slice(8) || "";
@@ -1763,9 +1763,9 @@ ${text}`);
               return;
             }
             const pages = await Zotero.FullText.getPages(pdfItem.id);
-            const pageNum2 = pages ? pages.total : 0;
-            this.setCachedPageNum(item.id, pageNum2);
-            if (!pageNum2 && pdfItem.getAnnotations().length > 0) {
+            const pageCount = pages ? pages.total : 0;
+            this.setCachedPageNum(item.id, pageCount);
+            if (!pageCount && pdfItem.getAnnotations().length > 0) {
               await Zotero.Fulltext.indexItems([pdfItem.id]);
             }
           }, 3000);
@@ -2218,8 +2218,8 @@ ${text}`);
           continue;
         }
         const styleIndex = this._columnStyleMap[window.CSS.escape(dataKey)];
-        const style2 = this._stylesheet.sheet.cssRules[styleIndex]?.style;
-        if (!style2) {
+        const style = this._stylesheet.sheet.cssRules[styleIndex]?.style;
+        if (!style) {
           continue;
         }
         const columnPadding = column.iconLabel ? 0 : 16;
@@ -2230,12 +2230,12 @@ ${text}`);
         }
         const fixedWidth = column.fixedWidth && column.width || column.staticWidth;
         if (fixedWidth) {
-          style2.setProperty("flex", "0 0", "important");
-          style2.setProperty("max-width", `${width}px`, "important");
-          style2.setProperty("min-width", `${width}px`, "important");
+          style.setProperty("flex", "0 0", "important");
+          style.setProperty("max-width", `${width}px`, "important");
+          style.setProperty("min-width", `${width}px`, "important");
         } else {
           width -= columnPadding;
-          style2.setProperty("flex-basis", `${width}px`);
+          style.setProperty("flex-basis", `${width}px`);
         }
         const styleID = `${config.addonRef}-column-width-${dataKey}`;
         ztoolkit.UI.appendElement({
@@ -2280,9 +2280,9 @@ ${text}`);
       return `${Math.floor(seconds / 60)}m`;
     }
     if (seconds < 86400) {
-      const hours2 = Math.floor(seconds / 3600);
+      const totalHours = Math.floor(seconds / 3600);
       const minutes = Math.floor(seconds % 3600 / 60);
-      return `${hours2}h ${minutes > 0 ? ` ${minutes}m` : ""}`;
+      return `${totalHours}h ${minutes > 0 ? ` ${minutes}m` : ""}`;
     }
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor(seconds % 86400 / 3600);

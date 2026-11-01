@@ -54,7 +54,7 @@ import "./upstream/features/item-tree/itemTreeLifecycle.ts";
 import "./upstream/features/item-tree/itemTreeRenderPatch.ts";
 import "./upstream/features/item-tree/itemTreeColumnLifecycle.ts";
 import "./upstream/features/item-tree/itemBoxPatchRegistry.ts";
-import "./upstream/features/item-tree/itemTree-57.ts";
+import "./upstream/features/item-tree/itemTreeColumns.ts";
 import "./upstream/features/reader/readerResourceLifecycle.ts";
 import "./upstream/features/reader/PDFStyles.ts";
 import "./upstream/platform/zotero/patches.ts";

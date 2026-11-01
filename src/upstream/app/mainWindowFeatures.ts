@@ -13,7 +13,7 @@ import { handleItemActivity } from "./itemActivity.ts";
 import { patchAll } from "../platform/zotero/patches.ts";
 import { initStorage } from "../platform/persistence/storage.ts";
 import { startDeferredItemTree } from "../features/item-tree/itemTreeLifecycle.ts";
-import { ItemTree } from "../features/item-tree/itemTree-57.ts";
+import { ItemTree } from "../features/item-tree/itemTreeColumns.ts";
 import { reportFeatureFailure } from "../../app/hooks.ts";
 import { getPref } from "../utils/prefs.ts";
 import { Record } from "../features/reader/record.ts";

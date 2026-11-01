@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { script } from './source.mts';
 
-const itemTreeFile = new URL('../src/upstream/features/item-tree/itemTree-57.ts', import.meta.url);
+const itemTreeFile = new URL('../src/upstream/features/item-tree/itemTreeColumns.ts', import.meta.url);
 async function loadItemTree(extra: Record<string, unknown> = {}, prefs: Record<string, unknown> = {}) {
   const ctx: vm.Context = {
     getPref: key => prefs[key], getString: testGetString, config: { addonRef: 'stylepersonal' },
