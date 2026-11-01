@@ -5,19 +5,19 @@
       existing?.remove();
       return undefined;
     }
-    let style2;
+    let style;
     if (existing?.localName === "style") {
-      style2 = existing;
+      style = existing;
     } else {
       existing?.remove();
-      style2 = doc.createElementNS(HTML_NAMESPACE, "style");
-      style2.id = id;
-      style2.type = "text/css";
-      (doc.head ?? doc.documentElement).appendChild(style2);
+      style = doc.createElementNS(HTML_NAMESPACE, "style");
+      style.id = id;
+      style.type = "text/css";
+      (doc.head ?? doc.documentElement).appendChild(style);
     }
-    if (style2.textContent !== css) {
-      style2.textContent = css;
+    if (style.textContent !== css) {
+      style.textContent = css;
     }
-    return style2;
+    return style;
   }
 

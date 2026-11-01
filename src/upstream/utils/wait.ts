@@ -1,4 +1,4 @@
-  export function waitUtilAsync2(condition, interval = 100, timeout = 10000) {
+  export function waitUtilAsync(condition, interval = 100, timeout = 10000) {
     return new Promise<void>((resolve, reject) => {
       const start = Date.now();
       const intervalId = ztoolkit.getGlobal("setInterval")(() => {

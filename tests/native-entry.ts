@@ -9,13 +9,13 @@ import { spGetJournalLookup, spGetAutomaticJournalRanks } from '../src/app/journ
 import { spGetJournalRanks } from '../src/app/manualRanks.ts';
 import { getString } from '../src/upstream/utils/locale.ts';
 import { spFeatureDefinitions } from '../src/core/features.ts';
-import { version2 } from '../src/upstream/config.ts';
+import { version } from '../src/upstream/config.ts';
 import { spGetCitationGraph, spConfirmCitationUpdate } from '../src/app/citations.ts';
 import { getCollectionRowItemCount } from '../src/upstream/features/collections/collectionItemCountData.ts';
 
 interface DayjsValue { format(template: string): string; local(): DayjsValue; utcOffset(minutes: number): DayjsValue; }
 export const nativeSmoke = { spRenameTags, spRemoveTags, spGraphLabel, spDisplayDate,
   getPref, setPref, requests, updatePublicationTags, registerShortcut, spGetJournalLookup, spGetAutomaticJournalRanks,
-  spGetJournalRanks, spGetCitationGraph, spConfirmCitationUpdate, getCollectionRowItemCount, getString, spFeatureDefinitions, version: version2,
+  spGetJournalRanks, spGetCitationGraph, spConfirmCitationUpdate, getCollectionRowItemCount, getString, spFeatureDefinitions, version,
   dayjs: import_dayjs.default as { utc(value: unknown): DayjsValue } };
 (addon.api as typeof addon.api & { __nativeSmoke: typeof nativeSmoke }).__nativeSmoke = nativeSmoke;

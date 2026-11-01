@@ -141,14 +141,14 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
         const inputNode = document.querySelector<HTMLInputElement>(".prompt-input");
         return Boolean(inputNode && !inputNode.value.startsWith("> "));
       },
-      callback: async prompt2 => {
+      callback: async prompt => {
         if (!active) {
           return;
         }
         const generation = ++searchGeneration;
-        const text = prompt2.inputNode.value;
+        const text = prompt.inputNode.value;
         suppressSearch(text);
-        const isCurrent = () => active && generation === searchGeneration && prompt2.promptNode.isConnected && prompt2.promptNode.style.display !== "none" && prompt2.inputNode.value === text;
+        const isCurrent = () => active && generation === searchGeneration && prompt.promptNode.isConnected && prompt.promptNode.style.display !== "none" && prompt.inputNode.value === text;
         async function filter(ids) {
           const valid = await Promise.all(ids.map(async id => {
             try {
@@ -161,7 +161,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           return ids.filter((_, index) => valid[index]);
         }
         try {
-          prompt2.showTip(getString("ui-searching"));
+          prompt.showTip(getString("ui-searching"));
           const s = new Zotero.Search();
           s.addCondition("quicksearch-titleCreatorYear", "contains", text);
           s.addCondition("itemType", "isNot", "attachment");
@@ -204,9 +204,9 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
             return;
           }
           ztoolkit.log(ids.length);
-          prompt2.exit();
-          prompt2.promptNode.style.display = "flex";
-          const container = prompt2.createCommandsContainer();
+          prompt.exit();
+          prompt.promptNode.style.display = "flex";
+          const container = prompt.createCommandsContainer();
           container.classList.add("suggestions");
           if (ids.length > 0) {
             ids.forEach(id => {
@@ -221,12 +221,12 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
                 listeners: [{
                   type: "mousemove",
                   listener: function () {
-                    prompt2.selectItem(this);
+                    prompt.selectItem(this);
                   }
                 }, {
                   type: "click",
                   listener: () => {
-                    prompt2.promptNode.style.display = "none";
+                    prompt.promptNode.style.display = "none";
                     Zotero_Tabs.select("zotero-pane");
                     ZoteroPane.selectItem(item.id);
                   }
@@ -261,9 +261,9 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
               container.appendChild(ele);
             });
           } else {
-            prompt2.exit();
-            prompt2.promptNode.style.display = "flex";
-            prompt2.showTip(getString("ui-not-found"));
+            prompt.exit();
+            prompt.promptNode.style.display = "flex";
+            prompt.showTip(getString("ui-not-found"));
           }
         } finally {}
       }
@@ -278,7 +278,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
     };
     const getAllTags = item => {
       const coloredTags = getColoredTags(item);
-      const tags = item.getTags().filter(tag => coloredTags.map(tag2 => tag2.tag).indexOf(tag.tag) == -1);
+      const tags = item.getTags().filter(tag => coloredTags.map(colored => colored.tag).indexOf(tag.tag) == -1);
       return [...coloredTags, ...tags];
     };
     ztoolkit.Prompt.register([{
@@ -297,13 +297,13 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
       /**
        * 进度条UI，重置
        */
-      callback: prompt2 => {
-        const container = prompt2.createCommandsContainer();
+      callback: prompt => {
+        const container = prompt.createCommandsContainer();
         const item = getItem();
-        prompt2.inputNode.placeholder = item.getField("title");
+        prompt.inputNode.placeholder = item.getField("title");
         const record = addon.api.storage.get(item, "readingTime");
         if (!record || !record.data || Object.keys(record.data).length == 0) {
-          prompt2.showTip(getString("prompt-empty"));
+          prompt.showTip(getString("prompt-empty"));
           return;
         }
         const box = ztoolkit.UI.createElement(document, "div", {
@@ -334,17 +334,17 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           await Zotero.OpenPDF.openToPage(pdfItem, page);
         };
         const progressSpans = [...span.querySelectorAll("span")];
-        progressSpans.forEach((span2, index) => {
-          span2.style.cursor = "pointer";
+        progressSpans.forEach((pageSpan, index) => {
+          pageSpan.style.cursor = "pointer";
           const page = index + 1;
-          span2.onclick = () => {
+          pageSpan.onclick = () => {
             openToPage(page);
           };
-          span2.onmouseenter = () => {
-            span2.style.border = "1.5px solid white";
+          pageSpan.onmouseenter = () => {
+            pageSpan.style.border = "1.5px solid white";
           };
-          span2.onmouseleave = () => {
-            span2.style.border = "";
+          pageSpan.onmouseleave = () => {
+            pageSpan.style.border = "";
           };
           const sec = values[index];
           let t3;
@@ -355,7 +355,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           } else {
             t3 = `${(sec / 60 / 60).toFixed(1)} h`;
           }
-          span2.setAttribute("title", getString("ui-reading-page", { args: { time: t3, page } }));
+          pageSpan.setAttribute("title", getString("ui-reading-page", { args: { time: t3, page } }));
         });
         box.appendChild(span);
         container.appendChild(box);
@@ -368,8 +368,8 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
         const items = ZoteroPane.getSelectedItems();
         return items.length == 1 && items[0].getField("title") == "StylePersonal";
       },
-      callback: async prompt2 => {
-        const tipNode = prompt2.showTip(getString("prompt-migration-in-progress"));
+      callback: async prompt => {
+        const tipNode = prompt.showTip(getString("prompt-migration-in-progress"));
         tipNode.style.position = "relative";
         const progress = ztoolkit.UI.createElement(document, "span", {
           styles: {
@@ -414,12 +414,12 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
             }
           } catch {}
           progress.style.width = `${i / ids.length * 100}%`;
-          prompt2.inputNode.value = getString("ui-migration-progress", { args: { current: i, total: ids.length } });
+          prompt.inputNode.value = getString("ui-migration-progress", { args: { current: i, total: ids.length } });
           await Zotero.Promise.delay(10);
         }
-        prompt2.inputNode.value = "";
-        prompt2.exit();
-        prompt2.showTip(getString("prompt-migration-complete", {
+        prompt.inputNode.value = "";
+        prompt.exit();
+        prompt.showTip(getString("prompt-migration-complete", {
           args: {
             count: ids.length,
             hours: (totalTime / 60 / 60).toFixed(2)
@@ -439,9 +439,9 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
         }
         return false;
       },
-      callback: prompt2 => {
+      callback: prompt => {
         const libraryID = 1;
-        const container = prompt2.createCommandsContainer();
+        const container = prompt.createCommandsContainer();
         container.style.fontSize = "1em";
         const tags = getAllTags(getItem());
         const inputStyles = {
@@ -455,12 +455,12 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           const color = Zotero.Tags.getColor(libraryID, tag.tag);
           let position = color ? color.position : undefined;
           position = position == undefined ? undefined : position + 1;
-          const set = line2 => {
-            const name = line2.querySelector("#name").value;
-            const color = line2.querySelector("#color").value;
-            const position2 = line2.querySelector("#position").value;
-            if (/^#(\w{3}|\w{6})$/i.test(color) && /^\d+$/.test(position2) && name.length) {
-              Zotero.Tags.setColor(libraryID, name, color, position2);
+          const set = row => {
+            const name = row.querySelector("#name").value;
+            const color = row.querySelector("#color").value;
+            const enteredPosition = row.querySelector("#position").value;
+            if (/^#(\w{3}|\w{6})$/i.test(color) && /^\d+$/.test(enteredPosition) && name.length) {
+              Zotero.Tags.setColor(libraryID, name, color, enteredPosition);
             }
           };
           const line = ztoolkit.UI.createElement(document, "div", {
@@ -559,8 +559,8 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
       when: () => {
         return getPref(`function.annotationColors.enable`);
       },
-      callback: prompt2 => {
-        prompt2.exit();
+      callback: prompt => {
+        prompt.exit();
         editAnnotationColors();
       }
     }, {
@@ -570,13 +570,13 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
         const item = getItem();
         return item && (item?.getField("title")).includes("Addon");
       },
-      callback: prompt2 => {
+      callback: prompt => {
         const item = getItem();
         Zotero.Prefs.set("Zotero.AddonItem.key", item.key);
         if ("item" in addon.api.storage) {
           addon.api.storage.item = item;
         }
-        prompt2.showTip(getString("prompt-addon-item-set", {
+        prompt.showTip(getString("prompt-addon-item-set", {
           args: {
             count: item.getNotes().length
           }
@@ -589,7 +589,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
       when: () => {
         return ZoteroPane.getSelectedItems().length >= 2;
       },
-      callback: async prompt2 => {
+      callback: async prompt => {
         const excludeKeys = ["hasAttachment"];
         const columns = requireItemsView().tree._columns._columns.filter(i => i.hidden == false && excludeKeys.indexOf(i.dataKey) == -1);
         const getCustomKeyCellText = (item, dataKey) => {
@@ -634,7 +634,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           }
           ztoolkit.log(csvText);
           await Zotero.File.putContentsAsync(filepath, csvText, "utf-8");
-          prompt2.exit();
+          prompt.exit();
         }
       }
     },
@@ -706,9 +706,9 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
         return false;
       },
       label: "Refolio",
-      callback: async prompt2 => {
+      callback: async prompt => {
         try {
-          const isPromptActive = () => active && prompt2.promptNode.isConnected && prompt2.promptNode.style.display !== "none";
+          const isPromptActive = () => active && prompt.promptNode.isConnected && prompt.promptNode.style.display !== "none";
           const sum = arr => {
             if (arr.length == 0) {
               return 0;
@@ -778,11 +778,11 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
           s2.addCondition("dateAdded", "isAfter", "2024-12-31");
           s2.addCondition("dateAdded", "isBefore", "2026-01-01");
           s2.addCondition("tag", "contains", "全文翻译");
-          const ids2 = await s2.search();
+          const translatedIDs = await s2.search();
           if (!isPromptActive()) {
             return;
           }
-          const ftItems = (await Promise.all(ids2.map(id => Zotero.Items.getAsync(id)))).filter((item): item is Zotero.Item => !!item && item.attachmentReaderType == "snapshot");
+          const ftItems = (await Promise.all(translatedIDs.map(id => Zotero.Items.getAsync(id)))).filter((item): item is Zotero.Item => !!item && item.attachmentReaderType == "snapshot");
           if (!isPromptActive()) {
             return;
           }
@@ -820,7 +820,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
             chineseCount,
             englishCount
           };
-          const container = prompt2.createCommandsContainer();
+          const container = prompt.createCommandsContainer();
           container.innerHTML = "";
           Object.assign(container.style, {
             display: "flex",
@@ -1016,7 +1016,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
             const duration = 1500;
             const startTime = window.performance.now();
             const update = now => {
-              if (!active || !container.isConnected || container.style.display === "none" || !prompt2.promptNode.isConnected || prompt2.promptNode.style.display === "none") {
+              if (!active || !container.isConnected || container.style.display === "none" || !prompt.promptNode.isConnected || prompt.promptNode.style.display === "none") {
                 return;
               }
               const elapsed = now - startTime;
@@ -1095,7 +1095,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
               }
             };
             const animate = () => {
-              if (!active || !container.isConnected || container.style.display === "none" || !prompt2.promptNode.isConnected || prompt2.promptNode.style.display === "none") {
+              if (!active || !container.isConnected || container.style.display === "none" || !prompt.promptNode.isConnected || prompt.promptNode.style.display === "none") {
                 return;
               }
               drawingContext.clearRect(0, 0, canvas.width, canvas.height);

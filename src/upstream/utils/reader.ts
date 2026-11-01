@@ -62,12 +62,12 @@
   }
   export function unregisterReaderEventListenersByPluginID(pluginID, readerAPI = Zotero.Reader) {
     const registry = readerAPI;
-    const unregister2 = registry?._unregisterEventListenerByPluginID;
-    if (typeof unregister2 !== "function") {
+    const unregister = registry?._unregisterEventListenerByPluginID;
+    if (typeof unregister !== "function") {
       return false;
     }
     try {
-      unregister2.call(registry, pluginID);
+      unregister.call(registry, pluginID);
       return true;
     } catch {
       return false;

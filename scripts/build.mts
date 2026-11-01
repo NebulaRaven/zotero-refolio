@@ -7,7 +7,7 @@ import { build as bundle, transform, type BuildOptions } from 'esbuild';
 import { zip, type ArchiveEntry } from './zip.mts';
 import { pixiBundle } from './pixi.mts';
 import type { JournalName } from '../src/core/models.ts';
-import { version2, config } from '../src/upstream/config.ts';
+import { version, config } from '../src/upstream/config.ts';
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const releaseRepository = 'https://github.com/NebulaRaven/zotero-refolio';
@@ -24,7 +24,7 @@ export function validateManifest(manifest: Manifest): void {
   if (app.update_url !== updateURL) {
     throw new Error('The update URL must point to the Refolio release manifest.');
   }
-  if (app.id !== config.addonID || manifest.version !== version2) {
+  if (app.id !== config.addonID || manifest.version !== version) {
     throw new Error('The manifest ID and version must match the plugin configuration.');
   }
 }

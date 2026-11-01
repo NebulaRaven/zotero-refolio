@@ -32,8 +32,8 @@ import { FulltextTranslate } from "../features/reader/fulltextTranslate.ts";
       id: "tldr-pane",
       isEnabled: enabled("tldr"),
       start: ({
-        window: window2
-      }) => registerTLDRPane(window2)
+        window
+      }) => registerTLDRPane(window)
     }, {
       id: "annotation-colors",
       isEnabled: enabled("annotationColors"),
@@ -99,20 +99,20 @@ import { FulltextTranslate } from "../features/reader/fulltextTranslate.ts";
       id: "reading-time-recorder",
       isEnabled: () => Boolean(getPref("readingProgress.recordingEnabled")),
       start: ({
-        addon: addon2
+        addon
       }) => {
         const record = new Record();
-        addon2.api.record = record;
+        addon.api.record = record;
         return () => {
           record.destroy();
-          delete addon2.api.record;
+          delete addon.api.record;
         };
       }
     }, {
       id: "custom-style",
       start: ({
-        window: window2
-      }) => addStyle(window2.document)
+        window
+      }) => addStyle(window.document)
     }];
   }
   export function createFinalFeatures(shutdownSignal) {

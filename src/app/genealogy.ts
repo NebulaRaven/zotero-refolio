@@ -5,7 +5,7 @@ import type { GenealogyKind } from "../core/models.ts";
 import { getPref } from "../upstream/utils/prefs.ts";
 import { spMergeManualGenealogy,spReadManualGenealogy } from "../core/manualGenealogy.ts";
 import { spBuildManualGenealogyControls } from "./manualGenealogy.ts";
-import { version2 } from "../upstream/config.ts";
+import { version } from "../upstream/config.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 export function spBuildGenealogyControls(view, container) {
   const doc = container.ownerDocument;
@@ -25,7 +25,7 @@ export function spBuildGenealogyControls(view, container) {
   let generation = 0, controller, remoteGraph, localBase;
   const client = new SPGenealogyClient(async url => {
     const response = await Zotero.HTTP.request("GET", url, { responseType: "json", timeout: 25000,
-      headers: { Accept: "application/json", "User-Agent": `Refolio/${version2} (https://github.com/NebulaRaven/zotero-refolio)` } });
+      headers: { Accept: "application/json", "User-Agent": `Refolio/${version} (https://github.com/NebulaRaven/zotero-refolio)` } });
     return response.response;
   }, ms => Zotero.Promise.delay(ms));
   const language = String(Zotero.locale || "en").split(/[-_]/)[0].toLowerCase();

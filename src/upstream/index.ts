@@ -2,8 +2,8 @@ import { BasicTool } from "zotero-plugin-toolkit";
 import { config } from "./config.ts";
 import { BROWSER_GLOBAL_NAMES,resolveBrowserGlobal } from "./utils/browserGlobals.ts";
 import { addon_default } from "./addon.ts";
-  export var basicTool2 = new BasicTool();
-  export var zotero = basicTool2.getGlobal("Zotero");
+  export var basicTool = new BasicTool();
+  export var zotero = basicTool.getGlobal("Zotero");
   export var addonRegistry = zotero;
   if (!addonRegistry[config.addonInstance]) {
     _globalThis.Zotero = zotero;
@@ -40,7 +40,7 @@ import { addon_default } from "./addon.ts";
         if (getter) {
           return getter();
         } else {
-          return basicTool2.getGlobal(name);
+          return basicTool.getGlobal(name);
         }
       }
     });
