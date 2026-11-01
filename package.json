@@ -35,6 +35,7 @@
   "dependencies": {
     "color-rna": "1.0.1",
     "dayjs": "1.11.23",
+    "pixi.js-legacy": "6.4.2",
     "runes": "0.4.3",
     "zotero-plugin-toolkit": "5.2.0"
   }

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { build as bundle, transform, type BuildOptions } from 'esbuild';
 import { zip, type ArchiveEntry } from './zip.mts';
+import { pixiBundle } from './pixi.mts';
 import type { JournalName } from '../src/core/models.ts';
 import { version2, config } from '../src/upstream/config.ts';
 
@@ -98,6 +99,7 @@ export async function compileScript(relativePath: string): Promise<string> {
 export async function addonFiles(): Promise<ArchiveEntry[]> {
   const entries = (await filesIn(path.join(root, 'addon'))).filter(([name]) => name !== 'bootstrap.js');
   entries.push(['bootstrap.js', await compileScript('src/bootstrap.ts')]);
+  entries.push(['chrome/content/dist/assets/pixi.js', await pixiBundle()]);
   return entries;
 }
 export async function filesIn(directory: string, prefix = ''): Promise<ArchiveEntry[]> {
@@ -117,7 +119,7 @@ export async function build() {
   entries.sort((a, b) => a[0].localeCompare(b[0], 'en'));
   for (const [name, bytes] of entries) {
     if (name.includes('/pro/') || name.endsWith('.enc')) throw new Error(`Pro asset remains: ${name}`);
-    if (name.endsWith('.js') && !name.includes('/dist/')) new vm.Script(bytes.toString(), { filename: name });
+    if (name.endsWith('.js')) new vm.Script(bytes.toString(), { filename: name });
   }
   const manifest = JSON.parse(entries.find(([name]) => name === 'manifest.json')![1].toString()) as Manifest;
   validateManifest(manifest);
