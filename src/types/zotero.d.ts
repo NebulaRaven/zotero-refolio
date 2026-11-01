@@ -13,7 +13,8 @@ declare global {
     const PDFTranslate: { api: { translate(text: string, options: { pluginID: string; langto?: string }): Promise<{ status: string; result: string }> } } | undefined;
     const FullText: { getPages(id: number): Promise<{ total: number } | undefined> };
     const Fulltext: { indexItems(ids: number[]): Promise<void> };
-    // Zotero.logError() logs err.message or err.toString() of whatever it gets, so catch blocks pass their unknown error.
+    // Zotero.logError() logs err.message, or err.toString() for values without one, so catch blocks can pass their
+    // unknown error; like the original Error signature, it still throws for null or undefined.
     function logError(err: unknown): void;
     interface Item { _displayTitle: string; }
     interface CollectionTreeRow {

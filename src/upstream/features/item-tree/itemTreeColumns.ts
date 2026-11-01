@@ -42,7 +42,8 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
     declare cache: { pdfPageNum: {}; };
     declare pageNumCacheKeys: string[];
     declare publicationUpdateGate: KeyedTaskGate;
-    declare patchRenderCell: undefined[];
+    // Cell decorations for Zotero's own columns; the row may also be a collection or search in the trash.
+    declare patchRenderCell: Array<{ key: string; renderCell(cell: HTMLElement, index: number, row: Zotero.Item | Zotero.Collection | Zotero.Search | undefined): HTMLElement }>;
     declare ready: Promise<void>;
     declare stopRenderCellPatch: (() => void) | undefined;
     declare localStorage: LocalStorage;
