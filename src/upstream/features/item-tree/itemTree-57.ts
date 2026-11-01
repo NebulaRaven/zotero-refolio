@@ -1441,7 +1441,7 @@ ${JSON.stringify(data.data)}`;
             tag: "span",
             classList: ["star"],
             styles: {
-              display: "inlin-block",
+              display: "inline-block",
               padding: `0 ${getPref("ratingColumn.padding")}px`,
               pointerEvents: isShowUnSelected ? "auto" : "none"
             },

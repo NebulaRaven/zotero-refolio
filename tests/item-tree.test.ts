@@ -125,3 +125,15 @@ test('status cells size themselves with the Zotero font-size variable instead of
   renderer({ style: {}, appendChild() {}, addEventListener() {} }, { tag: '/Reading', color: '#f00', itemID: 1 }, 0);
   assert.match(styles[0], /height: calc\(var\(--zotero-font-size, 1em\) \* 1\.4\)/);
 });
+
+test('rating stars declare a valid display value', async () => {
+  const stars = [];
+  const ctx = await loadItemTree({ ztoolkit: { log() {}, UI: { appendElement: options => { stars.push(options); return options; } } } },
+    { 'ratingColumn.selectedStar': '⭐', 'ratingColumn.padding': '1' });
+  let renderer;
+  await ctx.ItemTree.prototype.rating.call({ isSelectedRow: () => false, patchItemBox() {}, patchSetting() {},
+    registerColumn: async (_key, _provider, render) => { renderer = render; } });
+  renderer({ style: {} }, { rate: 3, id: 1 }, 0);
+  assert.equal(stars.length, 5);
+  for (const star of stars) assert.equal(star.styles.display, 'inline-block');
+});
