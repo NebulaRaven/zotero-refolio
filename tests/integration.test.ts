@@ -8,7 +8,7 @@ import { assemble, filesIn, root, validateManifest, compileScript, createUpdateM
 import { createHash } from 'node:crypto';
 import { zip } from '../scripts/zip.mts';
 import { spPublicationNames, spNormalizeJournalName, spMergeRanks, spJournalQuery, spJournalConflictSignature } from '../src/core/journals.ts';
-import { spManualRankRecord } from '../src/core/manualRanks.ts';
+import { spManualRankRecord, spReadManualRanks } from '../src/core/manualRanks.ts';
 
 test('assembled plugin parses, has its own namespace, and contains no Pro authorization runtime', async()=>{
   const source=await assemble(); new vm.Script(source);
@@ -117,7 +117,7 @@ test('graph refresh tolerates labels whose Pixi graphics have not been created y
 async function journalHarness(responseByName, oldRank={}, title='Acta Psychologica Sinica') {
   const code=await script(root+'/src/upstream/utils/base.ts', 'updatePublicationTags');
   let stored;const urls=[]; const cache: Record<string, unknown> = {rank:oldRank};
-  const context: vm.Context = {spPublicationNames,spNormalizeJournalName,spMergeRanks,spJournalQuery,spJournalConflictSignature,spManualRankRecord,
+  const context: vm.Context = {spPublicationNames,spNormalizeJournalName,spMergeRanks,spJournalQuery,spJournalConflictSignature,spManualRankRecord,spReadManualRanks,
     getString: testGetString,getErrorMessage: testGetErrorMessage,ztoolkit:{ProgressWindow:class {show(){return this;} createLine(){return this;}}},getPref:key=>({
     'publicationTagsColumn.source':'easyscholar','easyscholar.secretKey':'TEST_KEY',
     'publicationTagsColumn.aliases':'{}'

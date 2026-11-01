@@ -6,12 +6,15 @@ import { config } from "../upstream/config.ts";
 import { spElement,spSelect,spSelectOptions } from "./ui.ts";
 import { spRegisterMenu } from "./menus.ts";
 import { getPublicationTitle,updatePublicationTags } from "../upstream/utils/base.ts";
-import { spGetAutomaticJournalRanks,spGetJournalLookup,spJournalChosenValue } from "./journalLookup.ts";
+import { spGetAutomaticJournalRanks,spGetJournalLookup,spJournalChosenValue,spJournalPreferences,spRememberJournal } from "./journalLookup.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 export function spGetManualJournalRecord(title) {
-  if (getPref("function.manualJournalRanks.enable") === false) return undefined;
-  const names = spPublicationNames(title, getPref("publicationTagsColumn.aliases") || "{}");
-  return spManualRankRecord(getPref("publicationTagsColumn.manualRanks"), names, spNormalizeJournalName);
+  const prefs = spJournalPreferences();
+  if (prefs.manualEnabled === false) return undefined;
+  return spRememberJournal(prefs.records, title, () => {
+    const names = spPublicationNames(title, prefs.aliases());
+    return spManualRankRecord(prefs.manualRanks(), names, spNormalizeJournalName);
+  });
 }
 export function spGetJournalRanks(storage, title) {
   return spEffectiveRanks(spGetAutomaticJournalRanks(storage, title), spGetManualJournalRecord(title));

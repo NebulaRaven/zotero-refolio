@@ -1,8 +1,8 @@
 import { getString } from "../upstream/utils/locale.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { JournalLookup, JournalQuery, JournalRankMerge, RankValues } from '../core/models.ts';
+import type { JournalLookup, JournalQuery, JournalRankMerge, ManualRankRecord, ManualRanks, RankValues } from '../core/models.ts';
 import { spJournalQuery, spJournalConflictSignature, spPublicationNames, spNormalizeJournalName } from '../core/journals.ts';
-import { spManualRankRecord } from '../core/manualRanks.ts';
+import { spManualRankRecord, spReadManualRanks } from '../core/manualRanks.ts';
 import { getPref } from '../upstream/utils/prefs.ts';
 
 
@@ -12,9 +12,47 @@ export interface JournalStorage {
   set(item: { key: string }, field: string, value: unknown): Promise<unknown>;
 }
 
+export interface JournalPreferences {
+  readonly raw: readonly unknown[];
+  readonly source: string;
+  readonly manualEnabled: boolean;
+  aliases(): unknown;
+  manualRanks(): ManualRanks;
+  readonly queries: Map<string, JournalQuery>;
+  readonly records: Map<string, ManualRankRecord | undefined>;
+}
+
+export const journalCacheLimit = 5000;
+let journalPreferences: JournalPreferences | undefined;
+
+// The item-tree columns look up each row's journal several times per render and sort. Parsing
+// the preferences and normalizing every alias and manual name on each lookup made sorting a
+// large library take seconds, so the parsed preferences and per-title results are kept until
+// one of the raw preference values changes. Thrown errors are not kept: invalid JSON keeps reporting.
+export function spJournalPreferences(): JournalPreferences {
+  const raw = [getPref('publicationTagsColumn.aliases'), getPref('publicationTagsColumn.manualRanks'),
+    getPref('publicationTagsColumn.source'), getPref('function.manualJournalRanks.enable')] as const;
+  if (journalPreferences?.raw.every((value, index) => value === raw[index])) return journalPreferences;
+  const [aliases, manualRanks, source, manualEnabled] = raw;
+  let parsedAliases: unknown, parsedManualRanks: ManualRanks | undefined;
+  return journalPreferences = { raw, source, manualEnabled,
+    aliases: () => parsedAliases ??= JSON.parse(aliases || '{}'),
+    manualRanks: () => parsedManualRanks ??= spReadManualRanks(manualRanks),
+    queries: new Map(), records: new Map() };
+}
+
+export function spRememberJournal<T>(results: Map<string, T>, title: string, compute: () => T): T {
+  if (results.has(title)) return results.get(title);
+  const value = compute();
+  if (results.size >= journalCacheLimit) results.delete(results.keys().next().value);
+  results.set(title, value);
+  return value;
+}
+
 export function spGetJournalQuery(title: string): JournalQuery {
-  return spJournalQuery(title, getPref('publicationTagsColumn.aliases') || '{}',
-    getPref('publicationTagsColumn.manualRanks'), getPref('publicationTagsColumn.source') || 'easyscholar');
+  const prefs = spJournalPreferences();
+  return spRememberJournal(prefs.queries, title, () =>
+    spJournalQuery(title, prefs.aliases(), prefs.manualRanks(), prefs.source || 'easyscholar'));
 }
 
 export function spGetJournalLookup(storage: JournalStorage, title: string): JournalLookup | undefined {

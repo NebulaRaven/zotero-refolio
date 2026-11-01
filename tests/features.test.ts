@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import { spFilterGraph, spSharedGraph } from '../src/core/graph.ts';
 import { spNormalizeJournalName, spPublicationNames, spJournalQuery } from '../src/core/journals.ts';
-import { spManualRankRecord, spSaveManualRankRecord, spEffectiveRanks, spValidateManualRank } from '../src/core/manualRanks.ts';
+import { spManualRankRecord, spReadManualRanks, spSaveManualRankRecord, spEffectiveRanks, spValidateManualRank } from '../src/core/manualRanks.ts';
 import { spFeatureDefinitions, spRetiredPreferences } from '../src/core/features.ts';
 import { spGenealogyRelations, spGenealogyGraph, SPGenealogyClient } from '../src/core/genealogy.ts';
 
@@ -64,7 +64,7 @@ test('manual ranks work without an API key or cached data, and invalid edits fai
 });
 test('actual journal adapter reads overrides for both columns and can disable them without deleting stored data', async () => {
   const prefs = { 'publicationTagsColumn.manualRanks': JSON.stringify(spSaveManualRankRecord('{}', ['Sleep'], { sciif: '7.2' }, normalize)) };
-  const ctx: vm.Context = { getPref: key => prefs[key], spPublicationNames, spNormalizeJournalName, spJournalQuery, spManualRankRecord, spEffectiveRanks };
+  const ctx: vm.Context = { getPref: key => prefs[key], spPublicationNames, spNormalizeJournalName, spJournalQuery, spManualRankRecord, spReadManualRanks, spEffectiveRanks };
   vm.runInNewContext(await script(new URL('../src/app/journalLookup.ts', import.meta.url)), ctx);
   vm.runInNewContext(await script(new URL('../src/app/manualRanks.ts', import.meta.url)), ctx);
   const storage = { get: (_item, field) => field === 'rank' ? { sciif: '5', sci: 'Q1' } : undefined };
@@ -73,13 +73,75 @@ test('actual journal adapter reads overrides for both columns and can disable th
   assert.equal(ctx.spGetJournalRanks(storage, 'Sleep').sciif, '5');
   assert.ok(prefs['publicationTagsColumn.manualRanks'].includes('7.2'));
 });
+test('journal adapter reuses parsed preferences and per-title results until a journal preference changes', async () => {
+  const manualRanks = (value: string) => JSON.stringify(spSaveManualRankRecord('{}', ['Sleep'], { sciif: value }, normalize));
+  const prefs = { 'publicationTagsColumn.aliases': JSON.stringify({ Sleep: ['Sleep Journal'] }),
+    'publicationTagsColumn.manualRanks': manualRanks('7.2'), 'publicationTagsColumn.source': 'easyscholar' };
+  const queries: unknown[][] = [], records: unknown[][] = [];
+  const ctx: vm.Context = { getPref: key => prefs[key], spPublicationNames, spNormalizeJournalName, spReadManualRanks, spEffectiveRanks,
+    spJournalQuery: (...args: Parameters<typeof spJournalQuery>) => { queries.push(args); return spJournalQuery(...args); },
+    spManualRankRecord: (...args: Parameters<typeof spManualRankRecord>) => { records.push(args); return spManualRankRecord(...args); } };
+  vm.runInNewContext(await script(new URL('../src/app/journalLookup.ts', import.meta.url)), ctx);
+  vm.runInNewContext(await script(new URL('../src/app/manualRanks.ts', import.meta.url)), ctx);
+  const storage = { get: (_item, field) => field === 'rank' ? { sciif: '5', sci: 'Q1' } : undefined };
+  const read = (title = 'Sleep') => [ctx.spGetJournalRanks(storage, title).sciif, ctx.spGetJournalQuery(title).provider, ctx.spGetAutomaticJournalRanks(storage, title).sci];
+  const calls = () => [queries.length, records.length];
+  for (let i = 0; i < 3; i++) assert.deepEqual(read(), ['7.2', 'easyscholar', 'Q1']);
+  assert.deepEqual(calls(), [1, 1]);
+  assert.deepEqual(read('Sleep Journal'), ['7.2', 'easyscholar', 'Q1']);
+  assert.deepEqual(calls(), [2, 2]);
+  // Both titles receive the same parsed preferences instead of parsing the raw strings again.
+  assert.equal(typeof queries[0][1], 'object'); assert.equal(queries[1][1], queries[0][1]);
+  assert.equal(typeof queries[0][2], 'object'); assert.equal(queries[1][2], queries[0][2]); assert.equal(records[1][0], records[0][0]);
+  prefs['publicationTagsColumn.aliases'] = JSON.stringify({ Sleep: ['Sleep Research'] });
+  assert.deepEqual(read(), ['7.2', 'easyscholar', 'Q1']); assert.deepEqual(calls(), [3, 3]);
+  prefs['publicationTagsColumn.manualRanks'] = manualRanks('8');
+  assert.deepEqual(read(), ['8', 'easyscholar', 'Q1']); assert.deepEqual(calls(), [4, 4]);
+  prefs['publicationTagsColumn.source'] = 'garden';
+  assert.deepEqual(read(), ['8', 'garden', 'Q1']); assert.deepEqual(calls(), [5, 5]);
+  prefs['function.manualJournalRanks.enable'] = false;
+  assert.deepEqual(read(), ['5', 'garden', 'Q1']); assert.deepEqual(calls(), [6, 5]);
+  prefs['function.manualJournalRanks.enable'] = true;
+  assert.deepEqual(read(), ['8', 'garden', 'Q1']); assert.deepEqual(calls(), [7, 6]);
+  assert.deepEqual(read(), ['8', 'garden', 'Q1']); assert.deepEqual(calls(), [7, 6]);
+});
+test('journal adapter keeps reporting invalid journal preferences instead of caching the error', async () => {
+  const prefs = { 'publicationTagsColumn.aliases': '{', 'publicationTagsColumn.manualRanks': '{}' };
+  const ctx: vm.Context = { getPref: key => prefs[key], spPublicationNames, spNormalizeJournalName, spReadManualRanks, spJournalQuery, spManualRankRecord, spEffectiveRanks };
+  vm.runInNewContext(await script(new URL('../src/app/journalLookup.ts', import.meta.url)), ctx);
+  vm.runInNewContext(await script(new URL('../src/app/manualRanks.ts', import.meta.url)), ctx);
+  for (let i = 0; i < 2; i++) {
+    assert.throws(() => ctx.spGetJournalQuery('Sleep'), { name: 'SyntaxError' });
+    assert.throws(() => ctx.spGetManualJournalRecord('Sleep'), { name: 'SyntaxError' });
+  }
+  prefs['publicationTagsColumn.aliases'] = '{}'; prefs['publicationTagsColumn.manualRanks'] = '[]';
+  for (let i = 0; i < 2; i++) {
+    assert.throws(() => ctx.spGetJournalQuery('Sleep'), { message: 'ui-error-invalid-manual-ranks' });
+    assert.throws(() => ctx.spGetManualJournalRecord('Sleep'), { message: 'ui-error-invalid-manual-ranks' });
+  }
+  prefs['publicationTagsColumn.manualRanks'] = '{}';
+  assert.deepEqual(Array.from(ctx.spGetJournalQuery('Sleep').names), ['Sleep']);
+  assert.equal(ctx.spGetManualJournalRecord('Sleep'), undefined);
+});
+test('journal adapter bounds the titles it remembers', async () => {
+  let computed = 0;
+  const ctx: vm.Context = { getPref: () => undefined, spReadManualRanks,
+    spJournalQuery: title => { computed++; return { provider: 'easyscholar', names: [title], redirected: false, identity: title }; } };
+  vm.runInNewContext(await script(new URL('../src/app/journalLookup.ts', import.meta.url)), ctx);
+  ctx.spGetJournalQuery('First'); ctx.spGetJournalQuery('First');
+  assert.equal(computed, 1);
+  for (let i = 0; i < ctx.journalCacheLimit; i++) ctx.spGetJournalQuery(`Journal ${i}`);
+  assert.equal(computed, ctx.journalCacheLimit + 1);
+  ctx.spGetJournalQuery('First');
+  assert.equal(computed, ctx.journalCacheLimit + 2);
+});
 test('actual journal columns render manual values while still fetching missing automatic fields, including an IF of zero', async () => {
   const prefs = {
     'publicationTagsColumn.sortBy': 'sci, -sciif', 'publicationTagsColumn.source': 'easyscholar',
     'publicationColumn.fields': 'publicationTitle', 'IFColumn.field': 'sciif',
     'publicationTagsColumn.manualRanks': JSON.stringify(spSaveManualRankRecord('{}', ['Sleep'], { sciif: '0', pku: '北核' }, normalize))
   };
-  const ctx: vm.Context = { getPref: key => prefs[key], getString: testGetString, spPublicationNames, spNormalizeJournalName, spJournalQuery, spManualRankRecord, spEffectiveRanks,
+  const ctx: vm.Context = { getPref: key => prefs[key], getString: testGetString, spPublicationNames, spNormalizeJournalName, spJournalQuery, spManualRankRecord, spReadManualRanks, spEffectiveRanks,
     getPublicationTitle: () => 'Sleep', import_dayjs: { default: { extend() {}, locale() {} } }, import_relativeTime: {}, import_utc: {}, getDayjsLocale: () => 'en',
     Zotero: { locale: 'en', Prefs: { get: key => prefs[key.replace('stylepersonal.', '')] } }, config: { addonRef: 'stylepersonal' } };
   for (const file of ['src/app/journalLookup.ts', 'src/app/manualRanks.ts', 'src/upstream/utils/easyscholar.ts', 'src/upstream/features/item-tree/itemTree-57.ts']) {
