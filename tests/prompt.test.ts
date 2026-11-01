@@ -8,14 +8,14 @@ const promptFile = new URL('../src/upstream/features/workspace/prompt.ts', impor
 
 test('search results show item fields as text and italicize only the publication', async () => {
   const dom = domFixture();
-  const created = [];
+  const created: Array<InstanceType<typeof dom.Element>> = [];
   const ctx: vm.Context = { document: dom.document, ztoolkit: { UI: { createElement: (_doc, tag, options) => {
     const element = Object.assign(new dom.Element(tag), options?.properties); created.push(element); return element;
   } } } };
   vm.runInNewContext(await script(promptFile, 'appendItemDescription'), ctx);
   const fields = { date: '2024-01-01', publicationTitle: '<img src=x onerror=alert(1)>', volume: '3', issue: '2', pages: '1-9' };
   const item = { firstCreator: 'Lovelace', getField: name => fields[name] || '' };
-  const span = { parts: [], append(...parts) { this.parts.push(...parts); } };
+  const span: { parts: unknown[]; append(...parts: unknown[]): void } = { parts: [], append(...parts) { this.parts.push(...parts); } };
   ctx.appendItemDescription(span, item);
   assert.equal(created.length, 1);
   assert.equal(created[0].tagName, 'i');

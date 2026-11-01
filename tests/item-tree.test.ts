@@ -23,7 +23,7 @@ test('the creator column renders the row it is given when a section header prece
   const first = author('Lovelace'), second = author('Hopper');
   const ctx = await loadItemTree({ ZoteroPane: headerOffsetPane(first, second) },
     { 'function.creatorColumn.enable': true, 'creatorColumn.format': '${lastName}', 'creatorColumn.join': ', ', 'creatorColumn.slices': '0' });
-  const patches = [];
+  const patches: Array<{ renderCell(cell: object, index: number, item: object): unknown }> = [];
   await ctx.ItemTree.prototype.creator.call({ addRenderCellPatch: patch => patches.push(patch), patchSetting() {} });
   const cell = { innerText: '', querySelector: () => null };
   patches[0].renderCell(cell, 1, first);
@@ -34,7 +34,7 @@ test('the publication column renders the row it is given when a section header p
   const journal = title => ({ title, isRegularItem: () => true });
   const first = journal('Nature'), second = journal('Science');
   const ctx = await loadItemTree({ ZoteroPane: headerOffsetPane(first, second), getPublicationTitle: item => item.title });
-  const patches = [];
+  const patches: Array<{ renderCell(cell: object, index: number, item: object): unknown }> = [];
   await ctx.ItemTree.prototype.publication.call({ addRenderCellPatch: patch => patches.push(patch), patchSetting() {} });
   const cell = { innerText: '' };
   patches[0].renderCell(cell, 1, first);
@@ -48,7 +48,7 @@ test('choosing a status changes the clicked item even when a section header prec
       addTag(name) { tags.push({ tag: name }); }, async saveTx() { this.saved++; } };
   };
   const clicked = paper(1), other = paper(2);
-  const commands = [], listeners: Record<string, () => Promise<void>> = {};
+  const commands: Array<() => Promise<void>> = [], listeners: Record<string, () => Promise<void>> = {};
   const ctx = await loadItemTree({
     ZoteroPane: headerOffsetPane(clicked, other), getColoredTags: () => [], isStatusTagName: tag => tag.startsWith('/'),
     Zotero: { locale: 'en', isWin: false, Items: { get: id => [clicked, other].find(item => item.id === id) },
@@ -96,7 +96,7 @@ test('the annotation strip reads each annotation position once and colours each 
     get _annotationPosition() { reads++; return JSON.stringify({ pageIndex, rects: [[0, 0, width, 1]] }); }
   });
   const annotations = [annotation(0, 1, '#small', '1'), annotation(0, 5, '#large', '2'), annotation(2, 1, '#last', '3')];
-  const strip = [];
+  const strip: string[] = [];
   const item = { isRegularItem: () => true, getBestAttachment: async () => ({ getAnnotations: () => annotations }) };
   const { renderer, scheduled } = await annotationColumn({
     Zotero: { locale: 'en', Items: { get: () => item } },
@@ -127,7 +127,7 @@ test('status cells size themselves with the Zotero font-size variable instead of
 });
 
 test('rating stars declare a valid display value', async () => {
-  const stars = [];
+  const stars: Array<{ styles: { display: string } }> = [];
   const ctx = await loadItemTree({ ztoolkit: { log() {}, UI: { appendElement: options => { stars.push(options); return options; } } } },
     { 'ratingColumn.selectedStar': '⭐', 'ratingColumn.padding': '1' });
   let renderer;

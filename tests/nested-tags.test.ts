@@ -6,6 +6,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { script } from './source.mts';
 
 const tagsFile = new URL('../src/upstream/features/tags/tags.ts', import.meta.url);
+/** Element options the nested tags code hands to ztoolkit.UI and buildMenuPopup. */
+interface RenderedProps { attributes?: Record<string, unknown>; properties?: Record<string, unknown>; children?: RenderedProps[];
+  listeners?: Array<{ type: string; listener(event?: object): unknown }> }
 async function load(extra: Record<string, unknown> = {}) {
   const ctx: vm.Context = { window: { setTimeout() {}, clearTimeout() {} }, addon: { api: {} }, getString: testGetString,
     ztoolkit: { log: assert.fail }, getElements: () => [], ...extra };
@@ -72,12 +75,12 @@ function database() {
     // Zotero stores an attachment's own note in itemNotes with no parent (Item.prototype._saveData)
     if (item.type === 'note' || item.attachmentNote) run('INSERT INTO itemNotes VALUES (?, ?)', item.id, item.type === 'note' ? item.parent ?? null : null);
     if (item.type === 'attachment') run('INSERT INTO itemAttachments VALUES (?, ?)', item.id, item.parent ?? null);
-    if (item.type === 'annotation') run('INSERT INTO itemAnnotations VALUES (?, ?)', item.id, item.parent);
+    if (item.type === 'annotation') run('INSERT INTO itemAnnotations VALUES (?, ?)', item.id, item.parent!);
     if (item.deleted) run('INSERT INTO deletedItems VALUES (?)', item.id);
     for (const collectionID of item.collections ?? []) run('INSERT INTO collectionItems VALUES (?, ?)', collectionID, item.id);
     item.tags.forEach((tag, index) => {
-      if (!tagIDs.has(tag)) run('INSERT INTO tags VALUES (?, ?)', tagIDs.set(tag, tagIDs.size + 1).get(tag), tag);
-      run('INSERT INTO itemTags VALUES (?, ?, ?)', item.id, tagIDs.get(tag), index % 2);
+      if (!tagIDs.has(tag)) run('INSERT INTO tags VALUES (?, ?)', tagIDs.set(tag, tagIDs.size + 1).get(tag)!, tag);
+      run('INSERT INTO itemTags VALUES (?, ?, ?)', item.id, tagIDs.get(tag)!, index % 2);
     });
   }
   run('INSERT INTO deletedCollections VALUES (21)');
@@ -138,7 +141,7 @@ test('tag counts cover the items the old item scan read, child notes, attachment
   // A child item filed in a collection by itself does not bring its top-level item's tags along.
   assert.deepEqual(plain(await ctx.getTagCounts(1, 23, zotero)), []);
   for (const [libraryID, collectionID] of [[1, undefined], [2, undefined], [1, 20], [1, 21], [1, 22], [1, 23], [2, 40], [1, 40]]) {
-    assert.deepEqual(plain(await ctx.getTagCounts(libraryID, collectionID, zotero)), tally(scannedTags(libraryID, collectionID)), `${libraryID}/${collectionID}`);
+    assert.deepEqual(plain(await ctx.getTagCounts(libraryID, collectionID, zotero)), tally(scannedTags(libraryID!, collectionID)), `${libraryID}/${collectionID}`);
   }
   // Statement text stays stable so Zotero.DB can reuse its cached statements.
   assert.equal(new Set(queries).size, 2);
@@ -172,7 +175,7 @@ test('nested tag numbers add up tag counts exactly as the old per-item list did'
   assert.deepEqual(numbers(simple), { A: [2, { B: [1, {}], C: [1, {}] }] });
   assert.equal(simple.A.id, JSON.stringify(['#A/B', 0]));
   for (const [libraryID, collectionID] of [[1, undefined], [1, 20], [2, undefined]]) {
-    const occurrences = scannedTags(libraryID, collectionID);
+    const occurrences = scannedTags(libraryID!, collectionID);
     tags.plainTags = occurrences.map(tag => [tag, 1]);
     const scanned = numbers(tags.getNestedTags());
     tags.plainTags = tally(occurrences);
@@ -223,7 +226,8 @@ test('getTagMatch compiles each pattern once and matches as a freshly compiled p
   for (pattern of ['/^#(?:.+/)*(.+)/', '/#(\\w)/gi', '/^#(.)/y', '~~#', '~~', '#', '', '(', '/[/', undefined]) {
     counter.compiled = 0;
     for (let round = 0; round < 3; round++) {
-      for (const name of names) assert.equal(ctx.Tags.getTagMatch(name), compiledTagMatch(pattern, name), `${pattern} ${name}`);
+      // With no pattern (undefined) the old code threw on rawString.match() and its catch returned the tag.
+      for (const name of names) assert.equal(ctx.Tags.getTagMatch(name), compiledTagMatch(pattern as string, name), `${pattern} ${name}`);
     }
     assert.equal(counter.compiled, pattern === undefined ? 0 : 1, String(pattern));
   }
@@ -274,10 +278,10 @@ test('a global or sticky search pattern tests each tag from its start', async ()
 });
 
 test('renaming and removing a nested tag act on the library selected in the collection tree', async () => {
-  const calls = [];
-  let menu = [];
+  const calls: unknown[][] = [];
+  let menu: RenderedProps[] = [];
   const element = () => ({ style: {}, classList: { contains: () => false, add() {}, remove() {} }, querySelector: () => element() });
-  const rendered = [];
+  const rendered: RenderedProps[] = [];
   const ctx = await load({
     getPref: key => key === 'nestedTags.sorted' ? '0' : undefined, getFirstSelectedLibraryID: () => 7,
     Zotero: { isMac: false, Prefs: { get: () => true }, Libraries: { userLibraryID: 1 }, Tags: { getAll: async () => [{ tag: '#A/B' }, { tag: '#A/C' }] } },
@@ -299,10 +303,10 @@ test('renaming and removing a nested tag act on the library selected in the coll
     containerID: 'zotero-tag-selector', tagsIn: { items: [], collection: [] }, props: { sorted: [], item: { padding: 6 }, icon: { size: 10, right: 3, svg: '' }, tree: { size: 2 } },
     plainTags: [['#A/B', 1], ['#A/C', 1]], init: async () => {} });
   tags.render(element(), tags.getNestedTags(), 0);
-  const label = rendered[0].children[0].children[0].children[0];
-  assert.equal(label.properties.textContent, 'A');
-  await label.listeners.find(listener => listener.type === 'mouseup').listener({ button: 2, screenX: 0, screenY: 0 });
-  const command = label => menu.find(item => item.attributes?.label === testGetString(label)).listeners[0].listener();
+  const label = rendered[0].children![0].children![0].children![0];
+  assert.equal(label.properties!.textContent, 'A');
+  await label.listeners!.find(listener => listener.type === 'mouseup')!.listener({ button: 2, screenX: 0, screenY: 0 });
+  const command = label => menu.find(item => item.attributes?.label === testGetString(label))!.listeners![0].listener();
   await command('ui-rename');
   await command('ui-remove');
   assert.deepEqual(calls, [['rename', 7, '#A', '#Z'], ['remove', 7, '#A']]);

@@ -212,7 +212,7 @@ test('relationship writes do not recursively trigger new-paper prompts', async (
 });
 
 test('shutdown cancels an in-flight lookup, releases storage and makes queued work inert', async () => {
-  const f = await fixture(); let complete: (value: any) => void;
+  const f = await fixture(); let complete: ((value: any) => void) | undefined;
   f.context.Zotero.HTTP.request = async () => new Promise(resolve => { complete = resolve; });
   const pending = f.context.spFetchCitationRelations();
   while (!complete) await new Promise(resolve => setImmediate(resolve));
@@ -225,7 +225,7 @@ test('shutdown cancels an in-flight lookup, releases storage and makes queued wo
 });
 
 test('manual linking stays responsive during a network lookup and survives its later results', async () => {
-  const f = await fixture(); let complete: (value: any) => void;
+  const f = await fixture(); let complete: ((value: any) => void) | undefined;
   f.context.Zotero.HTTP.request = async () => new Promise(resolve => { complete = resolve; });
   const fetching = f.context.spFetchCitationRelations({ itemIDs: [1] });
   while (!complete) await new Promise(resolve => setImmediate(resolve));

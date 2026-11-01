@@ -201,7 +201,7 @@ test('actual journal columns render manual values while still fetching missing a
 });
 test('the IF column shares the publication tag update gate, so each title has one pending automatic lookup', async () => {
   const prefs = { 'publicationTagsColumn.sortBy': 'sci', 'publicationColumn.fields': 'publicationTitle', 'IFColumn.field': 'sciif' };
-  let title = 'Sleep'; const updates = [];
+  let title = 'Sleep'; const updates: unknown[][] = [];
   const ctx: vm.Context = { getPref: key => prefs[key], getString: testGetString, spPublicationNames, spNormalizeJournalName, spJournalQuery, spManualRankRecord, spReadManualRanks, spEffectiveRanks,
     getPublicationTitle: () => title, updatePublicationTags: async (_storage, journal, trigger) => { updates.push([journal, trigger]); },
     import_dayjs: { default: { extend() {}, locale() {} } }, import_relativeTime: {}, import_utc: {}, getDayjsLocale: () => 'en',
@@ -247,12 +247,12 @@ test('genealogy merges reciprocal records with provenance and does not invent re
   assert.deepEqual(result.nodes.Q1.links, { Q2: true });
 });
 test('genealogy client checks inverse statements, spaces requests, caches successes and sends no author search until requested', async () => {
-  let time = 0; const calls = [];
+  let time = 0; const calls: Array<{ url: string; time: number }> = [];
   const entities = { Q1: person('Q1'), Q2: person('Q2', { P184: [claim('Q1')] }) };
   const client = new SPGenealogyClient(async url => {
     calls.push({ url, time }); const params = new URL(url).searchParams;
     if (params.has('query')) return { results: { bindings: [{ person: { value: 'http://www.wikidata.org/entity/Q2' } }] } };
-    return { entities: Object.fromEntries(params.get('ids').split('|').map(id => [id, entities[id]])) };
+    return { entities: Object.fromEntries(params.get('ids')!.split('|').map(id => [id, entities[id]])) };
   }, async delay => { time += delay; }, () => time);
   assert.equal(calls.length, 0);
   const graph = await client.graph('Q1');
@@ -307,7 +307,7 @@ test('stopping the reading-time recorder waits for its last save', async () => {
   assert.equal(addon.api.record, undefined);
 });
 test('master disable leaves settings available without starting library or reader features', async () => {
-  const started = [];
+  const started: string[] = [];
   class Runtime { async start(feature) { started.push(feature.id); } async startAll() { assert.fail('Must not start disabled features'); } }
   const ctx: vm.Context = { getPref: key => key === 'enable' ? false : undefined, addon: { data: { alive: true } }, FeatureRuntime: Runtime };
   vm.runInNewContext(await script(new URL('../src/app/hooks.ts', import.meta.url)), ctx);

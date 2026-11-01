@@ -7,13 +7,13 @@ import vm from 'node:vm';
 import { domFixture } from './dom-fixture.ts';
 
 test('graph resizing captures the pointer, enforces minimum height, saves on release and supports the keyboard', async () => {
-  const events = new Map(), attributes = new Map(), saved = [];
+  const events = new Map(), attributes = new Map(), saved: unknown[][] = [];
   let captured;
   const handle = { setAttribute: (name, value) => attributes.set(name, value),
     addEventListener: (name, fn) => events.set(name, fn), removeEventListener: name => events.delete(name),
     setPointerCapture: id => captured = id, hasPointerCapture: id => captured === id, releasePointerCapture: () => captured = undefined };
   const container = { style: {} as Record<string, string>, parentElement: { clientHeight: 1000 }, getBoundingClientRect: () => ({ height: parseFloat(container.style.height) || 500 }) };
-  const view = { cleanups: [] };
+  const view: { cleanups: Array<() => void> } = { cleanups: [] };
   const ctx: vm.Context = { setPref: (key, value) => saved.push([key, value]), getString: testGetString, getErrorMessage: testGetErrorMessage };
   vm.runInNewContext(await script(new URL('../src/app/graphControls.ts', import.meta.url)), ctx);
   ctx.spMakeGraphResizable(view, container, handle, 200);
@@ -58,7 +58,7 @@ async function controlsFixture() {
   };
   for (const file of ['ui', 'manualCitations', 'graphControls']) vm.runInNewContext(await script(new URL(`../src/app/${file}.ts`, import.meta.url)), ctx);
   const view = { active: true, mode: 'citations', modeFunction: { citations() {}, note() {}, author() {}, tag() {} },
-    cleanups: [], status: undefined, syncControls: undefined,
+    cleanups: [], status: undefined, syncControls: undefined as (() => void) | undefined,
     refreshGraphView: async () => {}, setTheme() {}, fitGraph() { fitted++; }, promptForCitationRelations: async () => { prompted++; }
   };
   ctx.spBuildGraphControls(view, container);
@@ -88,15 +88,15 @@ test('graph views and actions occupy separate controls and view switches do not 
 test('every graph view can be hidden and restored, including when all views are hidden', async () => {
   const f = await controlsFixture();
   const tabs = f.container.querySelector('.sp-graph-modes');
-  f.preferences.set('graphView.modes.citations', false); f.view.syncControls();
+  f.preferences.set('graphView.modes.citations', false); f.view.syncControls!();
   assert.equal(f.view.mode, 'note'); assert.equal(tabs.children[0].hidden, true);
   for (const mode of ['note', 'author', 'tag']) f.preferences.set(`graphView.modes.${mode}`, false);
-  f.view.syncControls(); assert.equal(f.view.mode, undefined);
+  f.view.syncControls!(); assert.equal(f.view.mode, undefined);
   assert.ok(tabs.children.every(button => button.hidden));
   assert.equal((f.button('Fit') as any).disabled, true);
-  f.preferences.set('graphView.modes.citations', true); f.view.syncControls();
+  f.preferences.set('graphView.modes.citations', true); f.view.syncControls!();
   assert.equal(f.view.mode, 'citations'); assert.equal(tabs.children[0].hidden, false);
-  f.preferences.set('graphView.modes.author', true); f.preferences.set('graphView.mode', 'author'); f.view.syncControls();
+  f.preferences.set('graphView.modes.author', true); f.preferences.set('graphView.mode', 'author'); f.view.syncControls!();
   assert.equal(f.view.mode, 'author', 'Settings must update the active view immediately');
 });
 

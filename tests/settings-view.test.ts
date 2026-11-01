@@ -196,9 +196,9 @@ test('Zotero settings search expands more options and restores them afterwards',
   assert.equal(more[0].open, true);
   assert.ok(more.slice(1).every(details => !details.open));
   view.context.addon.data.prefs.release();
-  assert.equal(search.listeners.get('input').size, 0);
-  assert.equal(search.listeners.get('command').size, 0);
+  assert.equal(search.listeners.get('input')!.size, 0);
+  assert.equal(search.listeners.get('command')!.size, 0);
   await view.context.registerPrefsScripts(view.win);
-  assert.equal(search.listeners.get('input').size, 1);
+  assert.equal(search.listeners.get('input')!.size, 1);
   view.context.addon.data.prefs.release();
 });

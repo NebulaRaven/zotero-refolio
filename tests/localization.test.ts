@@ -101,7 +101,7 @@ test('settings render translated labels and preserve stored option values in all
     const dom = domFixture(), container = new dom.Element();
     const win: any = new dom.Element('window'); win.document = dom.document; dom.document.defaultView = win;
     dom.document.querySelector = selector => selector === '#stylepersonal-settings' ? container : null;
-    const api = testLocaleAPI(locale), saved = [];
+    const api = testLocaleAPI(locale), saved: unknown[][] = [];
     const context: vm.Context = {
       ...api, addon: { data: {}, api: {} }, config: { prefsPrefix: prefix, addonRef: 'stylepersonal' },
       getPref: key => defaults.get(`${prefix}.${key}`), setPref: (key, value) => saved.push([key, value]),
@@ -138,7 +138,7 @@ test('settings render translated labels and preserve stored option values in all
     for (const value of ['title', 'authorYear']) {
       labelField.value = value;
       await [...labelField.listeners.get('change')!][0]();
-      assert.equal(saved.at(-1)[1], value);
+      assert.equal(saved.at(-1)![1], value);
     }
     const minYear = inputs.find(input => input.dataset.pref === 'graphView.minYear')!;
     minYear.value = 'invalid';

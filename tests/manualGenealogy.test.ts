@@ -77,7 +77,7 @@ test('manual supplements merge with matching Wikidata identities without duplica
   assert.equal(graph.genealogyEdges.length, 2); assert.equal(Object.keys(graph.nodes).length, 3);
   assert.equal(graph.nodes.Q1.label, 'Online mentor');
   assert.equal(graph.genealogyEdges[0].wikidata, true); assert.equal(graph.genealogyEdges[0].manualRecords.length, 1);
-  assert.deepEqual(graph.genealogyEdges[0].references, base.genealogyEdges[0].references);
+  assert.deepEqual(graph.genealogyEdges[0].references, base.genealogyEdges![0].references);
   assert.equal(JSON.stringify(base), before);
   assert.equal(spMergeManualGenealogy(base, JSON.stringify(data)).genealogyEdges.length, 2);
 });

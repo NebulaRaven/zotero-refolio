@@ -21,7 +21,7 @@ test('rename rejects empty names and accidental tag merges before writing', () =
   assert.deepEqual(spRenamePlan(['#A'],'#A','#A'),[]);
 });
 test('rename awaits Zotero tag transactions, uses selected library, and rolls back a failed batch', async () => {
-  const calls=[];let active=0;
+  const calls: unknown[][]=[];let active=0;
   const z={Libraries:{get:id=>({editable:id===42})},Tags:{getAll:async()=>[{tag:'#A'},{tag:'#A/x'},{tag:'#AB'}],rename:async(lib,from,to)=>{
     assert.equal(active,0);active++;await new Promise(r=>setTimeout(r,2));active--;
     calls.push([lib,from,to]); if(from==='#A/x') throw new Error('database failure');
@@ -35,7 +35,7 @@ test('remove limits tags to the selected library and hierarchy', async () => {
   const z={Libraries:{get:()=>({editable:true})},Tags:{getAll:async()=>[{tag:'#A'},{tag:'#A/x'},{tag:'#AB'}],getID:name=>({'#A':2,'#A/x':3,'#AB':4}[name]),removeFromLibrary:async(...args)=>{removed=args;}}};
   await spRemoveTags(z,42,'#A');assert.deepEqual(removed,[42,[2,3]]);
 });
-const item=(id,fields,authors=[])=>({id,key:'KEY'+id,getField:key=>fields[key]||'',getCreators:()=>authors});
+const item=(id,fields,authors: Array<{ lastName: string }> =[])=>({id,key:'KEY'+id,getField:key=>fields[key]||'',getCreators:()=>authors});
 test('graph labels select short titles or named Extra fields, with readable fallbacks', () => {
   const paper=item(1,{title:'Full paper',shortTitle:'Theory',extra:'Graph Label: Dual continuum\nOther: Test',year:'2024'},[{lastName:'Li'}]);
   assert.equal(spGraphLabel(paper,'shortTitle'),'Theory');
@@ -53,7 +53,7 @@ test('citation graph matches DOI variants, preserves direction and excludes self
   assert.equal(spNormalizeDOI('not a doi'),'');
 });
 test('Crossref client deduplicates concurrent DOI requests and spaces request starts', async () => {
-  let time=0;const starts=[];
+  let time=0;const starts: number[]=[];
   const client=new SPCitationClient(async()=>{starts.push(time);return {status:'ok',message:{reference:[{DOI:'10.1234/B'}]}};},async ms=>{time+=ms;},()=>time);
   const [a,b]=await Promise.all([client.get('10.1234/a'),client.get('https://doi.org/10.1234/A')]);
   assert.deepEqual(a,b);assert.equal(starts.length,1);

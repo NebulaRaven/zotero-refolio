@@ -6,6 +6,8 @@ import { script } from './source.mts';
 import { domFixture } from './dom-fixture.ts';
 
 const root = new URL('../src/', import.meta.url);
+/** A getItems filter that the nested tags code adds to addon.data.patch. */
+type ItemFilter = (items: object[], row?: object) => unknown;
 async function load(context: vm.Context, ...files: string[]) {
   for (const file of files) vm.runInNewContext(await script(new URL(file, root)), context);
   return context;
@@ -279,7 +281,7 @@ async function tagsFixture() {
 }
 
 test('nested tags share the item filter, use Zotero 10 search scopes and release pending work', async () => {
-  const filters = [], listeners = new Set(), searches = [];
+  const filters: ItemFilter[] = [], listeners = new Set(), searches: Array<{ libraryID?: number }> = [];
   const scope = {}, scopeReady = deferred(), searchReady = deferred();
   let removedStyles = 0, searchCalls = 0;
   const hook = () => {};
@@ -311,7 +313,7 @@ test('nested tags share the item filter, use Zotero 10 search scopes and release
 });
 
 test('tag update bursts share one task, use the latest items and release the initial timer', async () => {
-  const clock = timers(), filters = [], updates = [];
+  const clock = timers(), filters: ItemFilter[] = [], updates: unknown[] = [];
   const ctx = await load({ window: clock, getString: testGetString, Zotero: { Promise: { delay: async () => {} } },
     ZoteroPane: { tagSelector: {} }, addon: { api: {}, data: { alive: true, patch: { getItems: { data: filters } } } },
     getElements: () => [], ztoolkit: { log: assert.fail } }, 'upstream/utils/ownedResource.ts', 'upstream/features/tags/tags.ts');
@@ -321,18 +323,18 @@ test('tag update bursts share one task, use the latest items and release the ini
   assert.equal(clock.pending.size, 1);
   for (let i = 0; i < 100; i++) filters[0]([{ id: i }]);
   assert.equal(clock.pending.size, 2);
-  await clock.fire([...clock.pending.keys()].at(-1));
+  await clock.fire([...clock.pending.keys()].at(-1)!);
   assert.deepEqual(updates, [[{ id: 99 }]]);
-  filters[0]([]); await clock.fire([...clock.pending.keys()].at(-1));
+  filters[0]([]); await clock.fire([...clock.pending.keys()].at(-1)!);
   assert.deepEqual(updates.at(-1), []);
   stop(); assert.equal(clock.pending.size, 0); assert.equal(filters.length, 0);
 });
 
 test('tag refresh and teardown cancel all owned timers, including callbacks already dequeued', async () => {
   const { tags, clock } = await tagsFixture(); let ran = 0;
-  const id = tags.schedule(() => ran++); const stale = clock.pending.get(id);
+  const id = tags.schedule(() => ran++); const stale = clock.pending.get(id)!;
   tags.clearRenderTimers(); await stale(); await settle(); assert.equal(ran, 0);
-  const queued = tags.schedule(() => ran++), callback = clock.pending.get(queued);
+  const queued = tags.schedule(() => ran++), callback = clock.pending.get(queued)!;
   clock.pending.delete(queued); callback(); tags.clearRenderTimers(); await settle(); assert.equal(ran, 0);
   for (let i = 0; i < 100; i++) tags.schedule(() => ran++);
   tags.destroy(); assert.equal(clock.pending.size, 0);
@@ -342,7 +344,7 @@ test('tag refresh and teardown cancel all owned timers, including callbacks alre
 test('late tag initialization cannot overwrite a newer selection and cached tag sets reuse counts', async () => {
   const { tags } = await tagsFixture(); const a = deferred<Array<[string, number]>>(), b = deferred<Array<[string, number]>>(); let calls = 0;
   tags.container = { children: [] }; tags.getPlainTags = () => (++calls === 1 ? a.promise : b.promise);
-  const rendered = []; tags.refresh = async () => rendered.push([...tags.plainTags]);
+  const rendered: unknown[] = []; tags.refresh = async () => rendered.push([...tags.plainTags]);
   const older = tags.init(true), newer = tags.init(true);
   b.resolve([['#new', 1]]); await newer; a.resolve([['#old', 1]]); await older;
   assert.deepEqual(rendered, [[['#new', 1]]]);
@@ -354,7 +356,7 @@ test('late tag initialization cannot overwrite a newer selection and cached tag 
 });
 
 test('TLDR edits save on change to the bound item and discard late results after switching or typing', async () => {
-  let options; const events = new Map(); const responses = [], writes = [];
+  let options; const events = new Map(); const responses: Array<ReturnType<typeof deferred>> = [], writes: unknown[][] = [];
   const input = { isConnected: true, value: '', addEventListener: (type, callback) => events.set(type, callback) };
   const body = { isConnected: true, querySelector: () => input };
   const ctx = await load({ config: { addonID: 'test', addonRef: 'test' }, getPref: () => false, getString: testGetString,
@@ -503,10 +505,10 @@ test('field dragging uses one frame per burst, releases document listeners and c
   const picker = parent.querySelector('.style-column-field-picker');
   assert.equal(dom.host.listeners.get('mousemove')?.size || 0, 0);
   picker.fire('mousedown', { button: 0, target: picker.querySelector('.field-chip-label'), clientX: 5, clientY: 5 });
-  assert.equal(dom.host.listeners.get('mousemove').size, 1);
+  assert.equal(dom.host.listeners.get('mousemove')!.size, 1);
   for (let i = 0; i < 100; i++) dom.host.fire('mousemove', { clientX: 300 + i, clientY: 5, preventDefault() {} });
   assert.equal(dom.frames.size, 1); dom.frame(); assert.ok(dom.animationCount > 0);
-  dom.host.fire('mouseup'); assert.equal(dom.host.listeners.get('mousemove').size, 0);
+  dom.host.fire('mouseup'); assert.equal(dom.host.listeners.get('mousemove')!.size, 0);
   assert.equal(input.value, 'b, c, a');
   picker.fire('mousedown', { button: 0, target: picker.querySelector('.field-chip-label'), clientX: 5, clientY: 5 });
   dom.host.fire('mousemove', { clientX: 300, clientY: 5, preventDefault() {} });

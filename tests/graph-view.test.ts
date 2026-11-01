@@ -165,7 +165,7 @@ test('a graph build that finishes after destroy leaves nothing cached', async ()
 });
 
 test('registerNotify passes an observer priority on to Zotero', async () => {
-  const registered = [];
+  const registered: unknown[][] = [];
   const ctx: vm.Context = { addon: { data: { alive: true } }, config: { addonRef: 'stylepersonal' },
     window: { addEventListener() {}, removeEventListener() {} },
     Zotero: { Notifier: { registerObserver: (...args) => { registered.push(args); return 'id'; }, unregisterObserver() {} } } };

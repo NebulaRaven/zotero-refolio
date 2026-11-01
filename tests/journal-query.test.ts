@@ -20,10 +20,10 @@ test('query-only settings persist across bilingual names, preserve overrides and
   let records = manual.spSaveManualRankRecord('{}', names, {}, normalize, ' New Journal ');
   assert.deepEqual(journals.spJournalQuery('心理学报', aliases, JSON.stringify(records)).names, ['New Journal', '新期刊']);
   records = manual.spSaveManualRankRecord(records, names, { sciif: '3' }, normalize);
-  assert.equal(manual.spManualRankRecord(records, names, normalize).queryTitle, 'New Journal');
+  assert.equal(manual.spManualRankRecord(records, names, normalize)!.queryTitle, 'New Journal');
   records = manual.spSaveManualRankRecord(records, names, { sciif: '3' }, normalize, '');
-  assert.equal(manual.spManualRankRecord(records, names, normalize).queryTitle, undefined);
-  assert.equal(manual.spManualRankRecord(records, names, normalize).fields.sciif, '3');
+  assert.equal(manual.spManualRankRecord(records, names, normalize)!.queryTitle, undefined);
+  assert.equal(manual.spManualRankRecord(records, names, normalize)!.fields.sciif, '3');
   records = manual.spSaveManualRankRecord(records, names, {}, normalize, '');
   assert.deepEqual(records, {});
   assert.throws(() => manual.spSaveManualRankRecord('{}', names, {}, normalize, 'A\nB'), { message: 'ui-error-single-journal' });
@@ -51,15 +51,15 @@ async function fixture(prefs: Record<string, unknown> = {}) {
   const values: Record<string, unknown> = { 'publicationTagsColumn.source': 'easyscholar',
     'publicationTagsColumn.aliases': '{}', 'publicationTagsColumn.manualRanks': '{}',
     'easyscholar.secretKey': 'TEST', 'garden.apiKey': 'TEST', ...prefs };
-  const cache = new Map<string, Record<string, unknown>>(), notices = [], calls: string[] = [];
+  const cache = new Map<string, Record<string, Record<string, unknown>>>(), notices: Array<{ title: string; lines: Array<{ text: string }> }> = [], calls: string[] = [];
   const storage = { lock: { promise: Promise.resolve() },
     get: (item, key) => cache.get(item.key)?.[key],
-    set: async (item, key, value) => { if (!cache.has(item.key)) cache.set(item.key, {}); cache.get(item.key)[key] = value; } };
+    set: async (item, key, value) => { if (!cache.has(item.key)) cache.set(item.key, {}); cache.get(item.key)![key] = value; } };
   const handlers = new Map<string, () => unknown | Promise<unknown>>();
   const ctx: vm.Context = { ...journals, ...manual, getPref: key => values[key], setPref: (key, value) => values[key] = value,
     getString: testGetString, getErrorMessage: testGetErrorMessage, addon: { api: { journalStorage: storage } },
     ztoolkit: { ProgressWindow: class {
-      lines = []; constructor(title) { notices.push({ title, lines: this.lines }); }
+      lines: Array<{ text: string }> = []; constructor(title) { notices.push({ title, lines: this.lines }); }
       show() { return this; } createLine(line) { this.lines.push(line); return this; }
     } }, window: { alert: assert.fail },
     Zotero: { getMainWindows: () => [], locale: 'en', HTTP: { request: async (_method, _url, options) => {
@@ -67,7 +67,7 @@ async function fixture(prefs: Record<string, unknown> = {}) {
     } } },
     showPublicationTagsError() {},
     publicationRequestScheduler: { run: (_key, fn) => fn() },
-    requests: { get: async url => { const name = new URL(url).searchParams.get('publicationName'); calls.push(name); return handlers.get(name)?.(); } }
+    requests: { get: async url => { const name = new URL(url).searchParams.get('publicationName')!; calls.push(name); return handlers.get(name)?.(); } }
   };
   for (const file of ['app/journalLookup.ts', 'app/ui.ts', 'upstream/utils/publicationTagUpdatePolicy.ts']) vm.runInNewContext(await script(new URL(file, root)), ctx);
   for (const fn of ['updatePublicationTags', 'getGardenJournalRank', 'getHTTPStatus']) vm.runInNewContext(await script(new URL('upstream/utils/base.ts', root), fn), ctx);
@@ -86,7 +86,7 @@ test('Human Nature uses the full query title, keeps its original cache key and w
   f.handlers.set(full, () => response({ sciif: 2, ssci: 'Q1' }));
   await f.run('Human Nature');
   assert.deepEqual(f.calls, [full]);
-  assert.deepEqual(plain(f.cache.get('Human Nature').rank), { sciif: '2', ssci: 'Q1' });
+  assert.deepEqual(plain(f.cache.get('Human Nature')!.rank), { sciif: '2', ssci: 'Q1' });
   assert.equal(f.cache.has(full), false);
   f.setQuery('Human Nature', '');
   assert.equal(f.ctx.spGetAutomaticJournalRanks(f.storage, 'Human Nature'), undefined);
@@ -107,13 +107,13 @@ test('automatic conflict notices deduplicate concurrent and repeated queries but
   secondary = '4'; await f.run('A'); assert.equal(f.notices.length, 3);
   f.setQuery('A', '', { sciif: '5' }); await f.run('A', 'context-menu');
   assert.equal(f.notices.length, 4);
-  assert.match(f.notices.at(-1).lines[1].text, /A = 2.*B = 4.*Using 5 \(Manual\)/);
+  assert.match(f.notices.at(-1)!.lines[1].text, /A = 2.*B = 4.*Using 5 \(Manual\)/);
   assert.equal(f.ctx.spGetJournalLookup(f.storage, 'A').conflicts.length, 1);
 });
 
 test('changing a query hides stale cache and discards an older in-flight result', async () => {
   const f = await fixture();
-  let finish: (value: unknown) => void;
+  let finish!: (value: unknown) => void;
   const delayed = new Promise(resolve => finish = resolve);
   f.handlers.set('Old', () => delayed); f.handlers.set('New', () => response({ sciif: 7 }));
   const old = f.run('Old');
@@ -123,7 +123,7 @@ test('changing a query hides stale cache and discards an older in-flight result'
   assert.deepEqual(plain(f.ctx.spGetJournalLookup(f.storage, 'Old').names), ['New']);
   f.setQuery('Old', 'Missing');
   assert.equal(f.ctx.spGetAutomaticJournalRanks(f.storage, 'Old'), undefined);
-  await f.run('Old'); assert.equal(f.cache.get('Old').rank['sciif'], '7');
+  await f.run('Old'); assert.equal(f.cache.get('Old')!.rank['sciif'], '7');
   assert.equal(f.ctx.spGetAutomaticJournalRanks(f.storage, 'Old'), undefined);
 });
 
@@ -134,7 +134,7 @@ test('partial renamed queries preserve only cache from the same query and record
   f.handlers.set('New', () => response({ sciif: '8' }));
   f.handlers.set('新刊', () => { throw new Error('network'); });
   await f.run('Old');
-  assert.deepEqual(plain(f.cache.get('Old').rank), { sciif: '8' });
+  assert.deepEqual(plain(f.cache.get('Old')!.rank), { sciif: '8' });
   assert.deepEqual(plain(f.ctx.spGetJournalLookup(f.storage, 'Old').failedNames), ['新刊']);
 });
 
@@ -146,7 +146,7 @@ test('Garden uses the same query-title and conflict policy', async () => {
   } }));
   await f.run('Old');
   assert.deepEqual(f.calls, ['New', 'Alias']);
-  assert.equal(f.cache.get('Old').rank['JCR'], 'Q1'); assert.equal(f.notices.length, 1);
+  assert.equal(f.cache.get('Old')!.rank['JCR'], 'Q1'); assert.equal(f.notices.length, 1);
   assert.equal(f.ctx.spGetJournalLookup(f.storage, 'Old').conflicts[0].field, 'JCR');
 });
 
@@ -179,7 +179,7 @@ test('automatic lookups skip a journal whose lookup failed until the retry delay
   f.advance(retryDelay - 1); await f.run('Sleep'); assert.deepEqual(f.calls, ['Sleep', 'Other']);
   f.handlers.set('Sleep', () => response({ sciif: 4 }));
   f.advance(1); await f.run('Sleep'); assert.deepEqual(f.calls, ['Sleep', 'Other', 'Sleep']);
-  assert.equal(f.cache.get('Sleep').rank['sciif'], '4');
+  assert.equal(f.cache.get('Sleep')!.rank['sciif'], '4');
 });
 
 test('a provider answering 401, 403 or 429 pauses its automatic lookups but not the other provider', async () => {
@@ -210,7 +210,7 @@ test('manual lookups ignore backoffs and a successful one lets automatic lookups
   f.handlers.set('B', () => response({ sciif: 5 }));
   for (const trigger of ['context-menu', 'column-click', 'settings']) await f.run('B', trigger);
   assert.deepEqual(f.calls, ['A', 'A', 'A', 'B', 'B', 'B', 'B']);
-  assert.equal(f.cache.get('B').rank['sciif'], '5');
+  assert.equal(f.cache.get('B')!.rank['sciif'], '5');
 });
 
 test('a throttled provider drops queued automatic requests, but a queued manual request for the same journal still runs', async () => {
@@ -222,11 +222,11 @@ test('a throttled provider drops queued automatic requests, but a queued manual 
   f.handlers.set('A', refused(429)); f.handlers.set('B', () => response({ sciif: 1 }));
   await Promise.all([f.run('A'), f.run('B'), f.run('C'), f.run('B', 'context-menu')]);
   assert.deepEqual(f.calls, ['A', 'B']);
-  assert.equal(f.cache.get('B').rank['sciif'], '1');
+  assert.equal(f.cache.get('B')!.rank['sciif'], '1');
 });
 
 test('journal requests let throttling reach the backoff instead of being retried inside Zotero', async () => {
-  const f = await fixture(); const options = [];
+  const f = await fixture(); const options: Array<{ noRetryOnThrottle?: boolean } | undefined> = [];
   f.ctx.requests.get = async (_url, _type, _headers, _throw, requestOptions) => { options.push(requestOptions); return response({ sciif: 1 }); };
   await f.run('A');
   f.values['publicationTagsColumn.source'] = 'garden';
@@ -236,7 +236,7 @@ test('journal requests let throttling reach the backoff instead of being retried
 });
 
 test('Requests.get passes request options on to Zotero.HTTP.request', async () => {
-  const seen = [];
+  const seen: Array<{ headers: Record<string, string> }> = [];
   const ctx: vm.Context = { spRedactURL: String, ztoolkit: { log() {} }, Zotero: { debug() {}, HTTP: { request: async (_method, _url, options) => { seen.push(options); return { status: 200, response: {} }; } } } };
   vm.runInNewContext(await script(new URL('upstream/utils/requests.ts', root)), ctx);
   await new ctx.Requests().get('https://example.org/', 'json', { A: '1' }, true, { noRetryOnThrottle: true });
@@ -281,7 +281,7 @@ async function panel(f: Awaited<ReturnType<typeof fixture>>) {
   dom.Element.prototype['scrollIntoView'] = () => {};
   vm.runInNewContext(await script(new URL('app/manualRanks.ts', root)), f.ctx);
   const stop = f.ctx.spRenderManualRanks(dom.document, parent, status);
-  const input = label => parent.querySelectorAll('input').find(node => node.getAttribute('aria-label') === label);
+  const input = label => parent.querySelectorAll('input').find(node => node.getAttribute('aria-label') === label)!;
   const click = async label => {
     const button = parent.querySelectorAll('button').find(node => node.textContent === label);
     assert.ok(button, label);
@@ -299,7 +299,7 @@ test('journal settings save query-only records, fetch them immediately and show 
   ui.input('Query journal name').value = 'New';
   await ui.click('Save journal settings');
   assert.deepEqual(f.calls, ['New', 'Alias']);
-  assert.equal(manual.spManualRankRecord(f.values['publicationTagsColumn.manualRanks'], ['Old'], normalize).queryTitle, 'New');
+  assert.equal(manual.spManualRankRecord(f.values['publicationTagsColumn.manualRanks'], ['Old'], normalize)!.queryTitle, 'New');
   assert.match(ui.text(), /New: 3\nAlias: 2/);
   f.setQuery('Old', 'New', { sciif: '9' }); f.ctx.addon.api.openManualJournal('Old');
   assert.equal(ui.input('Query journal name').value, 'New');
@@ -311,7 +311,7 @@ test('journal settings save query-only records, fetch them immediately and show 
 });
 
 test('a lookup finishing after the settings journal changes leaves the current panel intact', async () => {
-  const f = await fixture(); let finish: (value: unknown) => void;
+  const f = await fixture(); let finish!: (value: unknown) => void;
   f.handlers.set('New', () => new Promise(resolve => finish = resolve));
   const ui = await panel(f); f.ctx.addon.api.openManualJournal('Old');
   ui.input('Query journal name').value = 'New';
@@ -323,6 +323,6 @@ test('a lookup finishing after the settings journal changes leaves the current p
   assert.equal(ui.input('Journal name').value, 'Other');
   assert.equal(ui.input('Query journal name').value, '');
   assert.doesNotMatch(ui.text(), /Queried: New/);
-  assert.equal(f.cache.get('Old').rank['sciif'], '6');
+  assert.equal(f.cache.get('Old')!.rank['sciif'], '6');
   ui.stop();
 });

@@ -70,7 +70,7 @@ test('custom aliases override the directory, and missing or renamed titles are n
   assert.deepEqual(spPublicationNames('Journal of Abnormal Psychology'),['Journal of Abnormal Psychology']);
   const missing=database.journals.find(j=>j.zh&&!j.en);
   assert.ok(missing);
-  assert.ok(spPublicationNames(missing.zh).every(name=>/[\u4e00-\u9fff]/.test(name)));
+  assert.ok(spPublicationNames(missing.zh!).every(name=>/[\u4e00-\u9fff]/.test(name)));
   assert.equal(spNormalizeJournalName('Test（ Part A ）'),spNormalizeJournalName('TEST(Part A)'));
 });
 

@@ -29,7 +29,7 @@ export function domFixture() {
     append(...children: Element[]) { for (const child of children) { child.remove(); child.parentElement = this; this.children.push(child); } }
     appendChild(child: Element) { this.append(child); return child; }
     prepend(child: Element) { this.insertBefore(child, this.children[0]); }
-    after(child: Element) { this.parentElement.insertBefore(child, this.nextElementSibling); }
+    after(child: Element) { this.parentElement!.insertBefore(child, this.nextElementSibling); }
     insertBefore(child: Element, before?: Element) {
       if (child === before) return child;
       child.remove(); child.parentElement = this;
@@ -48,14 +48,14 @@ export function domFixture() {
       return this.children.flatMap(child => [...(child.matches(selector) ? [child] : []), ...child.querySelectorAll(selector)]);
     }
     querySelector(selector: string) { return this.querySelectorAll(selector)[0] || null; }
-    closest(selector: string): Element | null { return this.matches(selector) ? this : this.parentElement?.closest(selector); }
+    closest(selector: string): Element | null | undefined { return this.matches(selector) ? this : this.parentElement?.closest(selector); }
     contains(child: Element): boolean { return child === this || this.children.some(node => node.contains(child)); }
     cloneNode(deep = false) {
       const clone = new Element(this.tagName); clone.className = this.className;
       clone.attributes = new Map(this.attributes); clone.dataset = { ...this.dataset };
       if (deep) clone.append(...this.children.map(child => child.cloneNode(true))); return clone;
     }
-    addEventListener(type: string, fn: Function) { if (!this.listeners.has(type)) this.listeners.set(type, new Set()); this.listeners.get(type).add(fn); }
+    addEventListener(type: string, fn: Function) { if (!this.listeners.has(type)) this.listeners.set(type, new Set()); this.listeners.get(type)!.add(fn); }
     removeEventListener(type: string, fn: Function) { this.listeners.get(type)?.delete(fn); }
     dispatchEvent(event: { type: string }) { for (const fn of this.listeners.get(event.type) || []) fn(event); }
     fire(type: string, properties = {}) { this.dispatchEvent({ type, ...properties }); }

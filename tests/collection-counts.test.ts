@@ -22,7 +22,7 @@ function library() {
     CREATE TABLE collectionItems (collectionID INT NOT NULL, itemID INT NOT NULL);
     CREATE TABLE deletedCollections (collectionID INTEGER PRIMARY KEY);
   `);
-  const insert = (table: string, values: number[][]) => {
+  const insert = (table: string, values: Array<Array<number | null>>) => {
     for (const row of values) db.prepare(`INSERT INTO ${table} VALUES (${row.map(() => '?').join(',')})`).run(...row);
   };
   // Library 1: papers 1 and 2, a child note, attachment and annotation of paper 1, a standalone note,
@@ -35,7 +35,7 @@ function library() {
   insert('collectionItems', [[20, 1], [21, 8]]);
   insert('deletedCollections', [[21]]);
   return {
-    DB: { valueQueryAsync: async (sql: string, params: number[]) => Object.values(db.prepare(sql).get(...params))[0] },
+    DB: { valueQueryAsync: async (sql: string, params: number[]) => Object.values(db.prepare(sql).get(...params)!)[0] },
     Items: {
       // Same query as Zotero.DataObjects.prototype.getDeleted
       getDeleted: async (libraryID: number, asIDs: boolean) => {
