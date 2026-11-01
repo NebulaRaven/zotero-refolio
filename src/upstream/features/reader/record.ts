@@ -2,6 +2,10 @@ import { LruCache } from "../../utils/lruCache.ts";
 import { getPref } from "../../utils/prefs.ts";
 import { isReadingProgressRecordingEnabled } from "../../platform/persistence/storage.ts";
   // src/features/reader/record.ts
+  // Reading time is kept in memory and saved at most this often, in seconds, while one item stays open.
+  // With note storage every save is a database transaction, a notifier event and a sync upload, with
+  // file storage a rewrite of the whole file; a crash loses at most this much reading time.
+  export var READING_TIME_SAVE_INTERVAL = 120;
   export class Record {
     declare maxHangTime: number;
     declare isActivated: boolean;
@@ -15,6 +19,10 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
     declare intervalID: number;
     private recording = false;
     private generation = 0;
+    // Reading time not saved yet, by item key. A tick replaces the entry and a save removes it only if
+    // it is still the one written, so time added during a slow or failed write is never dropped.
+    private unsaved = new Map<string, { item: any; data: any; }>();
+    private lastSave = Date.now();
 
     constructor() {
       // s
@@ -53,11 +61,12 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
         return;
       }
       this.destroyed = true;
-      this.stopTimer();
+      const saved = this.stopTimer();
       window.removeEventListener("activate", this.boundActivate, true);
       window.removeEventListener("deactivate", this.boundDeactivate, true);
       window.removeEventListener("close", this.boundDeactivate, true);
       this.cache.clear();
+      return saved;
     }
     // ==== 核心逻辑：定时器管理 ====
     startTimer() {
@@ -70,6 +79,7 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
         this.recording = true;
         try {
           await this.listeningReader();
+          await this.saveReadingTimeIfDue();
         } catch (error) {
           ztoolkit.log("Reading progress recording failed", error);
         } finally { this.recording = false; }
@@ -83,12 +93,13 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
       }
       this.isActivated = false;
       this.hangCount = 0;
+      return this.saveReadingTime();
     }
     handleActivate() {
       this.startTimer();
     }
     handleDeactivate() {
-      this.stopTimer();
+      return this.stopTimer();
     }
     // ==== 业务逻辑：记录阅读时间 ====
     async listeningReader() {
@@ -128,7 +139,8 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
       }
       const totalPages = view._iframeWindow.PDFViewerApplication.pagesCount;
       const cacheKey = `readingTime-${item.key}`;
-      let readingData = this.cache.get(cacheKey);
+      // Time not saved yet, or still being written, is newer than the stored time.
+      let readingData = this.cache.get(cacheKey) ?? this.unsaved.get(item.key)?.data;
       if (!readingData) {
         const storage2 = addon.api.storage;
         if (!storage2) {
@@ -154,11 +166,34 @@ import { isReadingProgressRecordingEnabled } from "../../platform/persistence/st
       } else {
         currentData[dataIndex] = this.recordInterval;
       }
-      const storage = addon.api.storage;
-      if (!storage || this.destroyed || !this.isActivated) {
+      this.unsaved.set(item.key, { item, data: readingData });
+    }
+    saveReadingTimeIfDue() {
+      if (this.destroyed || !this.isActivated || !this.unsaved.size) {
         return;
       }
-      await storage.set(item, "readingTime", readingData);
+      // Time read in an item the reader has left is saved at once, the open item's once the interval is up.
+      const due = Date.now() - this.lastSave >= READING_TIME_SAVE_INTERVAL * 1000;
+      return this.saveReadingTime(due ? undefined : this.getItem()?.key);
+    }
+    async saveReadingTime(skipKey?: string) {
+      const storage = addon.api.storage;
+      const entries = [...this.unsaved].filter(([key]) => key !== skipKey);
+      if (!storage || !entries.length) {
+        return;
+      }
+      this.lastSave = Date.now();
+      await Promise.all(entries.map(async ([key, entry]) => {
+        try {
+          await storage.set(entry.item, "readingTime", entry.data);
+        } catch (error) {
+          ztoolkit.log("Failed to save reading time", error);
+          return;
+        }
+        if (this.unsaved.get(key) === entry) {
+          this.unsaved.delete(key);
+        }
+      }));
     }
     // ==== 辅助方法 ====
     getReader() {

@@ -347,6 +347,94 @@ test('reading timers do not overlap and ignore a reader replaced while lookup is
   assert.equal(writes, 0); recorder.destroy();
 });
 
+/** Storage that, like note storage, returns a parsed copy and records the total of every write. */
+function readingTimeStorage() {
+  const stored = new Map<string, string>(); const writes: Array<[string, number]> = [];
+  const total = (value: { data: Record<string, number> }) => Object.values(value.data).reduce((sum, seconds) => sum + seconds, 0);
+  return { writes,
+    get(item: { key: string }) { const text = stored.get(item.key); return text === undefined ? undefined : JSON.parse(text); },
+    async set(item: { key: string }, _key: string, value: { data: Record<string, number> }) { stored.set(item.key, JSON.stringify(value)); writes.push([item.key, total(value)]); } };
+}
+
+/** A recorder reading PDFs in tabs A and B; read() lets 20-second recording ticks pass on the selected tab. */
+async function recorderFixture(storage: object, log: (...args: unknown[]) => void = assert.fail) {
+  let now = 0, position = 0, tick: (() => Promise<void>) | undefined;
+  const listeners = new Map<string, () => unknown>();
+  const reader = (key: string) => ({ _item: { parentItem: { key } }, _internalReader: { _lastView: { _iframeWindow: { PDFViewerApplication: { pagesCount: 3,
+    pdfViewer: { _location: { pageNumber: 1, left: 0, top: 0, scale: 1 } } } } } } });
+  const readers: Record<string, ReturnType<typeof reader>> = { A: reader('A'), B: reader('B') }; const tabs = { selectedID: 'A' };
+  const ctx = await load({ window: { setInterval(fn) { tick = fn; return 1; }, clearInterval() { tick = undefined; },
+    addEventListener(type, fn) { listeners.set(type, fn); }, removeEventListener(type) { listeners.delete(type); } },
+  Date: { now: () => now }, getPref: () => 20, isReadingProgressRecordingEnabled: () => true, Zotero_Tabs: tabs,
+  Zotero: { Reader: { getByTabID: id => readers[id] } }, addon: { api: { storage } },
+  ztoolkit: { Reader: { getReader: async () => readers[tabs.selectedID] }, log } }, 'upstream/utils/lruCache.ts', 'upstream/features/reader/record.ts');
+  const recorder = new ctx.Record();
+  const read = async (seconds: number) => {
+    for (let elapsed = 0; elapsed < seconds; elapsed += 20) {
+      now += 20_000;
+      // Scrolling on keeps the recorder from treating the reader as idle.
+      readers[tabs.selectedID]._internalReader._lastView._iframeWindow.PDFViewerApplication.pdfViewer._location.top = ++position;
+      await tick?.();
+    }
+  };
+  return { recorder, read, select: (key: 'A' | 'B') => { tabs.selectedID = key; }, fire: (type: string) => listeners.get(type)!() };
+}
+
+test('reading time is saved once per save interval rather than on every recording tick', async () => {
+  const storage = readingTimeStorage();
+  const { recorder, read } = await recorderFixture(storage);
+  await read(100);
+  assert.deepEqual(storage.writes, []);
+  await read(20);
+  assert.deepEqual(storage.writes, [['A', 120]]);
+  await read(220);
+  assert.deepEqual(storage.writes, [['A', 120], ['A', 240]]);
+  await recorder.destroy();
+  assert.deepEqual(storage.writes, [['A', 120], ['A', 240], ['A', 340]]);
+});
+
+test('reading time is saved at once when the reader switches item, the window deactivates or the recorder stops', async () => {
+  const storage = readingTimeStorage();
+  const { recorder, read, select, fire } = await recorderFixture(storage);
+  await read(40);
+  select('B'); await read(20);
+  assert.deepEqual(storage.writes, [['A', 40]]);
+  await fire('deactivate');
+  assert.deepEqual(storage.writes, [['A', 40], ['B', 20]]);
+  await read(20);
+  fire('activate'); await read(20);
+  // A is read back from storage, so its saved 40 seconds are neither lost nor counted twice.
+  select('A'); await read(20);
+  assert.deepEqual(storage.writes, [['A', 40], ['B', 20], ['B', 40]]);
+  await recorder.destroy();
+  assert.deepEqual(storage.writes, [['A', 40], ['B', 20], ['B', 40], ['A', 60]]);
+});
+
+test('reading time that failed to save is kept and saved with the next write', async () => {
+  const storage = readingTimeStorage(); const errors: unknown[] = [];
+  const set = storage.set; let failures = 1;
+  storage.set = async (item, key, value) => { if (failures-- > 0) throw new Error('database'); return set(item, key, value); };
+  const { recorder, read, select } = await recorderFixture(storage, (_message, error) => errors.push(error));
+  await read(40);
+  select('B'); await read(20);
+  assert.equal(errors.length, 1); assert.deepEqual(storage.writes, []);
+  await read(20);
+  assert.deepEqual(storage.writes, [['A', 40]]);
+  await recorder.destroy();
+  assert.deepEqual(storage.writes, [['A', 40], ['B', 40]]);
+});
+
+test('reading time added while an earlier save is still being written is saved later', async () => {
+  const storage = readingTimeStorage(); const set = storage.set; const slow = deferred<void>();
+  storage.set = async (item, key, value) => { await set(item, key, value); if (storage.writes.length === 1) await slow.promise; };
+  const { recorder, read, fire } = await recorderFixture(storage);
+  await read(40); const saving = fire('deactivate');
+  fire('activate'); await read(20);
+  slow.resolve(); await saving;
+  await recorder.destroy();
+  assert.deepEqual(storage.writes, [['A', 40], ['A', 60]]);
+});
+
 test('field dragging uses one frame per burst, releases document listeners and cancels animations on cleanup', async () => {
   const dom = domFixture(); const parent = new dom.Element(), input = new dom.Element('input');
   parent.append(input); input.value = 'a, b, c';
