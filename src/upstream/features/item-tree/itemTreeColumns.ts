@@ -1561,7 +1561,6 @@ ${JSON.stringify(data.data)}`;
         const allValues: string[] = [];
         const id = "remark-autocomplete";
         editableText.addEventListener("input", async () => {
-          ztoolkit.log(1);
           if (allValues.length == 0) {
             const s = new Zotero.Search();
             s.addCondition("extra", "contains", "remark:");

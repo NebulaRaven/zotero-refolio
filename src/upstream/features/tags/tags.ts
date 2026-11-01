@@ -870,27 +870,6 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
                   type: "mouseup",
                   listener: async event => {
                     if (event.button == 2) {
-                      const menuItems: ElementProps[] = [];
-                      const selectedIndex = Number(getPref(`nestedTags.sorted`));
-                      for (let i = 0; i < this.props.sorted.length; i++) {
-                        const menuItem: { styles: { marginLeft: string; borderLeft: string }; listeners: Array<{ type: string; listener: () => Promise<void> }>; properties: { innerText: string } } = {
-                          styles: {
-                            marginLeft: "", borderLeft: ""
-                          },
-                          listeners: [],
-                          properties: { innerText: "" }
-                        };
-                        menuItem.styles.borderLeft = `3px solid ${selectedIndex == i ? "#16a085" : "transparent"}`;
-                        menuItem.properties.innerText = this.props.sorted[i];
-                        menuItem.listeners.push({
-                          type: "mousedown",
-                          listener: async () => {
-                            setPref(`nestedTags.sorted`, String(i));
-                            await this.init(true);
-                          }
-                        });
-                        menuItems.push(menuItem);
-                      }
                       const x = event.screenX;
                       const y = event.screenY;
                       const [plainTag, index] = JSON.parse(children[tag].id);
@@ -1524,8 +1503,8 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           }
         } else {
           addTo = "Item";
-          // parentItem is undefined for a standalone attachment; adding tags then throws.
-          targetItems = [reader._item.parentItem!];
+          // A standalone attachment has no parent item, so its tags go on the attachment itself.
+          targetItems = [reader._item.parentItem ?? reader._item];
         }
       }
       if (!this.active || generation !== this.popupGeneration) {

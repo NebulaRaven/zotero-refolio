@@ -181,28 +181,6 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       for (const node of this.renderer.nodes || []) if (node.text) node.text.style.fontFamily = palette.fontFamily;
       this.renderer.testCSS();
     }
-    /**
-     * 从其他面板切换到条目面板并显示节点的更新
-     * @returns
-     */
-    async blink() {
-      if (!this.active) {
-        return;
-      }
-      if (this.container.style.display == "none" || this.mode != "note") {
-        return;
-      }
-      const originalID = Zotero_Tabs.selectedID;
-      Zotero_Tabs.select("zotero-pane");
-      // Nothing calls blink(); it is the Better Notes workspace hook and needs that plugin.
-      await this.selectNode(Zotero.BetterNotes!.data.workspace.mainId);
-      this.schedule(async () => {
-        this.setData(await this.getGraph());
-        this.schedule(() => {
-          Zotero_Tabs.select(originalID);
-        }, 2000);
-      }, 500);
-    }
     registerButton() {
       const node = document.querySelector("#zotero-tb-note-add");
       const insertionPoint = node?.nextElementSibling;
