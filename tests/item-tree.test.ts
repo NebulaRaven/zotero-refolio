@@ -137,3 +137,26 @@ test('rating stars declare a valid display value', async () => {
   assert.equal(stars.length, 5);
   for (const star of stars) assert.equal(star.styles.display, 'inline-block');
 });
+
+test('linking related items still saves and finishes when the graph view is turned off', async () => {
+  const shortcuts = new Map<string, () => Promise<void>>();
+  const paper = (id: number) => ({ id, related: [] as number[], saved: 0, isRegularItem: () => true,
+    addRelatedItem(other: { id: number }) { if (!this.related.includes(other.id)) this.related.push(other.id); }, removeRelatedItem() {}, async saveTx() { this.saved++; } });
+  const first = paper(1), second = paper(2);
+  // Without the graph-view feature nothing publishes addon.api.refreshGraphView.
+  const ctx = await loadItemTree({
+    window: { require: () => ({ prototype: {} }) }, Zotero: { locale: 'en', Prefs: { get: () => undefined }, ItemTreeManager: {} },
+    addon: { api: {}, data: { alive: true } }, ZoteroPane: { itemsView: {}, getSelectedItems: () => [first, second] },
+    installItemTreeColumnResetGuard: () => () => {}, suppressDeprecatedItemTreeColumnWarnings: () => () => {},
+    installItemTreeRenderPatch: () => () => {}, LocalStorage: class {}, waitForItemsViewTree: async () => true,
+    startItemTreeContributions: async (contributions: Array<{ isEnabled?: () => boolean; start: () => unknown }>) => {
+      for (const contribution of contributions) if (!contribution.isEnabled || contribution.isEnabled()) await contribution.start();
+      return () => {};
+    },
+    isEnabel: (key: string) => key === 'relatedItems', spRegisterMenu: () => () => {},
+    registerShortcut: (key: string, callback: () => Promise<void>) => { shortcuts.set(key, callback); return () => {}; }
+  });
+  await ctx.ItemTree.prototype.init.call({ active: true, patchRenderCell: [], trackCleanup: (cleanup: () => void) => cleanup });
+  await shortcuts.get('relatedItems.link.shortcut')!();
+  assert.deepEqual([first.related, second.related, first.saved, second.saved], [[2], [1], 1, 1]);
+});

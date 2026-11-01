@@ -249,7 +249,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
               }
               await item1.saveTx();
             }
-            await addon.api.refreshGraphView();
+            await addon.api.refreshGraphView?.();
           };
           const releaseMenu = spRegisterMenu({
             menuID: "refolio-related-items-menu",
