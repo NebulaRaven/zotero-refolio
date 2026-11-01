@@ -161,6 +161,71 @@ test('empty entries of a loaded storage file are dropped and stored values read 
   assert.deepEqual(JSON.parse(writes[0]), { B: { readingTime: reading }, D: { rank: 'Q1' } });
 });
 
+/** Note storage on a fake add-on item whose getNotes(), like Zotero's, lists the untrashed child notes. */
+async function noteStorageFixture() {
+  let nextID = 10, lookups = 0, created = 0;
+  const notes = new Map<number, Note>();
+  const parent = { id: 1, key: 'ADDONKEY', childIDs: [] as number[], getNotes() { return this.childIDs.filter(id => !notes.get(id)!.deleted); } };
+  class Note {
+    id = nextID++; parentID: number | false = false; deleted = false; note = ''; _displayTitle = '';
+    setNote(text: string) { this.note = text; this._displayTitle = text.split('\n')[0]; }
+    async saveTx() { if (!notes.has(this.id)) { notes.set(this.id, this); parent.childIDs.push(this.id); } }
+  }
+  const resolve = (id: number) => { lookups++; return notes.get(id) || false; };
+  const ctx = await load({ window: timers(), getPref: () => true, ztoolkit: { log: assert.fail },
+    Zotero: { Item: class extends Note { constructor() { super(); created++; } },
+      Items: { get: resolve, getLibraryAndKeyFromID: id => notes.has(id) && { libraryID: 1, key: String(id) }, getByLibraryAndKey: (_library, key) => resolve(Number(key)) } } },
+    'upstream/platform/persistence/storage.ts');
+  const storage = new ctx.AddonItem(); storage.item = parent;
+  // Notes arriving or leaving through sync, outside the storage.
+  const sync = (key: string, data: object) => { const note = new Note(); note.parentID = parent.id; note.setNote(`${key}\n${JSON.stringify(data)}`); notes.set(note.id, note); parent.childIDs.push(note.id); return note; };
+  const erase = (note: Note) => { notes.delete(note.id); parent.childIDs.splice(parent.childIDs.indexOf(note.id), 1); };
+  return { storage, sync, erase, lookups: () => lookups, created: () => created };
+}
+
+test('note storage finds keys in an index built from one scan, including notes it created or sync added later', async () => {
+  const { storage, sync, lookups, created } = await noteStorageFixture();
+  sync('AAAAAAAA', { readingTime: 1 }); sync('BBBBBBBB', { readingTime: 2 });
+  const missing = { key: 'CCCCCCCC' };
+  assert.equal(storage.get(missing, 'readingTime'), undefined);
+  const scanned = lookups();
+  for (let i = 0; i < 5; i++) assert.equal(storage.get(missing, 'readingTime'), undefined);
+  assert.equal(storage.get({ key: 'AAAAAAAA' }, 'readingTime'), 1);
+  assert.equal(lookups(), scanned, 'a miss scanned the notes again');
+  await storage.set({ key: 'DDDDDDDD' }, 'readingTime', 4); assert.equal(created(), 1);
+  const afterCreate = lookups();
+  assert.equal(storage.get({ key: 'DDDDDDDD' }, 'readingTime'), 4); assert.equal(storage.get(missing, 'readingTime'), undefined);
+  assert.equal(lookups(), afterCreate, 'the created note was not added to the index');
+  sync('CCCCCCCC', { readingTime: 3 });
+  assert.equal(storage.get(missing, 'readingTime'), 3);
+});
+
+test('note storage does not serve notes that sync replaced, trashed or erased from its index', async () => {
+  const { storage, sync, erase } = await noteStorageFixture();
+  const first = sync('AAAAAAAA', { readingTime: 1 }); sync('BBBBBBBB', { readingTime: 2 });
+  const item = { key: 'AAAAAAAA' };
+  assert.equal(storage.get(item, 'readingTime'), 1);
+  // Same note count: one note erased and its replacement synced in.
+  erase(first); const second = sync('AAAAAAAA', { readingTime: 5 });
+  assert.equal(storage.get(item, 'readingTime'), 5);
+  await storage.set(item, 'readingTime', 6);
+  assert.match(second.note, /"readingTime":6/); assert.match(first.note, /"readingTime":1/);
+  second.deleted = true;
+  assert.equal(storage.get(item, 'readingTime'), undefined);
+});
+
+test('note storage never creates a second note for a key, even when its index missed a change', async () => {
+  const { storage, sync, created } = await noteStorageFixture();
+  const other = sync('OTHERKEY', { value: 1 });
+  assert.equal(storage.get({ key: 'NEWKEY00' }, 'value'), undefined);
+  // Sync rewrites a note in place, which neither the note count nor the note IDs reveal.
+  other.setNote(`NEWKEY00\n${JSON.stringify({ value: 2 })}`);
+  await storage.set({ key: 'NEWKEY00' }, 'value', 3);
+  assert.equal(created(), 0); assert.match(other.note, /"value":3/);
+  await storage.set({ key: 'FRESHKEY' }, 'value', 1); await storage.set({ key: 'FRESHKEY' }, 'value', 2);
+  assert.equal(created(), 1); assert.equal(storage.get({ key: 'FRESHKEY' }, 'value'), 2);
+});
+
 async function tagsFixture() {
   const clock = timers();
   const ctx = await load({ window: clock, addon: { api: {} }, getString: testGetString, ztoolkit: { log: assert.fail }, getElements: () => [] }, 'upstream/features/tags/tags.ts');

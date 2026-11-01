@@ -2,7 +2,6 @@ import { setPref } from "../../utils/prefs.ts";
 import { getPref } from "../../utils/prefs.ts";
 import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
   // src/platform/persistence/storage.ts
-  export var MAX_CACHED_NOTE_ITEMS = 500;
   export var READING_PROGRESS_RECORDING_PREF = "readingProgress.recordingEnabled";
   export function isReadingProgressRecordingEnabled(readPreference = getPref) {
     return readPreference(READING_PROGRESS_RECORDING_PREF) !== false;
@@ -109,8 +108,7 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
   export class AddonItem {
     declare title: string;
     declare prefKey: string;
-    declare cache: Record<string, any>;
-    declare cacheKeys: string[];
+    declare noteIndex: { parent: any; count: number; idSum: number; titles: Map<string, any>; titlesByLength: [string, any][]; } | undefined;
     declare pendingWrites: Map<any, any>;
     declare hiddenNotesUsers: number;
     declare disposed: boolean;
@@ -121,8 +119,6 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
     constructor() {
       this.title = "Addon Item";
       this.prefKey = "Zotero.AddonItem.key";
-      this.cache = {};
-      this.cacheKeys = [];
       this.pendingWrites = /* @__PURE__ */new Map();
       this.hiddenNotesUsers = 0;
       this.disposed = false;
@@ -211,7 +207,8 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
       if (this.disposed || !shouldPersistStorageKey(key)) {
         return;
       }
-      let noteItem = this.getNoteItem(item);
+      // Scanning once more before creating a note keeps a missed change from giving a key a second note.
+      let noteItem = this.getNoteItem(item) ?? this.getNoteItem(item, true);
       if (!noteItem) {
         if (this.disposed || !shouldPersistStorageKey(key)) {
           return;
@@ -229,7 +226,7 @@ ${JSON.stringify(noteData2)}`);
           }
           return;
         }
-        this.cacheNoteItem(`getNoteItem-${item.key}`, noteItem);
+        this.indexCreatedNote(item.key, noteItem);
         return;
       }
       if (this.disposed || !shouldPersistStorageKey(key)) {
@@ -295,36 +292,69 @@ ${JSON.stringify(noteData)}`);
     /**
      * item对应的笔记，根据item.key == noteItem._displayTitle寻找
      * @param item
+     * @param rescan Scan the notes again instead of trusting the index
      * @returns
      */
-    getNoteItem(item) {
+    getNoteItem(item, rescan = false) {
       if (!item) {
         return;
       }
+      const index = rescan ? this.indexNotes(this.item.getNotes()) : this.getNoteIndex();
       const key = item.key;
-      const cacheKey = `getNoteItem-${key}`;
-      const cachedNoteItem = this.getCachedNoteItem(cacheKey);
-      if (cachedNoteItem) {
-        return cachedNoteItem;
+      const noteItem = index.titles.get(key);
+      if (noteItem) {
+        return noteItem;
       }
-      const ids = this.item.getNotes();
-      let noteItem;
-      for (const id of ids) {
-        const idInfo = Zotero.Items.getLibraryAndKeyFromID(id);
-        if (!idInfo) {
-          continue;
-        }
-        const _noteItem = Zotero.Items.getByLibraryAndKey(idInfo.libraryID, idInfo.key);
-        if (!_noteItem) {
-          continue;
-        }
-        if (_noteItem._displayTitle.includes(key)) {
-          noteItem = _noteItem;
-          this.cacheNoteItem(cacheKey, noteItem);
+      // As in the linear search this replaces, a title that only contains the key matches too. Longest
+      // titles come first; one no longer than the key contains it only by being equal to it.
+      for (const [title, titledNote] of index.titlesByLength) {
+        if (title.length <= key.length) {
           break;
         }
+        if (title.includes(key)) {
+          return titledNote;
+        }
       }
-      return noteItem;
+    }
+    getNoteIndex() {
+      const ids = this.item.getNotes();
+      const idSum = ids.reduce((sum, id) => sum + id, 0);
+      const index = this.noteIndex;
+      // Sync adds, trashes and erases notes behind our back. New items get higher IDs than all existing
+      // ones, so a note replacing another changes the ID sum even when the count stays the same.
+      if (index?.parent === this.item && index.count === ids.length && index.idSum === idSum) {
+        return index;
+      }
+      return this.indexNotes(ids, idSum);
+    }
+    indexNotes(ids, idSum = ids.reduce((sum, id) => sum + id, 0)) {
+      const titles = new Map();
+      const titlesByLength: [string, any][] = [];
+      for (const id of ids) {
+        const noteItem = Zotero.Items.get(id);
+        if (!noteItem) {
+          continue;
+        }
+        const title = noteItem._displayTitle ?? "";
+        // Of two notes with the same title, the first in getNotes() order wins, as before.
+        if (!titles.has(title)) {
+          titles.set(title, noteItem);
+        }
+        titlesByLength.push([title, noteItem]);
+      }
+      titlesByLength.sort((a, b) => b[0].length - a[0].length);
+      return this.noteIndex = { parent: this.item, count: ids.length, idSum, titles, titlesByLength };
+    }
+    indexCreatedNote(key, noteItem) {
+      const index = this.noteIndex;
+      // Counting our own note keeps it from looking like a sync change; an index rebuilt while the note
+      // was being saved already has it.
+      if (index?.parent !== this.item || index.titles.get(key) === noteItem) {
+        return;
+      }
+      index.titles.set(key, noteItem);
+      index.count += 1;
+      index.idSum += noteItem.id;
     }
     hiddenNotes() {
       if (this.disposed) {
@@ -367,8 +397,7 @@ ${JSON.stringify(noteData)}`);
       this.searchPatchState = undefined;
       await Promise.allSettled([...(this.pendingWrites?.values() ?? [])]);
       this.pendingWrites?.clear();
-      this.cache = {};
-      this.cacheKeys = [];
+      this.noteIndex = undefined;
     }
     installHiddenNotesPatch() {
       const excludeKey = this.item.key;
@@ -405,33 +434,6 @@ ${JSON.stringify(noteData)}`);
         });
       };
       this.restoreSearch = replaceOwnedProperty(Zotero.Search.prototype, "search", wrappedSearch);
-    }
-    getCachedNoteItem(cacheKey) {
-      if (!Object.prototype.hasOwnProperty.call(this.cache, cacheKey)) {
-        return undefined;
-      }
-      this.cacheKeys ??= [];
-      const index = this.cacheKeys.indexOf(cacheKey);
-      if (index >= 0) {
-        this.cacheKeys.splice(index, 1);
-      }
-      this.cacheKeys.push(cacheKey);
-      return this.cache[cacheKey];
-    }
-    cacheNoteItem(cacheKey, noteItem) {
-      this.cacheKeys ??= [];
-      const existingIndex = this.cacheKeys.indexOf(cacheKey);
-      if (existingIndex >= 0) {
-        this.cacheKeys.splice(existingIndex, 1);
-      }
-      this.cacheKeys.push(cacheKey);
-      this.cache[cacheKey] = noteItem;
-      while (this.cacheKeys.length > MAX_CACHED_NOTE_ITEMS) {
-        const oldestKey = this.cacheKeys.shift();
-        if (oldestKey !== undefined) {
-          delete this.cache[oldestKey];
-        }
-      }
     }
   };
   export async function initStorage() {
