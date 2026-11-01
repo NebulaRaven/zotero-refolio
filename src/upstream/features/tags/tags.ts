@@ -135,11 +135,11 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
        * @returns
        */
       this.getTagPrefixes = () => {
-        const keys2 = Object.keys(this.state).filter(key => this.state[key].select);
-        if (keys2.length == 0) {
+        const selectedKeys = Object.keys(this.state).filter(key => this.state[key].select);
+        if (selectedKeys.length == 0) {
           return [];
         }
-        const tagStartArr = keys2.map(k => this.key2tag(k));
+        const tagStartArr = selectedKeys.map(k => this.key2tag(k));
         return tagStartArr;
       };
       this.containerID = containerID;
@@ -442,11 +442,11 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
         return;
       }
       if (!sortedItems) {
-        const sortedIDs2 = new Set();
+        const viewIDs = new Set();
         for (const item of ZoteroPane.getSortedItems()) {
-          sortedIDs2.add(item.id);
+          viewIDs.add(item.id);
         }
-        sortedItems = this.collectionItems.filter(item => sortedIDs2.has(item.id) || sortedIDs2.has(item.parentID));
+        sortedItems = this.collectionItems.filter(item => viewIDs.has(item.id) || viewIDs.has(item.parentID));
       }
       const ids = (items: Zotero.Item[]) => items.map(item => item.id).sort((a, b) => a - b);
       const cacheKey = JSON.stringify([ids(this.collectionItems), ids(sortedItems)]);
@@ -607,7 +607,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
       this._cachedSortMode = Number(getPref(`nestedTags.sorted`));
       this.render(box, this.nestedTags, 0);
       this._cachedSortMode = null;
-      const icons2 = {
+      const icons = {
         sort: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-sort-asc"><path d="M11 11h4"></path><path d="M11 15h7"></path><path d="M11 19h10"></path><path d="M9 7 6 4 3 7"></path><path d="M6 6v14"></path></svg>`,
         nest: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-folder-tree"><path d="M13 10h7a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"></path><path d="M13 21h7a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.88a1 1 0 0 1-.9-.55l-.44-.9a1 1 0 0 0-.9-.55H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"></path><path d="M3 3v2c0 1.1.9 2 2 2h3"></path><path d="M3 3v13c0 1.1.9 2 2 2h3"></path></svg>`,
         collapse: {
@@ -635,7 +635,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           tag: "toolbarbutton",
           classList: ["nested-tags-control-icon"],
           properties: {
-            innerHTML: icons2.sort
+            innerHTML: icons.sort
           },
           listeners: [{
             type: "click",
@@ -679,7 +679,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           tag: "toolbarbutton",
           classList: ["nested-tags-control-icon"],
           properties: {
-            innerHTML: icons2.nest
+            innerHTML: icons.nest
           },
           listeners: [{
             type: "click",
@@ -729,7 +729,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           tag: "toolbarbutton",
           classList: ["nested-tags-control-icon"],
           properties: {
-            innerHTML: icons2.collapse.true
+            innerHTML: icons.collapse.true
           },
           listeners: [{
             type: "click",
@@ -754,7 +754,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
               };
               toggle(box);
               isAllCollapse = !isAllCollapse;
-              this.innerHTML = icons2.collapse[String(isAllCollapse)];
+              this.innerHTML = icons.collapse[String(isAllCollapse)];
             }
           }]
         }]
@@ -895,7 +895,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
                       const orignalTagName = plainTag[0] + plainTag.slice(1).split("/").slice(0, index + 1).join("/");
                       const orignalEndTagName = orignalTagName.split("/").slice(-1)[0];
                       const libraryID = getFirstSelectedLibraryID() ?? Zotero.Libraries.userLibraryID;
-                      const matchedTags = (await Zotero.Tags.getAll(libraryID)).map(tag2 => tag2.tag).filter(tag2 => spTagWithin(tag2, orignalTagName, this.linkSymbol));
+                      const matchedTags = (await Zotero.Tags.getAll(libraryID)).map(entry => entry.tag).filter(name => spTagWithin(name, orignalTagName, this.linkSymbol));
                       buildMenuPopup({
                         x,
                         y
@@ -1038,10 +1038,10 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
             return;
           } else {
             const tagStart = this.key2tag(key);
-            if (!this.tagsIn.items.find(tag2 => tag2.startsWith(tagStart))) {
+            if (!this.tagsIn.items.find(name => name.startsWith(tagStart))) {
               this.state[key].select = false;
               itemNode.classList.remove("selected");
-              if (!this.tagsIn.collection.find(tag2 => tag2.startsWith(tagStart))) {
+              if (!this.tagsIn.collection.find(name => name.startsWith(tagStart))) {
                 itemNode.classList.remove("not-in-items");
                 itemNode.classList.add("not-in-collection");
               } else {
@@ -1062,7 +1062,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
         // AddTags
         this.onSelect && subTags.length ||
         // Not in Items
-        !displayAllTags && subTags.length && subTags.some(tag1 => this.tagsIn.items.find(tag2 => tag2.startsWith(this.key2tag(children[tag].children[tag1].id))))) {
+        !displayAllTags && subTags.length && subTags.some(subTag => this.tagsIn.items.find(name => name.startsWith(this.key2tag(children[tag].children[subTag].id))))) {
           const tree = ztoolkit.UI.appendElement({
             tag: "div",
             classList: ["tree"],
@@ -1137,19 +1137,18 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
     }
     getSortedTags(children) {
       let sortedTags;
-      const getString3 = s => s;
       switch (this._cachedSortMode ?? Number(getPref(`nestedTags.sorted`))) {
         case 0:
-          sortedTags = Object.keys(children).sort((a, b) => getString3(a) > getString3(b) ? 1 : -1);
+          sortedTags = Object.keys(children).sort((a, b) => a > b ? 1 : -1);
           break;
         case 1:
-          sortedTags = Object.keys(children).sort((a, b) => getString3(a) > getString3(b) ? 1 : -1).reverse();
+          sortedTags = Object.keys(children).sort((a, b) => a > b ? 1 : -1).reverse();
           break;
         case 2:
-          sortedTags = Object.keys(children).sort((tag1, tag2) => children[tag1].number - children[tag2].number);
+          sortedTags = Object.keys(children).sort((a, b) => children[a].number - children[b].number);
           break;
         case 3:
-          sortedTags = Object.keys(children).sort((tag1, tag2) => children[tag2].number - children[tag1].number);
+          sortedTags = Object.keys(children).sort((a, b) => children[b].number - children[a].number);
           break;
         default:
           sortedTags = Object.keys(children);
@@ -1443,8 +1442,8 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
                 let selecedTags = tagSelector.selectedTags;
                 ztoolkit.log(tagSelector.selectedTags);
                 if (selecedTags.size == 0) {
-                  const inputNodes2 = [...tagsContainer.querySelectorAll(".tag-selector-filter-container input")];
-                  const inputTag = inputNodes2.map(i => i.value).filter(Boolean)[0];
+                  const filterInputs = [...tagsContainer.querySelectorAll(".tag-selector-filter-container input")];
+                  const inputTag = filterInputs.map(i => i.value).filter(Boolean)[0];
                   if (!inputTag) {
                     window.alert(getString("ui-select-or-enter-tag"));
                     return;
@@ -1509,8 +1508,8 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           }
         } else if (src.includes("editor")) {
           const noteWin = (document.activeElement as HTMLIFrameElement)?.contentWindow;
-          const editor = Zotero.Notes._editorInstances.find(editor2 => {
-            return editor2._iframeWindow == noteWin;
+          const editor = Zotero.Notes._editorInstances.find(instance => {
+            return instance._iframeWindow == noteWin;
           });
           if (editor) {
             addTo = "Note";

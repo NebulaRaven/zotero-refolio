@@ -146,11 +146,11 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
       // Time not saved yet, or still being written, is newer than the stored time.
       let readingData = this.cache.get(cacheKey) ?? this.unsaved.get(item.key)?.data;
       if (!readingData) {
-        const storage2 = addon.api.storage;
-        if (!storage2) {
+        const storage = addon.api.storage;
+        if (!storage) {
           return;
         }
-        const storedData = await storage2.get(item, "readingTime");
+        const storedData = await storage.get(item, "readingTime");
         if (this.destroyed || !this.isActivated || generation !== this.generation || !isReadingProgressRecordingEnabled()) {
           return;
         }

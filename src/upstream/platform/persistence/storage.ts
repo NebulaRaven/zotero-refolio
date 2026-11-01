@@ -212,11 +212,11 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
       // Scanning once more before creating a note keeps a missed change from giving a key a second note.
       let noteItem = this.getNoteItem(item) ?? this.getNoteItem(item, true);
       if (!noteItem) {
-        const noteData2 = {
+        const initialData = {
           [key]: data
         };
         noteItem = await this.createNoteItem(`${item.key}
-${JSON.stringify(noteData2)}`);
+${JSON.stringify(initialData)}`);
         this.indexCreatedNote(item.key, noteItem);
         return;
       }
