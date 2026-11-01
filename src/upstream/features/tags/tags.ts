@@ -11,7 +11,6 @@ import { buildMenuPopup } from "../../platform/zotero/menu.ts";
 import { spRemoveTags,spRenameTags,spTagWithin } from "../../../core/tags.ts";
 import { isEnabel,registerShortcut } from "../../utils/base.ts";
 import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
-  // src/features/tags/tags.ts
   // Tags of the items Zotero.Items.getAll() returns: every item of the library, child notes, attachments
   // and annotations included, except those in the trash.
   const TAG_COUNTS = `SELECT T.name, COUNT(*) FROM items I
@@ -439,7 +438,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
         return;
       }
       if (!sortedItems) {
-        const sortedIDs2 = /* @__PURE__ */new Set();
+        const sortedIDs2 = new Set();
         for (const item of ZoteroPane.getSortedItems()) {
           sortedIDs2.add(item.id);
         }

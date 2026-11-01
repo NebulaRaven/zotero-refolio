@@ -31,7 +31,6 @@ import { buildMenuPopup } from "../../platform/zotero/menu.ts";
 import { mountColumnFieldPicker } from "./columnFieldPicker.ts";
 import { ItemBoxPatchRegistry } from "./itemBoxPatchRegistry.ts";
 import { registerNotify } from "../../platform/zotero/notifier.ts";
-  // src/features/item-tree/itemTree.ts
   import_dayjs.default.extend(import_relativeTime.default);
   import_dayjs.default.locale(getDayjsLocale(Zotero.locale));
   import_dayjs.default.extend(import_utc.default);
@@ -50,7 +49,7 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
     constructor() {
       this.active = true;
       this.cleanups = [];
-      this.timers = /* @__PURE__ */new Set();
+      this.timers = new Set();
       this.cache = {
         pdfPageNum: {}
       };
@@ -998,7 +997,7 @@ ${JSON.stringify(data.data)}`;
           if (!Number.isFinite(info.rank)) info.rank = 1;
           const rankIndex = info.rank - 1;
           const color = rankIndex >= rankColors.length ? rankColors.slice(-1)[0] : rankColors[rankIndex];
-          const text = [... /* @__PURE__ */new Set([getMapString(info.key), getMapString(info.value)])].filter(i2 => i2.length > 0).join(" ");
+          const text = [... new Set([getMapString(info.key), getMapString(info.value)])].filter(i2 => i2.length > 0).join(" ");
           const c = new ColorRNA_default(color);
           const [red, green, blue] = c.rgb();
           const hsl = c.HSL();

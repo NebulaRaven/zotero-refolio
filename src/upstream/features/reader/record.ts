@@ -1,7 +1,6 @@
 import { LruCache } from "../../utils/lruCache.ts";
 import { getPref } from "../../utils/prefs.ts";
 import { isReadingProgressRecordingEnabled } from "../../platform/persistence/storage.ts";
-  // src/features/reader/record.ts
   // Reading time is kept in memory and saved at most this often, in seconds, while one item stays open.
   // With note storage every save is a database transaction, a notifier event and a sync upload, with
   // file storage a rewrite of the whole file; a crash loses at most this much reading time.

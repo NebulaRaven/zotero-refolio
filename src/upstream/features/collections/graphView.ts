@@ -12,7 +12,6 @@ import { spElement } from "../../../app/ui.ts";
 import { spGetCitationGraph } from "../../../app/citations.ts";
 import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
 import { registerNotify } from "../../platform/zotero/notifier.ts";
-  // src/features/collections/graphView.ts
   export class GraphView {
     declare active: boolean;
     declare status: HTMLParagraphElement;
@@ -50,8 +49,8 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
     constructor() {
       this.active = true;
       this.cleanups = [];
-      this.timers = /* @__PURE__ */new Set();
-      this.animationFrames = /* @__PURE__ */new Set();
+      this.timers = new Set();
+      this.animationFrames = new Set();
       this._prefObserverID = null;
       this._onSelectHandler = null;
       this.onUnload = () => this.destroy();

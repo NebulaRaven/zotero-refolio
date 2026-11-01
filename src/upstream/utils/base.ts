@@ -7,7 +7,6 @@ import { spMergeRanks } from "../../core/journals.ts";
 import { spGetJournalQuery,spGetAutomaticJournalRanks,spStoreJournalLookup } from "../../app/journalLookup.ts";
 import { registerNotify } from "../platform/zotero/notifier.ts";
 import { findAnnotationColorName } from "../features/annotations/annotationColorNames.ts";
-  // src/utils/base.ts
   export function adjustDialogLayout(dialog) {
     dialog.window.addEventListener("load", () => {
       const maxWidth = [...dialog.window.document.querySelectorAll("label")].map(e => Number(e.getBoundingClientRect().width)).sort((a, b) => b - a)[0];
@@ -281,7 +280,7 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
     return getPref(`function.${key}.enable`);
   }
   export function getCurrentUTCTime() {
-    const now = /* @__PURE__ */new Date();
+    const now = new Date();
     const year = now.getUTCFullYear();
     const month = String(now.getUTCMonth() + 1).padStart(2, "0");
     const date = String(now.getUTCDate()).padStart(2, "0");

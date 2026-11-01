@@ -1,7 +1,6 @@
 import { setPref } from "../../utils/prefs.ts";
 import { getPref } from "../../utils/prefs.ts";
 import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
-  // src/platform/persistence/storage.ts
   export var READING_PROGRESS_RECORDING_PREF = "readingProgress.recordingEnabled";
   export function isReadingProgressRecordingEnabled(readPreference = getPref) {
     return readPreference(READING_PROGRESS_RECORDING_PREF) !== false;
@@ -119,7 +118,7 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
     constructor() {
       this.title = "Addon Item";
       this.prefKey = "Zotero.AddonItem.key";
-      this.pendingWrites = /* @__PURE__ */new Map();
+      this.pendingWrites = new Map();
       this.hiddenNotesUsers = 0;
       this.disposed = false;
     }
@@ -191,7 +190,7 @@ import { replaceOwnedProperty } from "../../utils/ownedResource.ts";
       if (this.disposed || !shouldPersistStorageKey(key)) {
         return;
       }
-      this.pendingWrites ??= /* @__PURE__ */new Map();
+      this.pendingWrites ??= new Map();
       const previous = this.pendingWrites.get(item.key) ?? Promise.resolve();
       const write = previous.catch(() => {}).then(() => this.setNow(item, key, data));
       this.pendingWrites.set(item.key, write);
