@@ -128,6 +128,8 @@ async function journalHarness(responseByName, oldRank={}, title='Acta Psychologi
   }}};
   vm.runInNewContext(await script(root+'/src/app/journalLookup.ts'),context);
   vm.runInNewContext(code+';globalThis.run=updatePublicationTags;',context);
+  vm.runInNewContext(await script(root+'/src/upstream/utils/publicationTagUpdatePolicy.ts','PublicationTagUpdateBackoff'),context);
+  context.publicationTagUpdateBackoff=new context.PublicationTagUpdateBackoff(0,0,{now:()=>0});
   await context.run({get:(_item,field)=>cache[field],set:async(item,field,value)=>{assert.equal(item.key,title);cache[field]=value;if(field==='rank')stored=value;}},title);
   return {stored:stored&&JSON.parse(JSON.stringify(stored)),urls};
 }

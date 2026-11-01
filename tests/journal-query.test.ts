@@ -11,6 +11,8 @@ const normalize = journals.spNormalizeJournalName;
 const response = (all: Record<string, unknown>) => ({ data: { officialRank: { all } } });
 const plain = value => JSON.parse(JSON.stringify(value));
 const root = new URL('../src/', import.meta.url);
+const retryDelay = 10 * 60_000, providerPause = 30 * 60_000;
+const refused = (status: number) => () => { throw Object.assign(new Error(`HTTP ${status}`), { status }); };
 
 test('query-only settings persist across bilingual names, preserve overrides and can be cleared', () => {
   const names = journals.spPublicationNames('Acta Psychologica Sinica');
@@ -63,16 +65,17 @@ async function fixture(prefs: Record<string, unknown> = {}) {
     Zotero: { getMainWindows: () => [], locale: 'en', HTTP: { request: async (_method, _url, options) => {
       const name = JSON.parse(options.body).items[0].query; calls.push(name); return handlers.get(name)?.();
     } } },
-    getHTTPStatus: () => 500, showPublicationTagsError() {},
-    getPublicationTagNotificationPolicy: trigger => ({ showError: trigger === 'context-menu', showResult: trigger !== 'automatic' }),
+    showPublicationTagsError() {},
     publicationRequestScheduler: { run: (_key, fn) => fn() },
     requests: { get: async url => { const name = new URL(url).searchParams.get('publicationName'); calls.push(name); return handlers.get(name)?.(); } }
   };
-  for (const file of ['app/journalLookup.ts', 'app/ui.ts']) vm.runInNewContext(await script(new URL(file, root)), ctx);
-  for (const fn of ['updatePublicationTags', 'getGardenJournalRank']) vm.runInNewContext(await script(new URL('upstream/utils/base.ts', root), fn), ctx);
+  for (const file of ['app/journalLookup.ts', 'app/ui.ts', 'upstream/utils/publicationTagUpdatePolicy.ts']) vm.runInNewContext(await script(new URL(file, root)), ctx);
+  for (const fn of ['updatePublicationTags', 'getGardenJournalRank', 'getHTTPStatus']) vm.runInNewContext(await script(new URL('upstream/utils/base.ts', root), fn), ctx);
+  let time = 0;
+  ctx.publicationTagUpdateBackoff = new ctx.PublicationTagUpdateBackoff(retryDelay, providerPause, { now: () => time });
   const setQuery = (title, queryTitle, fields = {}) => values['publicationTagsColumn.manualRanks'] = JSON.stringify(
     manual.spSaveManualRankRecord(values['publicationTagsColumn.manualRanks'], journals.spPublicationNames(title, values['publicationTagsColumn.aliases']), fields, normalize, queryTitle));
-  return { ctx, values, cache, storage, notices, calls, handlers, setQuery,
+  return { ctx, values, cache, storage, notices, calls, handlers, setQuery, now: () => time, advance: (ms: number) => { time += ms; },
     run: (title, trigger = 'automatic') => ctx.updatePublicationTags(storage, title, trigger) };
 }
 
@@ -145,6 +148,81 @@ test('Garden uses the same query-title and conflict policy', async () => {
   assert.deepEqual(f.calls, ['New', 'Alias']);
   assert.equal(f.cache.get('Old').rank['JCR'], 'Q1'); assert.equal(f.notices.length, 1);
   assert.equal(f.ctx.spGetJournalLookup(f.storage, 'Old').conflicts[0].field, 'JCR');
+});
+
+test('publication tag backoff delays failed journals, pauses refusing providers and forgets expired entries', async () => {
+  const ctx: vm.Context = {}; let time = 0;
+  vm.runInNewContext(await script(new URL('upstream/utils/publicationTagUpdatePolicy.ts', root)), ctx);
+  const backoff = new ctx.PublicationTagUpdateBackoff(600, 1800, { now: () => time });
+  const a = { provider: 'easyscholar', identity: 'a' }, b = { provider: 'easyscholar', identity: 'b' }, c = { provider: 'garden', identity: 'c' };
+  backoff.recordFailure(a);
+  assert.deepEqual([backoff.allows(a), backoff.allows(b)], [false, true]);
+  time = 599; assert.equal(backoff.allows(a), false);
+  time = 600; assert.equal(backoff.allows(a), true); assert.equal(backoff.retryAt.size, 0);
+  backoff.recordFailure(a); backoff.recordSuccess(a); assert.equal(backoff.allows(a), true);
+  for (const status of [0, 404, 500]) backoff.recordProviderStatus('easyscholar', status);
+  assert.equal(backoff.allows(b), true);
+  for (const status of [401, 403, 429]) {
+    backoff.recordProviderStatus('easyscholar', status);
+    assert.deepEqual([backoff.allows(a), backoff.allows(b), backoff.allows(c)], [false, false, true]);
+    time += 1800; assert.equal(backoff.allows(b), true); assert.equal(backoff.pausedUntil.size, 0);
+  }
+});
+
+test('automatic lookups skip a journal whose lookup failed until the retry delay passes', async () => {
+  const f = await fixture();
+  f.handlers.set('Sleep', () => { throw new Error('network'); });
+  f.handlers.set('Other', () => response({ sciif: 2 }));
+  await f.run('Sleep'); await f.run('Sleep');
+  assert.deepEqual(f.calls, ['Sleep']);
+  await f.run('Other'); assert.deepEqual(f.calls, ['Sleep', 'Other']);
+  f.advance(retryDelay - 1); await f.run('Sleep'); assert.deepEqual(f.calls, ['Sleep', 'Other']);
+  f.handlers.set('Sleep', () => response({ sciif: 4 }));
+  f.advance(1); await f.run('Sleep'); assert.deepEqual(f.calls, ['Sleep', 'Other', 'Sleep']);
+  assert.equal(f.cache.get('Sleep').rank['sciif'], '4');
+});
+
+test('a provider answering 401, 403 or 429 pauses its automatic lookups but not the other provider', async () => {
+  for (const status of [401, 403, 429]) {
+    const f = await fixture();
+    f.handlers.set('A', refused(status)); f.handlers.set('B', () => response({ sciif: 1 }));
+    f.handlers.set('C', () => ({ status: 200, response: { results: [{ matched: true, labels: [{ name: 'IF', value: 2 }] }] } }));
+    await f.run('A'); await f.run('B');
+    assert.deepEqual(f.calls, ['A'], `HTTP ${status}`);
+    f.values['publicationTagsColumn.source'] = 'garden';
+    await f.run('C'); assert.deepEqual(f.calls, ['A', 'C']);
+    f.values['publicationTagsColumn.source'] = 'easyscholar';
+    f.advance(providerPause); await f.run('B'); assert.deepEqual(f.calls, ['A', 'C', 'B']);
+  }
+  const f = await fixture();
+  f.handlers.set('A', refused(500)); f.handlers.set('B', () => response({ sciif: 1 }));
+  await f.run('A'); await f.run('B'); assert.deepEqual(f.calls, ['A', 'B']);
+});
+
+test('manual lookups ignore backoffs and a successful one lets automatic lookups of the journal run again', async () => {
+  const f = await fixture();
+  f.handlers.set('A', () => { throw new Error('network'); });
+  await f.run('A'); await f.run('A'); assert.deepEqual(f.calls, ['A']);
+  f.handlers.set('A', () => response({ sciif: 3 }));
+  await f.run('A', 'column-click'); assert.deepEqual(f.calls, ['A', 'A']);
+  await f.run('A'); assert.deepEqual(f.calls, ['A', 'A', 'A']);
+  f.handlers.set('B', refused(403)); await f.run('B');
+  f.handlers.set('B', () => response({ sciif: 5 }));
+  for (const trigger of ['context-menu', 'column-click', 'settings']) await f.run('B', trigger);
+  assert.deepEqual(f.calls, ['A', 'A', 'A', 'B', 'B', 'B', 'B']);
+  assert.equal(f.cache.get('B').rank['sciif'], '5');
+});
+
+test('a throttled provider drops queued automatic requests, but a queued manual request for the same journal still runs', async () => {
+  const f = await fixture();
+  vm.runInNewContext(await script(new URL('upstream/utils/rateLimitedRequestScheduler.ts', root)), f.ctx);
+  // Waiting on a timer lets the throttled answer be handled before the next queued request starts.
+  f.ctx.publicationRequestScheduler = new f.ctx.RateLimitedRequestScheduler(600, { now: f.now,
+    delay: (ms: number) => new Promise(resolve => setTimeout(() => resolve(f.advance(ms)))) });
+  f.handlers.set('A', refused(429)); f.handlers.set('B', () => response({ sciif: 1 }));
+  await Promise.all([f.run('A'), f.run('B'), f.run('C'), f.run('B', 'context-menu')]);
+  assert.deepEqual(f.calls, ['A', 'B']);
+  assert.equal(f.cache.get('B').rank['sciif'], '1');
 });
 
 async function panel(f: Awaited<ReturnType<typeof fixture>>) {

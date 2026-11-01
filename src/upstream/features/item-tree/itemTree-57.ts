@@ -1127,13 +1127,17 @@ ${JSON.stringify(data.data)}`;
         }
         const data = spGetJournalRanks(this.localStorage, publicationTitle);
         if (spGetAutomaticJournalRanks(this.localStorage, publicationTitle) === undefined && getPref("publicationTagsColumn.automaticUpdates") !== false) {
-          this.scheduleTimeout(async () => {
-            try {
-              await updatePublicationTags(this.localStorage, publicationTitle, "automatic");
-            } catch (e) {
-              ztoolkit.log(e);
-            }
-          });
+          if (this.publicationUpdateGate.tryStart(publicationTitle)) {
+            this.scheduleTimeout(async () => {
+              try {
+                await updatePublicationTags(this.localStorage, publicationTitle, "automatic");
+              } catch (e) {
+                ztoolkit.log(e);
+              } finally {
+                this.publicationUpdateGate.finish(publicationTitle);
+              }
+            });
+          }
         }
         if (data == undefined || !data[field]) {
           return {

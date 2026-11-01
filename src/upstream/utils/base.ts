@@ -2,7 +2,7 @@ import { Requests } from "./requests.ts";
 import { RateLimitedRequestScheduler } from "./rateLimitedRequestScheduler.ts";
 import { getString, getErrorMessage } from "./locale.ts";
 import { getPref } from "./prefs.ts";
-import { getPublicationTagNotificationPolicy } from "./publicationTagUpdatePolicy.ts";
+import { getPublicationTagNotificationPolicy, PublicationTagUpdateBackoff } from "./publicationTagUpdatePolicy.ts";
 import { spMergeRanks } from "../../core/journals.ts";
 import { spGetJournalQuery,spGetAutomaticJournalRanks,spStoreJournalLookup } from "../../app/journalLookup.ts";
 import { registerNotify } from "../platform/zotero/notifier.ts";
@@ -124,6 +124,11 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
     now: () => Date.now(),
     delay: milliseconds => Zotero.Promise.delay(milliseconds)
   });
+  export var PUBLICATION_RETRY_DELAY_MS = 10 * 60 * 1000;
+  export var PUBLICATION_PROVIDER_PAUSE_MS = 30 * 60 * 1000;
+  export var publicationTagUpdateBackoff = new PublicationTagUpdateBackoff(PUBLICATION_RETRY_DELAY_MS, PUBLICATION_PROVIDER_PAUSE_MS, {
+    now: () => Date.now()
+  });
   export var lastPublicationTagsErrorNotice = 0;
   export function getHTTPStatus(error) {
     if (!error || typeof error !== "object") {
@@ -175,26 +180,36 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
       return;
     }
     if (!apiKey && garden && !notificationPolicy.showResult) return;
+    // Manual updates ignore the backoff. Automatic requests check it again when they leave the
+    // request queue: a provider that throttled meanwhile must not receive the rest of the queue.
+    const automatic = trigger === "automatic";
+    const backedOff = () => automatic && !publicationTagUpdateBackoff.allows(query);
+    if (backedOff()) return;
+    const skipped = Symbol("skipped");
     const responses = [], failedNames = [];
     let lastError;
     for (const name of query.names) {
       if (localStorage.disposed || query.identity !== spGetJournalQuery(publicationTitle).identity) return;
       try {
-        const response = garden ? await getGardenJournalRank(name, apiKey) : await publicationRequestScheduler.run(`easyscholar:${name}`, () =>
-          requests.get(`https://www.easyscholar.cc/open/getPublicationRank?secretKey=${encodeURIComponent(apiKey)}&publicationName=${encodeURIComponent(name)}`, "json", {}, true));
+        // Manual requests get their own queue entries so they never share a dropped automatic one.
+        const response = await publicationRequestScheduler.run(`${query.provider}:${automatic ? "" : "manual:"}${name}`, () => backedOff() ? skipped : garden
+          ? getGardenJournalRank(name, apiKey)
+          : requests.get(`https://www.easyscholar.cc/open/getPublicationRank?secretKey=${encodeURIComponent(apiKey)}&publicationName=${encodeURIComponent(name)}`, "json", {}, true));
+        if (response === skipped) return;
         if (!response?.data?.officialRank) throw new Error("Journal service returned an invalid response.");
         responses.push({ name, response });
-      } catch (error) { lastError = error; failedNames.push(name); }
-    }
-    if (!responses.length) {
-      if (notificationPolicy.showError || trigger === "settings") showPublicationTagsError({ status: getHTTPStatus(lastError) });
-      return;
+      } catch (error) {
+        lastError = error; failedNames.push(name);
+        publicationTagUpdateBackoff.recordProviderStatus(query.provider, getHTTPStatus(error));
+      }
     }
     const result = spMergeRanks(responses);
-    if (!Object.keys(result.rank).length && lastError) {
+    if (!responses.length || !Object.keys(result.rank).length && lastError) {
+      if (automatic) publicationTagUpdateBackoff.recordFailure(query);
       if (notificationPolicy.showError || trigger === "settings") showPublicationTagsError({ status: getHTTPStatus(lastError) });
       return;
     }
+    publicationTagUpdateBackoff.recordSuccess(query);
     if (lastError) {
       const previous = spGetAutomaticJournalRanks(localStorage, publicationTitle);
       if (previous && typeof previous === "object") result.rank = { ...previous, ...result.rank };
@@ -210,11 +225,11 @@ import { findAnnotationColorName } from "../features/annotations/annotationColor
     return Object.keys(result.rank).length ? 1 : 0;
   }
   export async function getGardenJournalRank(name, apiKey) {
-    const res = await publicationRequestScheduler.run(`garden:${name}`, () => Zotero.HTTP.request("POST", "https://soil.magiczotero.top/v1/journal-labels/query", {
+    const res = await Zotero.HTTP.request("POST", "https://soil.magiczotero.top/v1/journal-labels/query", {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ items: [{ query: name }], include_paid: true }),
       responseType: "json"
-    }));
+    });
     if (res.status !== 200) throw Object.assign(new Error("Garden request failed"), { status: res.status });
     const result = res.response?.results?.[0];
     if (!result || (result.matched && !Array.isArray(result.labels))) throw new Error("Garden returned an invalid response.");

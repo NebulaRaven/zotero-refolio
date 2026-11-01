@@ -159,6 +159,31 @@ test('actual journal columns render manual values while still fetching missing a
   assert.equal(columns.get('publicationTags')({}).data.sci, 'Q2');
   assert.equal(columns.get('IF')({}).data, '0'); assert.equal(queued, 2);
 });
+test('the IF column shares the publication tag update gate, so each title has one pending automatic lookup', async () => {
+  const prefs = { 'publicationTagsColumn.sortBy': 'sci', 'publicationColumn.fields': 'publicationTitle', 'IFColumn.field': 'sciif' };
+  let title = 'Sleep'; const updates = [];
+  const ctx: vm.Context = { getPref: key => prefs[key], getString: testGetString, spPublicationNames, spNormalizeJournalName, spJournalQuery, spManualRankRecord, spReadManualRanks, spEffectiveRanks,
+    getPublicationTitle: () => title, updatePublicationTags: async (_storage, journal, trigger) => { updates.push([journal, trigger]); },
+    import_dayjs: { default: { extend() {}, locale() {} } }, import_relativeTime: {}, import_utc: {}, getDayjsLocale: () => 'en',
+    Zotero: { locale: 'en', Prefs: { get: key => prefs[key.replace('stylepersonal.', '')] } }, config: { addonRef: 'stylepersonal' } };
+  for (const file of ['src/app/journalLookup.ts', 'src/app/manualRanks.ts', 'src/upstream/utils/easyscholar.ts', 'src/upstream/utils/keyedTaskGate.ts', 'src/upstream/features/item-tree/itemTree-57.ts']) {
+    vm.runInNewContext(await script(new URL('../'+file, import.meta.url)), ctx);
+  }
+  const columns = new Map(), timers: Array<() => Promise<void>> = [];
+  const host = { localStorage: { lock: { promise: Promise.resolve() }, get: () => undefined },
+    publicationUpdateGate: new ctx.KeyedTaskGate(), scheduleTimeout: callback => timers.push(callback), patchSetting() {}, patchItemBox() {},
+    registerColumn: async (key, provider) => columns.set(key, provider) };
+  await ctx.ItemTree.prototype.IF.call(host);
+  await ctx.ItemTree.prototype.publicationTags.call(host);
+  for (let i = 0; i < 3; i++) { columns.get('IF')({}); columns.get('publicationTags')({}); }
+  assert.equal(timers.length, 1);
+  title = 'Nature'; columns.get('IF')({}); columns.get('IF')({});
+  assert.equal(timers.length, 2);
+  await Promise.all(timers.splice(0).map(run => run()));
+  assert.deepEqual(updates, [['Sleep', 'automatic'], ['Nature', 'automatic']]);
+  // A finished lookup releases the title, so a later render can try again.
+  columns.get('IF')({}); assert.equal(timers.length, 1);
+});
 
 const claim = (id, extra = {}) => ({ rank: 'normal', mainsnak: { datavalue: { value: { id } } }, ...extra });
 const person = (id, claims = {}) => ({ id, labels: { en: { value: `Person ${id}` } }, claims: { P31: [claim('Q5')], ...claims } });
