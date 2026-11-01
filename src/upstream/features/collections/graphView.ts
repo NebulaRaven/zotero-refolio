@@ -264,7 +264,8 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
     async getGraph() {
       const mode = this.mode;
       if (!mode) return { nodes: {} };
-      const items = ZoteroPane.getSortedItems();
+      // The trash also lists deleted collections and searches, which have none of the item methods.
+      const items = ZoteroPane.getSortedItems().filter(item => item instanceof Zotero.Item);
       const collection = getFirstSelectedCollection();
       const context = `${mode}:${getFirstSelectedLibraryID()}:${collection?.key || "library"}`;
       const raw: GraphData = await this.modeFunction[mode](items);
@@ -276,8 +277,6 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
         if (node.type !== "item") continue;
         const item = Zotero.Items.get(Number(id));
         if (!item) continue;
-        node.label = this.getItemDisplayText(item);
-        node.fullLabel = item.getDisplayTitle?.() || item.getField("title") || node.label;
         let date = "";
         try { date = item.getField("date") || ""; } catch {}
         const year = String(date).match(/\b(\d{4})\b/);
@@ -290,6 +289,14 @@ import { spPromptEmptyCitationGraph } from "../../../app/citationPrompts.ts";
       };
       const seeds = ZoteroPane.getSelectedItems().map(item => item.id);
       const graph = spFilterGraph(raw, seeds, options);
+      // Labels are only needed for what is drawn; the filtered nodes are copies, so the raw graph keeps none.
+      for (const [id, node] of Object.entries(graph.nodes)) {
+        if (node.type !== "item") continue;
+        const item = Zotero.Items.get(Number(id));
+        if (!item) continue;
+        node.label = this.getItemDisplayText(item);
+        node.fullLabel = item.getDisplayTitle?.() || item.getField("title") || node.label;
+      }
       graph.totalNodes = Object.keys(raw.nodes).length;
       graph.noSelection = options.scope === "selected" && !seeds.length;
       graph.yearFiltered = Boolean(options.minYear || options.maxYear);
