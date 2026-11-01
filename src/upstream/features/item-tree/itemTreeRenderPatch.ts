@@ -2,17 +2,17 @@
     const originalRenderCell = prototype._renderCell;
     const patchedRenderCell = function (index, data, column, isFirstColumn) {
       const cell = originalRenderCell.call(this, index, data, column, isFirstColumn);
-      const patch2 = patches.find(({
+      const patch = patches.find(({
         key
       }) => key === column?.dataKey);
-      if (!patch2) {
+      if (!patch) {
         return cell;
       }
       try {
         if (!isEnabled()) {
           return cell;
         }
-        return patch2.renderCell(cell, index, this.getRow?.(index)?.ref);
+        return patch.renderCell(cell, index, this.getRow?.(index)?.ref);
       } catch (error) {
         try {
           onError(error);

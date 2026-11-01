@@ -138,11 +138,11 @@ import { registerNotify } from "../../platform/zotero/notifier.ts";
         }
         attItems = [];
         const ids = toplevelItem.getAttachments(false);
-        for (const id2 of ids) {
+        for (const attachmentID of ids) {
           if (!active) {
             return;
           }
-          const attItem = await Zotero.Items.getAsync(id2);
+          const attItem = await Zotero.Items.getAsync(attachmentID);
           if (!active) {
             return;
           }

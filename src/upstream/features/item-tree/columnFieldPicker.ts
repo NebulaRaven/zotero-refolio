@@ -1,7 +1,7 @@
 import { getElements } from "../../utils/dom.ts";
-  export function createFieldIcon(document2, kind) {
+  export function createFieldIcon(doc, kind) {
     const namespace = "http://www.w3.org/2000/svg";
-    const icon = document2.createElementNS(namespace, "svg");
+    const icon = doc.createElementNS(namespace, "svg");
     icon.setAttribute("class", `field-icon field-${kind}`);
     icon.setAttribute("viewBox", "0 0 16 16");
     icon.setAttribute("width", "12");
@@ -12,7 +12,7 @@ import { getElements } from "../../utils/dom.ts";
     icon.setAttribute("stroke-linecap", "round");
     icon.setAttribute("aria-hidden", "true");
     icon.setAttribute("focusable", "false");
-    const path = document2.createElementNS(namespace, "path");
+    const path = doc.createElementNS(namespace, "path");
     path.setAttribute("d", kind === "remove" ? "M4 4L12 12M12 4L4 12" : "M8 3V13M3 8H13");
     icon.append(path);
     return icon;
@@ -38,20 +38,20 @@ import { getElements } from "../../utils/dom.ts";
     return reordered;
   }
   export function mountColumnFieldPicker(input, options) {
-    const document2 = input.ownerDocument;
-    const view = document2.defaultView;
+    const doc = input.ownerDocument;
+    const view = doc.defaultView;
     if (!view || !input.parentNode) {
       return () => {};
     }
-    const source = document2.querySelector(`[data-bind="${options.sourcePrefKey}"]`);
-    const watchedControls = new Set([source, ...(options.watchPrefKeys ?? []).map(key => document2.querySelector(`[data-bind="${key}"]`))].filter(control => control !== null));
+    const source = doc.querySelector(`[data-bind="${options.sourcePrefKey}"]`);
+    const watchedControls = new Set([source, ...(options.watchPrefKeys ?? []).map(key => doc.querySelector(`[data-bind="${key}"]`))].filter(control => control !== null));
     const previousDisplay = input.style.display;
     const previousHidden = input.hidden;
     const previousPickerAttribute = input.getAttribute("data-field-picker-input");
-    const root = document2.createElement("div");
+    const root = doc.createElement("div");
     root.className = "style-column-field-picker";
-    const style2 = document2.createElement("style");
-    style2.textContent = `
+    const style = doc.createElement("style");
+    style.textContent = `
     input[data-field-picker-input] { display: none !important; }
     .style-column-field-picker { position: relative; width: 100%; min-width: 0; font: inherit; color: var(--fill-primary); }
     .style-column-field-picker .field-selection { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-height: 32px; padding: 6px !important; border: var(--material-border); border-radius: 4px; background: var(--material-background); }
@@ -77,18 +77,18 @@ import { getElements } from "../../utils/dom.ts";
     .style-column-field-picker .field-option-description { flex: 1; min-width: 0; overflow: hidden; color: var(--fill-secondary); font-size: .85em; font-weight: normal; line-height: 1.5; padding: 3px 0; text-overflow: ellipsis; white-space: nowrap; }
     .style-column-field-picker .field-empty { padding: 6px; color: var(--fill-secondary); }
   `;
-    const selection = document2.createElement("div");
+    const selection = doc.createElement("div");
     selection.className = "field-selection";
     selection.setAttribute("role", "group");
     selection.setAttribute("aria-label", options.selectLabel);
-    const panel = document2.createElement("div");
+    const panel = doc.createElement("div");
     panel.className = "field-options";
     panel.id = `field-options-${input.getAttribute("data-bind")}`;
     panel.setAttribute("role", "listbox");
     panel.setAttribute("aria-multiselectable", "true");
     panel.setAttribute("aria-label", options.selectLabel);
     panel.hidden = true;
-    root.append(style2, selection, panel);
+    root.append(style, selection, panel);
     input.after(root);
     input.setAttribute("data-field-picker-input", "true");
     input.hidden = true;
@@ -132,14 +132,14 @@ import { getElements } from "../../utils/dom.ts";
         return;
       }
       const fields = parseColumnFields(input.value);
-      const available = options.getOptions(source?.value, document2);
+      const available = options.getOptions(source?.value, doc);
       const descriptions = new Map(available.map(option => [option.value, option.description]));
       const appearances = new Map<string, { backgroundColor: string; color: string }>(available.map(option => [option.value, option.appearance]));
       cancelAnimations();
       selection.replaceChildren();
       panel.replaceChildren();
       for (const field of fields) {
-        const chip = document2.createElement("div");
+        const chip = doc.createElement("div");
         chip.className = descriptions.has(field) ? "field-chip" : "field-chip field-chip-unavailable";
         chip.dataset.field = field;
         const appearance = appearances.get(field);
@@ -150,14 +150,14 @@ import { getElements } from "../../utils/dom.ts";
         chip.title = `${field}
 ${descriptions.get(field) ?? options.unavailableLabel}`;
         chip.setAttribute("role", "listitem");
-        const label = document2.createElement("span");
+        const label = doc.createElement("span");
         label.className = "field-chip-label";
         label.textContent = field;
-        const remove = document2.createElement("button");
+        const remove = doc.createElement("button");
         remove.type = "button";
         remove.className = "field-remove";
         remove.setAttribute("aria-label", `${options.removeLabel}: ${field}`);
-        remove.append(createFieldIcon(document2, "remove"));
+        remove.append(createFieldIcon(doc, "remove"));
         remove.addEventListener("click", () => {
           save(toggleColumnField(parseColumnFields(input.value), field));
           toggle.focus();
@@ -177,12 +177,12 @@ ${descriptions.get(field) ?? options.unavailableLabel}`;
         chip.append(label, remove);
         selection.append(chip);
       }
-      toggle = document2.createElement("button");
+      toggle = doc.createElement("button");
       toggle.type = "button";
       toggle.className = "field-toggle";
-      const toggleLabel = document2.createElement("span");
+      const toggleLabel = doc.createElement("span");
       toggleLabel.textContent = options.selectLabel;
-      toggle.append(createFieldIcon(document2, "add"), toggleLabel);
+      toggle.append(createFieldIcon(doc, "add"), toggleLabel);
       toggle.setAttribute("aria-haspopup", "listbox");
       toggle.setAttribute("aria-expanded", String(expanded));
       toggle.setAttribute("aria-controls", panel.id);
@@ -198,25 +198,25 @@ ${descriptions.get(field) ?? options.unavailableLabel}`;
       selection.append(toggle);
       const remaining = available.filter(option => !fields.includes(option.value));
       if (remaining.length === 0) {
-        const empty = document2.createElement("div");
+        const empty = doc.createElement("div");
         empty.className = "field-empty";
         empty.textContent = options.emptyLabel;
         empty.setAttribute("role", "status");
         panel.append(empty);
       }
       for (const [index, option] of remaining.entries()) {
-        const button = document2.createElement("button");
+        const button = doc.createElement("button");
         button.type = "button";
         button.className = "field-option";
         button.dataset.field = option.value;
-        const label = document2.createElement("span");
+        const label = doc.createElement("span");
         label.className = "field-option-label";
         label.textContent = option.value;
         if (option.appearance) {
           button.style.setProperty("--field-background", option.appearance.backgroundColor);
           button.style.setProperty("--field-text", option.appearance.color);
         }
-        const description = document2.createElement("span");
+        const description = doc.createElement("span");
         description.className = "field-option-description";
         description.textContent = option.description;
         button.append(label, description);
@@ -247,8 +247,8 @@ ${option.description}`;
         return;
       }
       draggedChip = chip;
-      document2.addEventListener("mousemove", onMouseMove);
-      document2.addEventListener("mouseup", onMouseUp);
+      doc.addEventListener("mousemove", onMouseMove);
+      doc.addEventListener("mouseup", onMouseUp);
       dragChanged = false;
       dragStarted = false;
       dragStartX = event.clientX;
@@ -334,8 +334,8 @@ ${option.description}`;
       });
     };
     const stopTrackingDrag = () => {
-      document2.removeEventListener("mousemove", onMouseMove);
-      document2.removeEventListener("mouseup", onMouseUp);
+      doc.removeEventListener("mousemove", onMouseMove);
+      doc.removeEventListener("mouseup", onMouseUp);
       if (moveFrame !== undefined) view.cancelAnimationFrame(moveFrame);
       moveFrame = undefined;
     };
@@ -400,7 +400,7 @@ ${option.description}`;
       control.addEventListener("input", render);
       control.addEventListener("change", render);
     }
-    document2.addEventListener("click", outsideClick);
+    doc.addEventListener("click", outsideClick);
     root.addEventListener("mousedown", onMouseDown);
     panel.addEventListener("wheel", onWheel, {
       passive: false
@@ -417,7 +417,7 @@ ${option.description}`;
         control.removeEventListener("input", render);
         control.removeEventListener("change", render);
       }
-      document2.removeEventListener("click", outsideClick);
+      doc.removeEventListener("click", outsideClick);
       panel.removeEventListener("wheel", onWheel);
       root.removeEventListener("mousedown", onMouseDown);
       stopTrackingDrag();

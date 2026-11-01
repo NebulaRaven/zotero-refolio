@@ -28,12 +28,12 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
         id: `${config.addonRef}-fulltext-translate`,
         name: getString("fulltext-translate"),
         label: "Refolio",
-        callback: async prompt2 => {
+        callback: async palette => {
           if (this.disposed) {
             return;
           }
-          for (const controller2 of this.activeAbortControllers) {
-            controller2.abort();
+          for (const previousController of this.activeAbortControllers) {
+            previousController.abort();
           }
           const controller = new AbortController();
           this.activeAbortControllers.add(controller);
@@ -44,8 +44,8 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
           let attItem;
           try {
             if (Zotero_Tabs.selectedID == "zotero-pane") {
-              const item2 = ZoteroPane.getSelectedItems()?.[0];
-              attItem = await item2?.getBestAttachment();
+              const selectedItem = ZoteroPane.getSelectedItems()?.[0];
+              attItem = await selectedItem?.getBestAttachment();
             } else {
               attItem = Zotero.Reader.getByTabID(Zotero_Tabs.selectedID)._item;
             }
@@ -55,7 +55,7 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
               return;
             }
             const item = attItem.parentItem;
-            this.infoContainer = prompt2.createCommandsContainer();
+            this.infoContainer = palette.createCommandsContainer();
             this.infoContainer.style.padding = "1em";
             this.infoContainer.style.display = "flex";
             this.infoContainer.style.flexDirection = "column";
@@ -86,7 +86,7 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
             if (this.disposed || signal.aborted) {
               return;
             }
-            prompt2.exit();
+            palette.exit();
           }, 3000);
           this.exitTimers.add(timer);
         }
@@ -582,8 +582,8 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
         const index = parseInt(indexStr);
         const item = this.mathCache[index];
         if (item && item.base64) {
-          const style2 = item.isBlock ? `display: block; margin: 1em auto; max-width: 100%;` : `display: inline-block; vertical-align: middle; max-width: 100%;`;
-          return `<img src="${item.base64}" style="${style2}" alt="${this.escapeHtml(getString("ui-formula"))}" />`;
+          const style = item.isBlock ? `display: block; margin: 1em auto; max-width: 100%;` : `display: inline-block; vertical-align: middle; max-width: 100%;`;
+          return `<img src="${item.base64}" style="${style}" alt="${this.escapeHtml(getString("ui-formula"))}" />`;
         }
         if (item) {
           if (item.isBlock) {

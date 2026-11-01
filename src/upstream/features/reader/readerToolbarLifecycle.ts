@@ -7,9 +7,9 @@
     if (!isActive()) {
       return false;
     }
-    const document2 = getDocument(reader);
-    if (document2) {
-      return render(reader, document2);
+    const readerDocument = getDocument(reader);
+    if (readerDocument) {
+      return render(reader, readerDocument);
     } else {
       return false;
     }

@@ -112,9 +112,9 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
         } catch {}
       }
       resources.buttons.clear();
-      for (const style2 of resources.styleElements) {
+      for (const style of resources.styleElements) {
         try {
-          style2.remove();
+          style.remove();
         } catch {}
       }
       resources.styleElements.clear();
@@ -142,7 +142,7 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
         element.remove();
       });
       if (cssString) {
-        const style2 = ztoolkit.UI.appendElement({
+        const style = ztoolkit.UI.appendElement({
           enableElementRecord: false,
           tag: "style",
           id,
@@ -151,7 +151,7 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
             innerHTML: cssString
           }
         }, head);
-        resources.styleElements.add(style2);
+        resources.styleElements.add(style);
       }
     }
     setColor(resources, win, color) {
@@ -237,10 +237,10 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
       } else {
         this.addCSS(resources, heads[0], cssObj.id, cssObj.cssString);
       }
-      const win1 = reader?._internalReader?._primaryView?._iframeWindow;
-      this.setColor(resources, win1, color);
-      const win2 = reader?._internalReader?._secondaryView?._iframeWindow;
-      this.setColor(resources, win2, color);
+      const primaryViewWindow = reader?._internalReader?._primaryView?._iframeWindow;
+      this.setColor(resources, primaryViewWindow, color);
+      const secondaryViewWindow = reader?._internalReader?._secondaryView?._iframeWindow;
+      this.setColor(resources, secondaryViewWindow, color);
       this.refresh();
       reader.currentPDFStyle = currentPDFStyle;
     }
@@ -252,13 +252,13 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
       if (!this.isReaderResourceActive(reader, resources)) {
         return;
       }
-      const setPref2 = PDFStyles3 => {
-        setPref(`PDFStyles`, JSON.stringify(PDFStyles3));
+      const savePDFStyles = pdfStyles => {
+        setPref(`PDFStyles`, JSON.stringify(pdfStyles));
       };
-      const getPref2 = () => {
-        let PDFStyles3 = JSON.parse(String(getPref(`PDFStyles`) || "[]"));
-        if (!PDFStyles3.find(i => i.color?.length > 0)) {
-          PDFStyles3 = [{
+      const loadPDFStyles = () => {
+        let pdfStyles = JSON.parse(String(getPref(`PDFStyles`) || "[]"));
+        if (!pdfStyles.find(i => i.color?.length > 0)) {
+          pdfStyles = [{
             name: "☀️",
             selected: false,
             css: `
@@ -298,15 +298,15 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
             color: `#e2eccd`
           }];
         }
-        return PDFStyles3;
+        return pdfStyles;
       };
       const addUpdatePref = async (index = -1) => {
         const updating = index >= 0;
-        const PDFStyles3 = getPref2();
+        const pdfStyles = loadPDFStyles();
         const dialogData: { name: any; color: any; css: any; } & { _lastButtonId?: string; unloadLock?: { promise: Promise<void> } } = {
-          name: PDFStyles3[index]?.name,
-          color: PDFStyles3[index]?.color,
-          css: PDFStyles3[index]?.css
+          name: pdfStyles[index]?.name,
+          color: pdfStyles[index]?.color,
+          css: pdfStyles[index]?.css
         };
         const dialog = new ztoolkit.Dialog(3, 1).setDialogData(dialogData).addCell(0, 0, {
           tag: "input",
@@ -373,15 +373,15 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
         }
         if (dialogData._lastButtonId == "addUpdate") {
           if (index >= 0) {
-            PDFStyles3[index].name = dialogData.name;
-            PDFStyles3[index].css = dialogData.css;
-            PDFStyles3[index].color = dialogData.color;
+            pdfStyles[index].name = dialogData.name;
+            pdfStyles[index].css = dialogData.css;
+            pdfStyles[index].color = dialogData.color;
             new ztoolkit.ProgressWindow(config.addonName).createLine({
               text: getString("ui-update"),
               type: "success"
             }).show();
           } else {
-            PDFStyles3.push({
+            pdfStyles.push({
               name: dialogData.name,
               css: dialogData.css,
               color: dialogData.color,
@@ -394,20 +394,20 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
           }
         }
         if (dialogData._lastButtonId == "remove") {
-          PDFStyles3.splice(index, 1);
+          pdfStyles.splice(index, 1);
           new ztoolkit.ProgressWindow(config.addonName).createLine({
             text: getString("ui-remove"),
             type: "success"
           }).show();
         }
-        setPref2(PDFStyles3);
-        const PDFStyle2 = PDFStyles3.find(e => e.selected);
-        if (PDFStyle2) {
+        savePDFStyles(pdfStyles);
+        const selectedStyle = pdfStyles.find(e => e.selected);
+        if (selectedStyle) {
           this.addPDFStyle({
             id: "pdf-css",
-            cssString: PDFStyle2.css,
+            cssString: selectedStyle.css,
             replace: true
-          }, PDFStyle2.color);
+          }, selectedStyle.color);
         }
       };
       let readerWin;
@@ -421,8 +421,8 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
       if (!this.isReaderResourceActive(reader, resources) || !readerWin || !viewerWin) {
         return;
       }
-      const PDFStyles2 = getPref2();
-      const PDFStyle = PDFStyles2.find(e => e.selected);
+      const savedStyles = loadPDFStyles();
+      const PDFStyle = savedStyles.find(e => e.selected);
       if (PDFStyle) {
         this.addPDFStyle({
           id: "pdf-css",
@@ -449,7 +449,7 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
         if (!this.isReaderResourceActive(reader, resources)) {
           return;
         }
-        const PDFStyles3 = getPref2();
+        const pdfStyles = loadPDFStyles();
         const menupopup = ztoolkit.UI.appendElement({
           enableElementRecord: false,
           tag: "menupopup",
@@ -467,32 +467,32 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
           resources.menuPopupCleanups.delete(closePopup);
         });
         resources.menuPopupCleanups.add(closePopup);
-        for (const PDFStyle2 of PDFStyles3) {
+        for (const style of pdfStyles) {
           const menuitem = ztoolkit.UI.appendElement({
             enableElementRecord: false,
             tag: "menuitem",
             attributes: {
-              label: PDFStyle2.name
+              label: style.name
             },
             styles: {
-              backgroundColor: PDFStyle2.selected ? "#0078d7" : "",
-              color: PDFStyle2.selected ? "#fff" : ""
+              backgroundColor: style.selected ? "#0078d7" : "",
+              color: style.selected ? "#fff" : ""
             }
           }, menupopup);
           menuitem.addEventListener("command", () => {
             if (!this.isReaderResourceActive(reader, resources)) {
               return;
             }
-            PDFStyle2.selected = !PDFStyle2.selected;
-            if (PDFStyle2.selected) {
+            style.selected = !style.selected;
+            if (style.selected) {
               this.addPDFStyle({
                 id: "pdf-css",
-                cssString: PDFStyle2.css,
+                cssString: style.css,
                 replace: false
-              }, PDFStyle2.color);
+              }, style.color);
               menuitem.classList.add("selected");
-              PDFStyles3.forEach(e => e.selected = false);
-              PDFStyle2.selected = true;
+              pdfStyles.forEach(e => e.selected = false);
+              style.selected = true;
             } else {
               this.addPDFStyle({
                 id: "pdf-css",
@@ -501,7 +501,7 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
               }, "");
               menuitem.classList.remove("selected");
             }
-            setPref2(PDFStyles3);
+            savePDFStyles(pdfStyles);
           });
           let timer;
           menuitem.addEventListener("mousedown", () => {
@@ -517,7 +517,7 @@ import { ownTemporaryMenuPopup } from "../../platform/zotero/menu.ts";
               if (!this.isReaderResourceActive(reader, resources)) {
                 return;
               }
-              addUpdatePref(PDFStyles3.indexOf(PDFStyle2));
+              addUpdatePref(pdfStyles.indexOf(style));
             }, 1000);
             resources.timers.add(timer);
             popupTimers.add(timer);

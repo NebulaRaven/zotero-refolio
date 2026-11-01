@@ -290,10 +290,10 @@ import { spRegisterMenu } from "../../../app/menus.ts";
       if (!library) throw new Error(`Library not found: ${libraryID}`);
       const groupName = library.name;
       const names = [];
-      const getCollectionState = key2 => {
-        const col = Zotero.Collections.getByLibraryAndKey(libraryID, key2) || Zotero.Searches.getByLibraryAndKey(libraryID, key2);
+      const getCollectionState = collectionKey => {
+        const col = Zotero.Collections.getByLibraryAndKey(libraryID, collectionKey) || Zotero.Searches.getByLibraryAndKey(libraryID, collectionKey);
         if (!col) {
-          throw new Error(`Collection not found: ${libraryID}/${key2}`);
+          throw new Error(`Collection not found: ${libraryID}/${collectionKey}`);
         }
         names.push(col.name);
         return {

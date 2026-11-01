@@ -94,7 +94,7 @@ import { getElements } from "../../utils/dom.ts";
         columns,
         getPrefs,
         storePrefs,
-        resize: typeof columnModel.onResize === "function" ? (widths, storePrefs2 = false) => columnModel.onResize(widths, storePrefs2) : undefined
+        resize: typeof columnModel.onResize === "function" ? (widths, shouldStorePrefs = false) => columnModel.onResize(widths, shouldStorePrefs) : undefined
       };
     }
     async switchViewGroup(viewGroup) {
@@ -233,8 +233,8 @@ import { getElements } from "../../utils/dom.ts";
     buildRightMenu() {
       const buildMenu = () => {
         this.schedule(() => {
-          const sort = columnsViews2 => {
-            return columnsViews2.sort((a, b) => Number(a.position) - Number(b.position));
+          const sort = views => {
+            return views.sort((a, b) => Number(a.position) - Number(b.position));
           };
           const addUpdateView = (columnsView, updating = false) => {
             const dialogData: { name: any; position: any; content: any; shortcut: any; recordCurrentView: boolean; loadCallback: () => void; unloadCallback: () => void; } & { _lastButtonId?: string; unloadLock?: { promise: Promise<void> } } = {
