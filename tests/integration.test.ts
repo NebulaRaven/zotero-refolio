@@ -14,7 +14,6 @@ test('assembled plugin parses, has its own namespace, and contains no Pro author
   const source=await assemble(); new vm.Script(source);
   assert.ok(source.includes('addonInstance: "StylePersonal"'));
   assert.ok(!/pro\.muisedestiny|ethereal-pro-|ProtectedPro|enrollmentToken|createProRuntime/.test(source));
-  assert.ok(!source.includes('rename(1, tag2'));
   assert.ok(source.includes('io._lastButtonId === "tag-rename"'));
 });
 test('defaults stay within the fork namespace and do not create a reading-progress library item',async()=>{

@@ -259,3 +259,38 @@ test('the nested tag search compiles its pattern once and filters tag segments a
   assert.deepEqual(await search('  '), ['#A/B', '#A/C', '#A/D', '#A/E', '#Highlight', '#Image', '#Note', '#PDF', '#Standalone', '#Sub']);
   await assert.rejects(search('c++'), SyntaxError);
 });
+
+test('renaming and removing a nested tag act on the library selected in the collection tree', async () => {
+  const calls = [];
+  let menu = [];
+  const element = () => ({ style: {}, classList: { contains: () => false, add() {}, remove() {} }, querySelector: () => element() });
+  const rendered = [];
+  const ctx = await load({
+    getPref: key => key === 'nestedTags.sorted' ? '0' : undefined, getFirstSelectedLibraryID: () => 7,
+    Zotero: { isMac: false, Prefs: { get: () => true }, Libraries: { userLibraryID: 1 }, Tags: { getAll: async () => [{ tag: '#A/B' }, { tag: '#A/C' }] } },
+    ztoolkit: { log: assert.fail, UI: { appendElement: options => { rendered.push(options); return element(); }, insertElementBefore: () => element() },
+      Dialog: class {
+        io: Record<string, unknown>;
+        addCell() { return this; }
+        addButton() { return this; }
+        setDialogData(io) { this.io = io; return this; }
+        open() { Object.assign(this.io, { tagName: '#Z', _lastButtonId: 'tag-rename', unloadLock: { promise: Promise.resolve() } }); }
+      } },
+    buildMenuPopup: (_position, items) => { menu = items; },
+    spTagWithin: (tag, parent) => tag === parent || tag.startsWith(parent + '/'),
+    spRenameTags: async (_zotero, libraryID, from, to) => { calls.push(['rename', libraryID, from, to]); },
+    spRemoveTags: async (_zotero, libraryID, parent) => { calls.push(['remove', libraryID, parent]); },
+    window: { setTimeout() {}, clearTimeout() {}, confirm: () => true, alert: assert.fail }
+  });
+  const tags = Object.assign(Object.create(ctx.Tags.prototype), { active: true, timers: new Set(), state: {}, linkSymbol: '/',
+    containerID: 'zotero-tag-selector', tagsIn: { items: [], collection: [] }, props: { sorted: [], item: { padding: 6 }, icon: { size: 10, right: 3, svg: '' }, tree: { size: 2 } },
+    plainTags: [['#A/B', 1], ['#A/C', 1]], init: async () => {} });
+  tags.render(element(), tags.getNestedTags(), 0);
+  const label = rendered[0].children[0].children[0].children[0];
+  assert.equal(label.properties.textContent, 'A');
+  await label.listeners.find(listener => listener.type === 'mouseup').listener({ button: 2, screenX: 0, screenY: 0 });
+  const command = label => menu.find(item => item.attributes?.label === testGetString(label)).listeners[0].listener();
+  await command('ui-rename');
+  await command('ui-remove');
+  assert.deepEqual(calls, [['rename', 7, '#A', '#Z'], ['remove', 7, '#A']]);
+});
