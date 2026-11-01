@@ -3,7 +3,10 @@ import type { GraphView } from '../upstream/features/collections/graphView.ts';
 import { spElement,spGenealogyOptions,spSelect,spSelectOptions } from "./ui.ts";
 import { spDeleteManualGenealogy,spReadManualGenealogy,spRestoreManualGenealogy,spSaveManualGenealogy } from "../core/manualGenealogy.ts";
 import { getPref,setPref } from "../upstream/utils/prefs.ts";
+import type { GenealogyKind } from "../core/models.ts";
 // SPDX-License-Identifier: AGPL-3.0-or-later
+/** The control each kind of editor field builds: an input, a menulist or a textarea. */
+interface FieldElements { input: HTMLInputElement; select: XULMenuListElement; textarea: HTMLTextAreaElement }
 export function spBuildManualGenealogyControls(view: GraphView, parent: HTMLElement, showManual) {
   const doc = parent.ownerDocument;
   const create = spElement.bind(null, doc);
@@ -19,9 +22,10 @@ export function spBuildManualGenealogyControls(view: GraphView, parent: HTMLElem
     for (const [id, person] of Object.entries(view.genealogyData?.nodes || {})) if (id.startsWith("Q") || !result[id]) result[id] = {label: person.label || id, description: person.description || ""};
     return result;
   };
-  const field = (label, tag = "input") => {
+  // T names the field's element. TypeScript cannot narrow T from the default tag or from tag === "select", hence the assertions.
+  const field = <T extends keyof FieldElements = "input">(label: string, tag = "input" as T): FieldElements[T] => {
     const row = create("label", form, label), input = tag === "select" ? spSelect(doc, row) : create(tag, row);
-    input.setAttribute("aria-label", label); return input;
+    input.setAttribute("aria-label", label); return input as FieldElements[T];
   };
   const personFields = (role, nameLabel, descriptionLabel) => {
     const choice = field(role, "select"), name = field(nameLabel), description = field(descriptionLabel);
@@ -87,8 +91,9 @@ export function spBuildManualGenealogyControls(view: GraphView, parent: HTMLElem
     }
   };
   save.addEventListener("click", () => run(async () => {
+    // kind offers only spGenealogyOptions() values, and spSaveManualGenealogy rejects any other kind.
     const result = spSaveManualGenealogy(getPref("genealogy.manualData"), { id: editing || undefined,
-      mentor: mentor.value(), student: student.value(), kind: kind.value, sourceURL: source.value, note: note.value }, () => doc.defaultView.crypto.randomUUID());
+      mentor: mentor.value(), student: student.value(), kind: kind.value as GenealogyKind, sourceURL: source.value, note: note.value }, () => doc.defaultView.crypto.randomUUID());
     setPref("genealogy.manualData", JSON.stringify(result.data));
     const savedKind = kind.value; await showManual(savedKind); reset(); renderList();
     message.textContent = getString("ui-relationship-saved-locally");

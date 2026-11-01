@@ -12,7 +12,7 @@ export function spRegisterMenu<T extends MenuTarget>(options: RefolioMenuOptions
   const existing = registrations.get(options.menuID);
   if (existing) existing.users++;
   else {
-    const key = Zotero.MenuManager.registerMenu({ ...options, pluginID: config.addonID } as _ZoteroTypes.MenuManager.MenuOptions);
+    const key = Zotero.MenuManager.registerMenu({ ...options, pluginID: config.addonID });
     if (!key) throw new Error(`Unable to register menu ${options.menuID}`);
     registrations.set(options.menuID, { key, users: 1 });
   }

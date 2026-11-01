@@ -6,12 +6,15 @@ declare global {
   namespace Zotero {
     let StylePersonal: Addon;
     let _AddonItemGlobal: AddonItem | undefined;
-    const CollectionTreeRow: { prototype: CollectionTreeRow };
+    // zotero-types declares getChildren() as returning one Collection or Feed; collectionTreeRow.js returns the child collections or feeds.
+    const CollectionTreeRow: { prototype: Omit<CollectionTreeRow, "getChildren"> & { getChildren(): Collection[] | Feed[] | undefined } };
     const TagSelector: { init(container: Element, options: { container: string; onSelection: (data: unknown) => Promise<void> }): Promise<_ZoteroTypes.RefolioTagSelector> };
     const BetterNotes: { data: { workspace: { mainId: string } } } | undefined;
     const PDFTranslate: { api: { translate(text: string, options: { pluginID: string; langto?: string }): Promise<{ status: string; result: string }> } } | undefined;
     const FullText: { getPages(id: number): Promise<{ total: number } | undefined> };
     const Fulltext: { indexItems(ids: number[]): Promise<void> };
+    // Zotero.logError() logs err.message or err.toString() of whatever it gets, so catch blocks pass their unknown error.
+    function logError(err: unknown): void;
     interface Item { _displayTitle: string; }
     interface CollectionTreeRow {
       isFeeds(): boolean;
@@ -32,6 +35,10 @@ declare global {
     interface ItemTree { getRow(index: number): TreeRow & { ref: Zotero.Item }; }
     interface ReaderInstance<T extends keyof Reader.ViewTypeMap = 'pdf' | 'epub' | 'snapshot'> { currentPDFStyle?: string; }
     namespace Tags { interface TagJson { color?: string; position?: number; } }
+    interface DB {
+      // With onRow, db.js passes each mozIStorageRow and a cancel function to the callback and resolves to undefined.
+      queryAsync(sql: string, params: DB.QueryParams | undefined, options: { inBackup?: boolean; noParseParams?: boolean; noCache?: boolean; onRow: (row: mozIStorageRow, cancel: () => void) => void }): Promise<undefined>;
+    }
     interface Tags { removeFromLibrary(libraryID: number, tagIDs: number[], onProgress?: Function, types?: number[]): Promise<void>; }
     interface Zotero_Tabs { _history: Array<Array<{ data?: { itemID?: number } }>>; }
     interface ItemTreeManager {

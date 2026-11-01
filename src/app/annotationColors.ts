@@ -767,7 +767,7 @@ export async function editAnnotationColors() {
               },
               listeners: [{
                 type: "change",
-                listener: function () {
+                listener: function (this: HTMLInputElement) {
                   if (this.checked) {
                     setPref(`annotationColorNameDirection`, "horizontal");
                     updatePreview();
@@ -801,7 +801,7 @@ export async function editAnnotationColors() {
               },
               listeners: [{
                 type: "change",
-                listener: function () {
+                listener: function (this: HTMLInputElement) {
                   if (this.checked) {
                     setPref(`annotationColorNameDirection`, "vertical");
                     updatePreview();

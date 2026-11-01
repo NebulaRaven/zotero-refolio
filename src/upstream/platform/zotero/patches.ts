@@ -29,7 +29,7 @@ export function patchAll(): Cleanup {
   const releaseItems = acquirePatch(prototype, 'getItems', () => {
     let active = true;
     const original = prototype.getItems;
-    const restore = replaceOwnedProperty(prototype, 'getItems', async function (options: { unfiltered?: boolean } = {}) {
+    const restore = replaceOwnedProperty(prototype, 'getItems', async function (this: Zotero.CollectionTreeRow, options: { unfiltered?: boolean } = {}) {
       let items = await original.call(this, options);
       if (active && addon.data.alive && !options.unfiltered) {
         for (const filter of [...addon.data.patch.getItems.data]) {
@@ -46,7 +46,7 @@ export function patchAll(): Cleanup {
     let timer: number | undefined;
     const ownerWindow = window;
     const original = itemsView._displayColumnPickerMenu;
-    const restore = replaceOwnedProperty(itemsView, '_displayColumnPickerMenu', function (...args) {
+    const restore = replaceOwnedProperty(itemsView, '_displayColumnPickerMenu', function (this: _ZoteroTypes.ItemTree, ...args) {
       const result = original.apply(this, args);
       if (active && addon.data.alive && timer === undefined) {
         timer = ownerWindow.setTimeout(() => {

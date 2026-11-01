@@ -8,6 +8,13 @@ export function spElement<K extends keyof HTMLElementTagNameMap>(doc: Document, 
   parent?.append(element as Node);
   return element;
 }
+/** spElement with its document bound: the factory that `spElement.bind(null, doc)` returns. */
+export type SpElementFactory = <K extends keyof HTMLElementTagNameMap>(tag: K, parent?: Element | null, text?: string) => HTMLElementTagNameMap[K];
+// The lib signature of Function.prototype.bind loses the tag type parameter, so the bound factory would return a union
+// of every HTML element. This declaration (types only; nothing is emitted) keeps the factory generic.
+export declare namespace spElement {
+  function bind(thisArg: null, doc: Document): SpElementFactory;
+}
 
 export function spSelect(doc: Document, parent: Element): XULMenuListElement {
   const select = doc.createXULElement("menulist") as XULMenuListElement;

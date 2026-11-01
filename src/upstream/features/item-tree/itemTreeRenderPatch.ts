@@ -1,6 +1,6 @@
   export function installItemTreeRenderPatch(prototype, patches, isEnabled, onError: (error: unknown) => void = () => {}) {
     const originalRenderCell = prototype._renderCell;
-    const patchedRenderCell = function (index, data, column, isFirstColumn) {
+    const patchedRenderCell = function (this: _ZoteroTypes.ItemTree, index, data, column, isFirstColumn) {
       const cell = originalRenderCell.call(this, index, data, column, isFirstColumn);
       const patch = patches.find(({
         key

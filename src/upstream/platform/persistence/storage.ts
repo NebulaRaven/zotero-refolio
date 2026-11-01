@@ -398,12 +398,14 @@ ${JSON.stringify(noteData)}`);
     }
     installHiddenNotesPatch() {
       const excludeKey = this.item.key;
-      const search = Zotero.Search.prototype.search;
+      // The wrapper forwards whichever asTempTable it gets, so search() is typed as its implementation (ids, or a temp
+      // table name for asTempTable) rather than as the overloads that accept only a literal false or true.
+      const search = Zotero.Search.prototype.search as (this: Zotero.Search, asTempTable?: boolean) => Promise<number[] | string>;
       const itemTitle = this.title;
       const patchState = this.searchPatchState = {
         active: true
       };
-      const wrappedSearch = async function (asTempTable) {
+      const wrappedSearch = async function (this: Zotero.Search, asTempTable) {
         const result = await search.call(this, asTempTable);
         if (typeof result === "string") {
           return result;

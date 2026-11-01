@@ -23,7 +23,7 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     const test: NativeReport['tests'][number] = { name, status: 'running' };
     report.tests.push(test); await save();
     try { await run(); test.status = 'passed'; }
-    catch (error) { Object.assign(test, { status: 'failed', error: String(error), stack: error.stack }); }
+    catch (error) { Object.assign(test, { status: 'failed', error: String(error), stack: (error as Error).stack }); }
     await save();
   };
   const assert = (value, message) => { if (!value) throw new Error(message); };
@@ -428,7 +428,7 @@ async function runRefolioNativeSmoke(options: { profile: string; dataDir: string
     try {
       for (const key of keys) toggle(key, false);
       await addon.api.refreshGraphView();
-      assert([...tabs.querySelectorAll('[data-mode]')].every((tab: HTMLElement) => tab.hidden), 'A hidden category remains visible');
+      assert([...tabs.querySelectorAll<HTMLElement>('[data-mode]')].every((tab: HTMLElement) => tab.hidden), 'A hidden category remains visible');
       assert(button(actions, 'ui-fit').disabled && container.querySelector<HTMLElement>('.sp-graph-filters').hidden,
         'All-hidden graph still exposes active controls');
       toggle('citations', true); await addon.api.refreshGraphView();

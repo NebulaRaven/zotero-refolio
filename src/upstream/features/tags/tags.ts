@@ -1,4 +1,4 @@
-import type { TagElement } from '../../../types/ui.ts';
+import type { NestedTagsControlIcon, TagElement } from '../../../types/ui.ts';
 import { requireItemsView } from "../../utils/zoteroPane.ts";
 import { getPref,setPref } from "../../utils/prefs.ts";
 import ColorRNA_default from "color-rna";
@@ -683,7 +683,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           },
           listeners: [{
             type: "click",
-            listener: async function () {
+            listener: async function (this: NestedTagsControlIcon) {
               const node = this;
               if (nestedTagsContainer.style.display == "none") {
                 nestedTagsContainer.style.display = "flex";
@@ -733,7 +733,7 @@ import { getSelectedReaderAnnotations } from "../../utils/reader.ts";
           },
           listeners: [{
             type: "click",
-            listener: function () {
+            listener: function (this: NestedTagsControlIcon) {
               const _isAllCollapse = isAllCollapse;
               const toggle = async node => {
                 let nodes = [...node.querySelectorAll(".item .collapse")];

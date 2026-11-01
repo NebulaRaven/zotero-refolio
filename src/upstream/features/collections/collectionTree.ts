@@ -207,7 +207,7 @@ import { spRegisterMenu } from "../../../app/menus.ts";
   export function patch() {
     const prototype = Zotero.CollectionTreeRow.prototype;
     const originalGetChildren = prototype.getChildren;
-    const patchedGetChildren = function () {
+    const patchedGetChildren = function (this: Zotero.CollectionTreeRow) {
       const sortBy = getPref(`collectionItem.sortBy`);
       const children = originalGetChildren.call(this);
       const sortFunc = sortFunctions[sortBy];

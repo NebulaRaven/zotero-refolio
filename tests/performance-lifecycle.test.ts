@@ -403,7 +403,7 @@ function readingTimeStorage() {
 }
 
 /** A recorder reading PDFs in tabs A and B; read() lets 20-second recording ticks pass on the selected tab. */
-async function recorderFixture(storage: object, log: (...args: unknown[]) => void = assert.fail) {
+async function recorderFixture(storage: object, log: (message: string, error: unknown) => void = assert.fail) {
   let now = 0, position = 0, tick: (() => Promise<void>) | undefined, tabNotify: ((...data: unknown[]) => unknown) | undefined, unregistered = 0;
   const listeners = new Map<string, () => unknown>();
   const reader = (key: string) => ({ _item: { parentItem: { key } }, _internalReader: { _lastView: { _iframeWindow: { PDFViewerApplication: { pagesCount: 3,

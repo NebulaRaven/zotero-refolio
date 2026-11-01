@@ -31,7 +31,7 @@ async function startup() {
       const installed = await AddonManager.getAddonByID("style-personal@nebularaven.local");
       await IOUtils.writeUTF8(runnerOptions.status, JSON.stringify({stage:"installed",revision:runnerRevision,active:installed.isActive,appDisabled:installed.appDisabled}));
     } catch (error) {
-      await IOUtils.writeUTF8(runnerOptions.status, JSON.stringify({stage:"failed",revision:runnerRevision,error:String(error),stack:error.stack}));
+      await IOUtils.writeUTF8(runnerOptions.status, JSON.stringify({stage:"failed",revision:runnerRevision,error:String(error),stack:(error as Error).stack}));
     } finally { runnerBusy = false; }
   };
   runnerTimer = setInterval(run, 2000);

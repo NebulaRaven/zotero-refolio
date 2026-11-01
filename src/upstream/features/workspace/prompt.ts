@@ -6,6 +6,7 @@ import { getColoredTags } from "../../utils/base.ts";
 import { getString } from "../../utils/locale.ts";
 import { drawOpacityProgress } from "../../utils/draw.ts";
 import { editAnnotationColors } from "../../../app/annotationColors.ts";
+import type { Prompt } from "zotero-plugin-toolkit";
   /** Search-result summary: field values stay plain text and the publication is italicized. */
   export function appendItemDescription(parent, item) {
     const parts: Array<string | { italic: string }> = [];
@@ -121,7 +122,7 @@ import { editAnnotationColors } from "../../../app/annotationColors.ts";
     };
     const promptInstance = ztoolkit.Prompt.prompt;
     const originalShowSuggestions = promptInstance?.showSuggestions;
-    const restorePromptSuggestions = promptInstance && originalShowSuggestions ? replaceOwnedProperty(promptInstance, "showSuggestions", async function (inputText) {
+    const restorePromptSuggestions = promptInstance && originalShowSuggestions ? replaceOwnedProperty(promptInstance, "showSuggestions", async function (this: Prompt, inputText) {
       if (suppressedSearchText !== undefined) {
         const currentInputText = this.inputNode?.value;
         if (currentInputText !== inputText) {

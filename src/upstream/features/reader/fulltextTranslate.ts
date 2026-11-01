@@ -72,7 +72,7 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
             ztoolkit.log(e);
             this.showInfo(getString("fulltext-fatal-error", {
               args: {
-                error: String(e.message || e)
+                error: String((e as Error).message || e)
               }
             }));
           } finally {
@@ -870,9 +870,10 @@ import { buildMicrosoftTranslationRequest,parseMicrosoftTranslationResponse } fr
         return getString("fulltext-translate-missing-plugin");
       }
       try {
+        // PDF Translate keeps its target language (langto) in a string preference.
         const res = await translate.call(Zotero.PDFTranslate.api, text, {
           pluginID: config.addonID,
-          langto: tl
+          langto: tl as string
         });
         this.ensureActive(signal);
         if (res.status == "success") {

@@ -26,7 +26,7 @@
     let owners = 0;
     let installed = true;
     const pending = new Set<() => void>();
-    const guarded = function (...args) {
+    const guarded = function (this: _ZoteroTypes.ItemTree, ...args) {
       if (!("_columnsId" in this) || typeof this.forceUpdate !== "function") {
         return original.apply(this, args);
       }

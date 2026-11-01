@@ -728,13 +728,13 @@ ${JSON.stringify(data.data)}`;
           });
         };
         const originalSetColor = Zotero.Tags.setColor;
-        const wrappedSetColor = async function (id, name, color, pos) {
+        const wrappedSetColor = async function (this: _ZoteroTypes.Tags, id, name, color, pos) {
           await originalSetColor.call(this, id, name, color, pos);
           refresh();
         };
         this.trackCleanup(replaceOwnedProperty(Zotero.Tags, "setColor", wrappedSetColor));
         const originalRemoveFromLibrary = Zotero.Tags.removeFromLibrary;
-        const wrappedRemoveFromLibrary = async function (libraryID, tagIDs) {
+        const wrappedRemoveFromLibrary = async function (this: _ZoteroTypes.Tags, libraryID, tagIDs) {
           await originalRemoveFromLibrary.call(this, libraryID, tagIDs);
           refresh();
         };
@@ -2144,7 +2144,7 @@ ${text}`);
         };
         if (!itemBoxPatches.has(itemBox)) {
           const originalRender = itemBox.render;
-          const patchedRender = function (...args) {
+          const patchedRender = function (this: Element, ...args) {
             try {
               const result = originalRender.apply(this, args);
               callback();
@@ -2198,6 +2198,18 @@ ${text}`);
       });
     }
   };
+  /** A column of Zotero's VirtualizedTable, as far as the resize fix reads it. */
+  interface VirtualizedTableColumn { dataKey: string; width: number; fixedWidth?: boolean; staticWidth?: boolean; iconLabel?: unknown; }
+  /** The column model of a VirtualizedTable (tree._columns), whose onResize the resize fix replaces. */
+  interface VirtualizedTableColumns {
+    _columns: VirtualizedTableColumn[];
+    _columnStyleMap: Record<string, number>;
+    /** The table's <style> element; its rules are the per-column style rules. */
+    _stylesheet: { sheet: { cssRules: ArrayLike<CSSStyleRule> } };
+    _getPrefs(): Record<string, unknown>;
+    _getColumnPrefsToPersist(column: VirtualizedTableColumn): unknown;
+    _storePrefs(prefs: Record<string, unknown>): void;
+  }
   export async function registerColumnResizeFix(shouldContinue = () => true) {
     const itemsView = requireItemsView();
     while (shouldContinue() && addon.data.alive && !itemsView.tree) {
@@ -2208,7 +2220,7 @@ ${text}`);
     }
     const tree = itemsView.tree;
     const styleIDs = new Set<string>();
-    const onResize = function (columnWidths, storePrefs = false) {
+    const onResize = function (this: VirtualizedTableColumns, columnWidths: Record<string, number>, storePrefs = false) {
       const prefs = storePrefs ? this._getPrefs() : undefined;
       for (const [rawDataKey, requestedWidth] of Object.entries(columnWidths)) {
         const columnIndex = Number(rawDataKey);
