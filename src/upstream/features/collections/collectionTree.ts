@@ -169,33 +169,13 @@ import { spRegisterMenu } from "../../../app/menus.ts";
       releasePatch();
     };
   }
-  export var getString2 = s => s.toLowerCase();
+  // Keys are the saved preference values; labels come from collectionSortLabels.
   export var sortFunctions = {
     "No Sort": (A, B) => {
       return 0;
     },
-    "Collection Name (A-Z)": (A, B) => {
-      const nameA = getString2(A.name);
-      const nameB = getString2(B.name);
-      if (nameA < nameB) {
-        return -1;
-      } else if (nameA > nameB) {
-        return 1;
-      } else {
-        return 0;
-      }
-    },
-    "Collection Name (Z-A)": (A, B) => {
-      const nameA = getString2(A.name);
-      const nameB = getString2(B.name);
-      if (nameA < nameB) {
-        return 1;
-      } else if (nameA > nameB) {
-        return -1;
-      } else {
-        return 0;
-      }
-    },
+    "Collection Name (A-Z)": (A, B) => Zotero.localeCompare(A.name, B.name),
+    "Collection Name (Z-A)": (A, B) => Zotero.localeCompare(B.name, A.name),
     "Item Count (0-9)": (A, B) => {
       try {
         const numA = A.getChildItems(true, false).length;
@@ -215,6 +195,16 @@ import { spRegisterMenu } from "../../../app/menus.ts";
       }
     }
   };
+  export var collectionSortLabels = {
+    "No Sort": "ui-collection-sort-none",
+    "Collection Name (A-Z)": "ui-collection-sort-name-ascending",
+    "Collection Name (Z-A)": "ui-collection-sort-name-descending",
+    "Item Count (0-9)": "ui-collection-sort-count-ascending",
+    "Item Count (9-0)": "ui-collection-sort-count-descending"
+  };
+  export function collectionSortLabel(value) {
+    return getString(collectionSortLabels[value]);
+  }
   export function patch() {
     const prototype = Zotero.CollectionTreeRow.prototype;
     const originalGetChildren = prototype.getChildren;
@@ -261,7 +251,7 @@ import { spRegisterMenu } from "../../../app/menus.ts";
         return {
           tag: "menuitem",
           attributes: {
-            label: by,
+            label: collectionSortLabel(by),
             type: "checkbox",
             checked: Zotero.Prefs.get(prefKey) == by
           },
