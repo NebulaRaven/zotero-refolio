@@ -103,9 +103,13 @@ import { FulltextTranslate } from "../features/reader/fulltextTranslate.ts";
       }) => {
         const record = new Record();
         addon.api.record = record;
-        return () => {
-          record.destroy();
-          delete addon.api.record;
+        // The recorder saves unsaved reading time on destroy; storage stops after it and must receive that save.
+        return async () => {
+          try {
+            await record.destroy();
+          } finally {
+            delete addon.api.record;
+          }
         };
       }
     }, {

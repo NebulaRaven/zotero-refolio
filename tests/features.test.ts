@@ -290,6 +290,22 @@ test('reader recording and formerly unconditional tools follow their own switche
     prefs[`function.${key}.enable`] = true; assert.equal(feature.isEnabled(), true);
   }
 });
+test('stopping the reading-time recorder waits for its last save', async () => {
+  let finishSave;
+  class Recorder { destroy() { return new Promise(resolve => { finishSave = resolve; }); } }
+  const context: vm.Context = { getPref: () => true, Record: Recorder };
+  vm.runInNewContext(await script(new URL('../src/upstream/app/mainWindowFeatures.ts', import.meta.url)), context);
+  const feature = context.createStandardFeatures().find(f => f.id === 'reading-time-recorder');
+  const addon = { api: {} as Record<string, unknown> };
+  const stop = feature.start({ addon });
+  let stopped = false;
+  const stopping = Promise.resolve(stop()).then(() => { stopped = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(stopped, false);
+  finishSave(); await stopping;
+  assert.equal(stopped, true);
+  assert.equal(addon.api.record, undefined);
+});
 test('master disable leaves settings available without starting library or reader features', async () => {
   const started = [];
   class Runtime { async start(feature) { started.push(feature.id); } async startAll() { assert.fail('Must not start disabled features'); } }
